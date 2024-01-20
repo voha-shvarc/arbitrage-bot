@@ -1,0 +1,21 @@
+# sdks
+binance-connector==3.3.1
+pybit==5.5.0
+python-okx==0.2.1
+gate-api==4.60.2
+git+https://github.com/HuobiRDCenter/huobi_Python.git  # huobi
+
+retry
+SQLAlchemy==2.0
+psycopg2-binary
+alembic
+celery[redis]
+flower
+python-dotenv
+
+telebot
+
+# google api sdk
+google-api-python-client
+google-auth-httplib2
+google-auth-oauthlib

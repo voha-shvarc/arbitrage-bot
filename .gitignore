@@ -1,0 +1,7 @@
+.idea
+__pycache__
+.venv
+processing.log
+error.log
+service_account.json
+.env

@@ -1,0 +1,77 @@
+version: '3.3'
+
+services:
+  bot:
+    build: .
+    image: ${APP_IMAGE_NAME}
+    restart: always
+    command: ["/app/docker/bot.sh"]
+    deploy:
+      replicas: 3
+    networks:
+      - main
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    build: ./docker/postgres/.
+    image: ${DB_IMAGE_NAME}
+    environment:
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+    restart: always
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    ports:
+      - "5435:5432"
+    networks:
+      - main
+
+  redis:
+    image: redis:7
+    restart: always
+    ports:
+      - "6379:6379"
+    networks:
+      - main
+
+  celery:
+    build: .
+    image: ${APP_IMAGE_NAME}
+    restart: always
+    command: ["/app/docker/celery.sh", "celery"]
+    networks:
+      - main
+    depends_on:
+      - db
+
+  celery-beat:
+    build: .
+    image: ${APP_IMAGE_NAME}
+    restart: always
+    command: ["/app/docker/celery.sh", "beat"]
+    networks:
+      - main
+    depends_on:
+      - redis
+      - celery
+
+  flower:
+    build: .
+    image: ${APP_IMAGE_NAME}
+    restart: always
+    command: ["/app/docker/celery.sh", "flower"]
+    ports:
+      - "5555:5555"
+    networks:
+      - main
+    depends_on:
+      - redis
+      - celery
+
+networks:
+  main:
+    driver: bridge
