@@ -1,4 +1,5 @@
 import logging
+import time
 from typing import Tuple
 
 from sqlalchemy import func, exists, and_
@@ -26,6 +27,9 @@ class ExchangePairAnalyzer:
     def run(self):
         common_pairs = self._get_common_pairs()
         log.info(f"Found {len(common_pairs)} common pairs")
+        if len(common_pairs) == 0:
+            log.info("Sleeping for 5 seconds, waiting for sync scripts to run")
+            time.sleep(5)
 
         for pair in common_pairs:
             log.info(f"processing {pair.default_name}")
