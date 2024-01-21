@@ -48,7 +48,8 @@ def sync_coin_exchange_networks():
             .filter(
                 or_(
                     and_(Exchange.name == "GateIO", Coin.name == "GTC"),
-                    and_(Network.name == 'BSC', Coin.name == 'BABYDOGE')
+                    and_(Network.name == 'BSC', Coin.name == 'BABYDOGE'),
+                    and_(Exchange.name == "GateIO", Coin.name == "PEPE2")
                 )
             )
         session.query(CoinNetworkExchange).filter(CoinNetworkExchange.id.in_(subq)).update({"can_withdraw": False}, synchronize_session=False)

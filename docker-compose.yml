@@ -62,6 +62,8 @@ services:
   flower:
     build: .
     image: ${APP_IMAGE_NAME}
+    environment:
+      - FLOWER_UNAUTHENTICATED_API=True
     restart: always
     command: ["/app/docker/celery.sh", "flower"]
     ports:
