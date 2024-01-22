@@ -1,6 +1,6 @@
 FROM python:alpine3.17
 
-RUN apk add build-base git bash
+RUN apk add build-base git bash postgresql-client
 WORKDIR /app
 
 COPY requirements.txt ./

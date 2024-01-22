@@ -5,14 +5,16 @@ services:
     build: .
     image: ${APP_IMAGE_NAME}
     restart: always
-    command: ["/app/docker/bot.sh"]
     deploy:
       replicas: 3
+      resources:
+        limits:
+          cpus: "0.2"
+    command: ["/app/docker/bot.sh"]
     networks:
       - main
     depends_on:
-      db:
-        condition: service_healthy
+      - db
 
   db:
     build: ./docker/postgres/.
@@ -20,11 +22,6 @@ services:
     environment:
       - POSTGRES_PASSWORD=${DB_PASSWORD}
     restart: always
-    healthcheck:
-      test: [ "CMD-SHELL", "pg_isready" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
     ports:
       - "5435:5432"
     networks:
@@ -34,7 +31,7 @@ services:
     image: redis:7
     restart: always
     ports:
-      - "6379:6379"
+      - "6380:6379"
     networks:
       - main
 
