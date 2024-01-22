@@ -10,6 +10,7 @@ services:
       resources:
         limits:
           cpus: "0.2"
+          memory: 125m
     command: ["/app/docker/bot.sh"]
     networks:
       - main
@@ -26,6 +27,7 @@ services:
       resources:
         limits:
           cpus: "0.15"
+          memory: 150m
     ports:
       - "5435:5432"
     networks:
@@ -34,6 +36,11 @@ services:
   redis:
     image: redis:7
     restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: "0.1"
+          memory: 50m
     ports:
       - "6380:6379"
     networks:
@@ -48,6 +55,7 @@ services:
       resources:
         limits:
           cpus: "0.2"
+          memory: 125m
     networks:
       - main
     depends_on:
@@ -58,6 +66,11 @@ services:
     image: ${APP_IMAGE_NAME}
     restart: always
     command: ["/app/docker/celery.sh", "beat"]
+    deploy:
+      resources:
+        limits:
+          cpus: "0.1"
+          memory: 75m
     networks:
       - main
     depends_on:
@@ -75,6 +88,7 @@ services:
       resources:
         limits:
           cpus: "0.1"
+          memory: 50m
     ports:
       - "5555:5555"
     networks:
@@ -85,4 +99,4 @@ services:
 
 networks:
   main:
-    driver: bridge
+    driver: overlay
