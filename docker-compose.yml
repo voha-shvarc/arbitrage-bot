@@ -77,25 +77,25 @@ services:
       - redis
       - celery
 
-  flower:
-    build: .
-    image: ${APP_IMAGE_NAME}
-    environment:
-      - FLOWER_UNAUTHENTICATED_API=True
-    restart: always
-    command: ["/app/docker/celery.sh", "flower"]
-    deploy:
-      resources:
-        limits:
-          cpus: "0.1"
-          memory: 75m
-    ports:
-      - "5555:5555"
-    networks:
-      - main
-    depends_on:
-      - redis
-      - celery
+#  flower:
+#    build: .
+#    image: ${APP_IMAGE_NAME}
+#    environment:
+#      - FLOWER_UNAUTHENTICATED_API=True
+#    restart: always
+#    command: ["/app/docker/celery.sh", "flower"]
+#    deploy:
+#      resources:
+#        limits:
+#          cpus: "0.1"
+#          memory: 75m
+#    ports:
+#      - "5555:5555"
+#    networks:
+#      - main
+#    depends_on:
+#      - redis
+#      - celery
 
 networks:
   main:
