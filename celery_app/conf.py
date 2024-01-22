@@ -6,7 +6,7 @@ app = Celery('tasks', include=['celery_app.sync', 'celery_app.tasks'], broker='r
 app.conf.beat_schedule = {
     "sync_pairs": {
         "task": "celery_app.sync.sync_pairs",
-        "schedule": 60 * 10,  # every 10 minutes
+        "schedule": 60 * 9,  # every 9 minutes
     },
     "sync_coin_exchange_networks": {
         "task": "celery_app.sync.sync_coin_exchange_networks",
@@ -14,6 +14,6 @@ app.conf.beat_schedule = {
     },
     "send_analytics": {
         "task": "celery_app.tasks.send_analytics",
-        "schedule": 60 * 10,  # every 10 minutes
+        "schedule": 60 * 13,  # every 13 minutes
     },
 }
