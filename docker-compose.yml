@@ -10,7 +10,7 @@ services:
       resources:
         limits:
           cpus: "0.2"
-          memory: 125m
+          memory: 100m
     command: ["/app/docker/bot.sh"]
     networks:
       - main
@@ -27,7 +27,7 @@ services:
       resources:
         limits:
           cpus: "0.15"
-          memory: 150m
+          memory: 125m
     ports:
       - "5435:5432"
     networks:
@@ -55,7 +55,7 @@ services:
       resources:
         limits:
           cpus: "0.2"
-          memory: 125m
+          memory: 150m
     networks:
       - main
     depends_on:
@@ -70,7 +70,7 @@ services:
       resources:
         limits:
           cpus: "0.1"
-          memory: 75m
+          memory: 200m
     networks:
       - main
     depends_on:
@@ -88,7 +88,7 @@ services:
       resources:
         limits:
           cpus: "0.1"
-          memory: 50m
+          memory: 75m
     ports:
       - "5555:5555"
     networks:
