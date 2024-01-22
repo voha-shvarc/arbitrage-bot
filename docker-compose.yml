@@ -22,6 +22,10 @@ services:
     environment:
       - POSTGRES_PASSWORD=${DB_PASSWORD}
     restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: "0.15"
     ports:
       - "5435:5432"
     networks:
@@ -40,6 +44,10 @@ services:
     image: ${APP_IMAGE_NAME}
     restart: always
     command: ["/app/docker/celery.sh", "celery"]
+    deploy:
+      resources:
+        limits:
+          cpus: "0.2"
     networks:
       - main
     depends_on:
@@ -63,6 +71,10 @@ services:
       - FLOWER_UNAUTHENTICATED_API=True
     restart: always
     command: ["/app/docker/celery.sh", "flower"]
+    deploy:
+      resources:
+        limits:
+          cpus: "0.1"
     ports:
       - "5555:5555"
     networks:
