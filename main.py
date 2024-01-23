@@ -7,7 +7,7 @@ from analyze.analyzer import ExchangePairAnalyzer
 from exchanges import BinanceAPI, BybitAPI, OkxAPI, GateIOAPI, HuobiAPI
 
 log_file = "error.log"
-formatt = logging.Formatter('%(asctime)s - %(message)s')
+formatt = logging.Formatter("%(asctime)s - %(message)s")
 log_er = logging.getLogger("error")
 log_er.setLevel(logging.ERROR)
 handler = logging.FileHandler(log_file)
@@ -41,5 +41,5 @@ def main():
                     log_er.exception(e)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

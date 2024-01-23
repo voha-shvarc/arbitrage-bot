@@ -18,13 +18,14 @@ class BybitAPI(AbstractExchange):
         pairs_info = self.session.get_instruments_info(category="spot")
         trading_pairs = [
             TradingPair(base_coin=pair["baseCoin"], quote_coin=pair["quoteCoin"], exchange=self.NAME)
-            for pair in pairs_info['result']['list'] if pair['quoteCoin'] == "USDT"
+            for pair in pairs_info["result"]["list"]
+            if pair["quoteCoin"] == "USDT"
         ]
         return trading_pairs
 
     def get_coin_exchange_networks(self):
         # TODO: maybe check coin for presence in db
-        for coin_data in self.session.get_coin_info()['result']['rows']:
+        for coin_data in self.session.get_coin_info()["result"]["rows"]:
             try:
                 yield CoinNetworkExchangeDC.from_bybit(coin_data)
             except IndexError:
@@ -32,8 +33,8 @@ class BybitAPI(AbstractExchange):
 
     def get_price(self, pair, limit=20):
         res = self.session.get_orderbook(symbol=pair.default_name, limit=limit, category="spot")
-        buy = res['result']['a']
-        sell = res['result']['b']
+        buy = res["result"]["a"]
+        sell = res["result"]["b"]
         if not buy or not sell:
             raise NoPriceFound()
         return buy, sell

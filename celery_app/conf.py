@@ -1,6 +1,6 @@
 from celery import Celery
 
-app = Celery('tasks', include=['celery_app.sync', 'celery_app.tasks'], broker='redis://redis:6379')
+app = Celery("tasks", include=["celery_app.sync", "celery_app.tasks"], broker="redis://redis:6379")
 
 
 app.conf.beat_schedule = {

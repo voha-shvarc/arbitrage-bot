@@ -46,9 +46,9 @@ class CoinNetworkExchange(Base):
     network_id = Column(ForeignKey("networks.id"), index=True)
 
     arrival_time = Column(Integer)
-    withdraw_fee = Column(Float, default=0, server_default='0')
-    can_withdraw = Column(Boolean, default=False, server_default='false', index=True, nullable=False)
-    can_deposit = Column(Boolean, default=False, server_default='false', index=True, nullable=False)
+    withdraw_fee = Column(Float, default=0, server_default="0")
+    can_withdraw = Column(Boolean, default=False, server_default="false", index=True, nullable=False)
+    can_deposit = Column(Boolean, default=False, server_default="false", index=True, nullable=False)
     created_at = db_created()
     updated_at = db_updated()
 
@@ -107,8 +107,13 @@ class ProfitBundle(Base):
     coin_network_exchange_id = Column(ForeignKey("coin_network_exchange.id"), index=True)
     base_exchange_id = Column(ForeignKey("exchanges.id"), index=True)
     pair_exchange_id = Column(ForeignKey("exchanges.id"), index=True)
-    synced = Column(Boolean(), default=False, server_default='False', index=True)
-    status = Column(String(20), default=BundleStatus.in_progress, server_default=BundleStatus.in_progress, index=True,)
+    synced = Column(Boolean(), default=False, server_default="False", index=True)
+    status = Column(
+        String(20),
+        default=BundleStatus.in_progress,
+        server_default=BundleStatus.in_progress,
+        index=True,
+    )
     created_at = db_created()
     updated_at = db_updated()
 

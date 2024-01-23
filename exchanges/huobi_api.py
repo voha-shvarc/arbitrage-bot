@@ -18,8 +18,11 @@ class HuobiAPI(AbstractExchange):
     def get_trading_pairs(self) -> List[TradingPair]:
         pairs_info = self.client.get_exchange_symbols()
         trading_pairs = [
-            TradingPair(base_coin=pair.base_currency.upper(), quote_coin=pair.quote_currency.upper(), exchange=self.NAME)
-            for pair in pairs_info if pair.state == 'online'
+            TradingPair(
+                base_coin=pair.base_currency.upper(), quote_coin=pair.quote_currency.upper(), exchange=self.NAME
+            )
+            for pair in pairs_info
+            if pair.state == "online"
         ]
         return trading_pairs
 

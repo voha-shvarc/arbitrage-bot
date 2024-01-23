@@ -2,7 +2,7 @@ from sqlalchemy import Column, DateTime, func
 
 from db.base import Session
 
-DEFAULT_TIMEZONE = 'UTC'
+DEFAULT_TIMEZONE = "UTC"
 
 
 def get_or_create(session: Session, model, defaults=None, **kwargs):
@@ -18,24 +18,24 @@ def get_or_create(session: Session, model, defaults=None, **kwargs):
 
 
 def db_created(**kw):
-    if 'nullable' not in kw:
-        kw['nullable'] = False
-    if 'default' not in kw:
-        kw['default'] = func.timezone(DEFAULT_TIMEZONE, func.current_timestamp())
-    if 'index' not in kw:
-        kw['index'] = True
-    if 'doc' not in kw:
-        kw['doc'] = u'Created Date'
+    if "nullable" not in kw:
+        kw["nullable"] = False
+    if "default" not in kw:
+        kw["default"] = func.timezone(DEFAULT_TIMEZONE, func.current_timestamp())
+    if "index" not in kw:
+        kw["index"] = True
+    if "doc" not in kw:
+        kw["doc"] = "Created Date"
     return Column(DateTime, **kw)
 
 
 def db_updated(**kw):
-    if 'nullable' not in kw:
-        kw['nullable'] = False
-    if 'default' not in kw:
-        kw['default'] = func.timezone(DEFAULT_TIMEZONE, func.current_timestamp())
-    if 'onupdate' not in kw:
-        kw['onupdate'] = func.timezone(DEFAULT_TIMEZONE, func.current_timestamp())
-    if 'doc' not in kw:
-        kw['doc'] = u'Updated Date'
+    if "nullable" not in kw:
+        kw["nullable"] = False
+    if "default" not in kw:
+        kw["default"] = func.timezone(DEFAULT_TIMEZONE, func.current_timestamp())
+    if "onupdate" not in kw:
+        kw["onupdate"] = func.timezone(DEFAULT_TIMEZONE, func.current_timestamp())
+    if "doc" not in kw:
+        kw["doc"] = "Updated Date"
     return Column(DateTime, **kw)

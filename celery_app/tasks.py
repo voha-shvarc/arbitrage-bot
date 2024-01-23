@@ -30,15 +30,19 @@ error_log = logging.getLogger("error")
 @app.task(bind=True, max_retries=20)
 def monitor_bundle(self, bundle_id):
     with Session() as session:
-        bundle = session.query(ProfitBundle) \
-            .options(joinedload(ProfitBundle.coin_network_exchange),
-                     joinedload(ProfitBundle.coin_network_exchange).joinedload(CoinNetworkExchange.network),
-                     joinedload(ProfitBundle.pair),
-                     joinedload(ProfitBundle.pair).joinedload(Pair.base_coin),
-                     joinedload(ProfitBundle.pair).joinedload(Pair.quote_coin),
-                     joinedload(ProfitBundle.base_exchange),
-                     joinedload(ProfitBundle.pair_exchange)) \
+        bundle = (
+            session.query(ProfitBundle)
+            .options(
+                joinedload(ProfitBundle.coin_network_exchange),
+                joinedload(ProfitBundle.coin_network_exchange).joinedload(CoinNetworkExchange.network),
+                joinedload(ProfitBundle.pair),
+                joinedload(ProfitBundle.pair).joinedload(Pair.base_coin),
+                joinedload(ProfitBundle.pair).joinedload(Pair.quote_coin),
+                joinedload(ProfitBundle.base_exchange),
+                joinedload(ProfitBundle.pair_exchange),
+            )
             .get(bundle_id)
+        )
 
     base_exchange = exchange_mapping[bundle.base_exchange.name](config)
     pair_exchange = exchange_mapping[bundle.pair_exchange.name](config)
@@ -47,9 +51,7 @@ def monitor_bundle(self, bundle_id):
     pair_exchange_price = pair_exchange.get_price(bundle.pair)
 
     price_analyzer = PriceAnalyzer(
-        buy_price=base_exchange_price[0],
-        sell_price=pair_exchange_price[1],
-        network=bundle.coin_network_exchange
+        buy_price=base_exchange_price[0], sell_price=pair_exchange_price[1], network=bundle.coin_network_exchange
     )
     try:
         price_analyzer.run()
@@ -71,9 +73,9 @@ def monitor_bundle(self, bundle_id):
 
     # if bundle comes to this point, then it's over retried or isn't anymore profitable
     with Session() as session:
-        session.query(ProfitBundle) \
-            .filter(ProfitBundle.id == bundle_id) \
-            .update({"status": BundleStatus.done}, synchronize_session=False)
+        session.query(ProfitBundle).filter(ProfitBundle.id == bundle_id).update(
+            {"status": BundleStatus.done}, synchronize_session=False
+        )
         session.commit()
 
 

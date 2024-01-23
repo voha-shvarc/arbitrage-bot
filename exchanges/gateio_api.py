@@ -17,7 +17,8 @@ class GateIOAPI(AbstractExchange):
         pairs_info = self.spot_client.list_currency_pairs()
         trading_pairs = [
             TradingPair(base_coin=pair.base, quote_coin=pair.quote, exchange=self.NAME)
-            for pair in pairs_info if pair.quote == "USDT" and pair.trade_status == "tradable"
+            for pair in pairs_info
+            if pair.quote == "USDT" and pair.trade_status == "tradable"
         ]
         return trading_pairs
 
