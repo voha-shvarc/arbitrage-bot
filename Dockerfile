@@ -1,4 +1,4 @@
-FROM python:alpine3.17
+FROM python:3.11-alpine3.17
 
 RUN apk add build-base git bash postgresql-client
 WORKDIR /app
