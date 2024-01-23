@@ -6,11 +6,11 @@ services:
     image: ${APP_IMAGE_NAME}
     restart: always
     deploy:
-      replicas: 3
+      replicas: 2
       resources:
         limits:
-          cpus: "0.2"
-          memory: 100m
+          cpus: "0.175"
+          memory: 125m
     command: ["/app/docker/bot.sh"]
     networks:
       - main
@@ -39,7 +39,7 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.1"
+          cpus: "0.075"
           memory: 50m
     ports:
       - "6380:6379"
@@ -55,7 +55,7 @@ services:
       resources:
         limits:
           cpus: "0.2"
-          memory: 150m
+          memory: 250m
     networks:
       - main
     depends_on:
