@@ -1,4 +1,4 @@
-FROM python:alpine3.17
+FROM python:3.11-alpine3.17
 
 RUN apk add build-base git bash postgresql-client
 WORKDIR /app
@@ -9,5 +9,6 @@ RUN pip install -r requirements.txt
 COPY . .
 
 RUN chmod a+x docker/*.sh
+RUN chmod a+x docker/bot.sh
 
 RUN python /app/docker/fix_huobi.py
