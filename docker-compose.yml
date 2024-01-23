@@ -6,11 +6,7 @@ services:
     image: ${APP_IMAGE_NAME}
     restart: always
     deploy:
-      replicas: 2
-      resources:
-        limits:
-          cpus: "0.175"
-          memory: 125m
+      replicas: 3
     command: ["/app/docker/bot.sh"]
     networks:
       - main
@@ -23,11 +19,6 @@ services:
     environment:
       - POSTGRES_PASSWORD=${DB_PASSWORD}
     restart: always
-    deploy:
-      resources:
-        limits:
-          cpus: "0.15"
-          memory: 125m
     ports:
       - "5435:5432"
     networks:
@@ -36,11 +27,6 @@ services:
   redis:
     image: redis:7
     restart: always
-    deploy:
-      resources:
-        limits:
-          cpus: "0.075"
-          memory: 50m
     ports:
       - "6380:6379"
     networks:
@@ -51,11 +37,6 @@ services:
     image: ${APP_IMAGE_NAME}
     restart: always
     command: ["/app/docker/celery.sh", "celery"]
-    deploy:
-      resources:
-        limits:
-          cpus: "0.2"
-          memory: 250m
     networks:
       - main
     depends_on:
@@ -66,37 +47,27 @@ services:
     image: ${APP_IMAGE_NAME}
     restart: always
     command: ["/app/docker/celery.sh", "beat"]
-    deploy:
-      resources:
-        limits:
-          cpus: "0.1"
-          memory: 200m
     networks:
       - main
     depends_on:
       - redis
       - celery
 
-#  flower:
-#    build: .
-#    image: ${APP_IMAGE_NAME}
-#    environment:
-#      - FLOWER_UNAUTHENTICATED_API=True
-#    restart: always
-#    command: ["/app/docker/celery.sh", "flower"]
-#    deploy:
-#      resources:
-#        limits:
-#          cpus: "0.1"
-#          memory: 75m
-#    ports:
-#      - "5555:5555"
-#    networks:
-#      - main
-#    depends_on:
-#      - redis
-#      - celery
+  flower:
+    build: .
+    image: ${APP_IMAGE_NAME}
+    environment:
+      - FLOWER_UNAUTHENTICATED_API=True
+    restart: always
+    command: ["/app/docker/celery.sh", "flower"]
+    ports:
+      - "5555:5555"
+    networks:
+      - main
+    depends_on:
+      - redis
+      - celery
 
 networks:
   main:
-    driver: overlay
+    driver: bridge
