@@ -19,20 +19,20 @@ class NetworkExchange:
     @classmethod
     def from_binance(cls, data):
         name = data["network"]
-        can_deposit = data['depositEnable']
-        can_withdraw = data['withdrawEnable']
-        withdraw_fee = data['withdrawFee']
-        arrival_time = data['estimatedArrivalTime']
+        can_deposit = data["depositEnable"]
+        can_withdraw = data["withdrawEnable"]
+        withdraw_fee = data["withdrawFee"]
+        arrival_time = data["estimatedArrivalTime"]
 
         return cls(name, can_deposit, can_withdraw, withdraw_fee, arrival_time)
 
     @classmethod
     def from_bybit(cls, data):
         name = data["chain"]
-        can_deposit = data['chainDeposit'] == '1'
-        can_withdraw = data['chainWithdraw'] == '1'
+        can_deposit = data["chainDeposit"] == "1"
+        can_withdraw = data["chainWithdraw"] == "1"
         try:
-            withdraw_fee = float(data['withdrawFee'])
+            withdraw_fee = float(data["withdrawFee"])
         except ValueError:
             withdraw_fee = 0
 
@@ -42,9 +42,9 @@ class NetworkExchange:
     @classmethod
     def from_okx(cls, data):
         name = data["chain"].split("-")[1]
-        can_deposit = data['canDep']
-        can_withdraw = data['canWd']
-        withdraw_fee = float(data['minFee'])
+        can_deposit = data["canDep"]
+        can_withdraw = data["canWd"]
+        withdraw_fee = float(data["minFee"])
 
         return cls(name, can_deposit, can_withdraw, withdraw_fee, 1)
 
@@ -88,7 +88,7 @@ class CoinNetworkExchangeDC:
     @classmethod
     def from_binance(cls, data):
         coin_name = data["coin"]
-        networks = [NetworkExchange.from_binance(network) for network in data['networkList']]
+        networks = [NetworkExchange.from_binance(network) for network in data["networkList"]]
 
         return cls(coin_name, "Binance", networks)
 
@@ -118,7 +118,8 @@ class CoinNetworkExchangeDC:
         coin_name = data.currency
         networks = [
             NetworkExchange.from_huobi(network, net_name)
-            for network in data.chains if network.withdrawFeeType == 'fixed'
+            for network in data.chains
+            if network.withdrawFeeType == "fixed"
             for net_name in cls._get_huobi_network_names(network, coin_name)
         ]
 
@@ -129,10 +130,10 @@ class CoinNetworkExchangeDC:
         names = set()
         if network.baseChain:
             names.add(network.baseChain)
-        if network.baseChainProtocol and network.baseChainProtocol != '-':
+        if network.baseChainProtocol and network.baseChainProtocol != "-":
             names.add(network.baseChainProtocol)
 
-        chain_name = network.chain.replace(coin_name, '')
+        chain_name = network.chain.replace(coin_name, "")
         if chain_name:
             names.add(chain_name.upper())
 

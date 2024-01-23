@@ -8,6 +8,7 @@ from exchanges.abstract import AbstractExchange, NoPriceFound
 
 class BinanceAPI(AbstractExchange):
     """For testing use different keys. more here https://testnet.binance.vision/"""
+
     NAME = "Binance"
     NOT_ALLOWED_STATUS = "BREAK"
 
@@ -17,22 +18,25 @@ class BinanceAPI(AbstractExchange):
         self.client = Spot(api_key=api_key, api_secret=api_secret)
 
     def get_trading_pairs(self) -> List[TradingPair]:
-        pairs_info = self.client.exchange_info(permissions=['SPOT'])
+        pairs_info = self.client.exchange_info(permissions=["SPOT"])
         trading_pairs = [
-            TradingPair(base_coin=pair['baseAsset'], quote_coin=pair['quoteAsset'], exchange=self.NAME)
-            for pair in pairs_info['symbols'] if self._is_valid_pair(pair)
+            TradingPair(base_coin=pair["baseAsset"], quote_coin=pair["quoteAsset"], exchange=self.NAME)
+            for pair in pairs_info["symbols"]
+            if self._is_valid_pair(pair)
         ]
         return trading_pairs
 
     def _is_valid_pair(self, coin_data):
-        return coin_data['isSpotTradingAllowed'] \
-               and coin_data['quoteAsset'] == "USDT" \
-               and coin_data['status'] != self.NOT_ALLOWED_STATUS
+        return (
+            coin_data["isSpotTradingAllowed"]
+            and coin_data["quoteAsset"] == "USDT"
+            and coin_data["status"] != self.NOT_ALLOWED_STATUS
+        )
 
     def get_price(self, pair, limit=20):
         order_book = self.client.depth(symbol=pair.default_name, limit=limit)
-        buy = order_book['asks']
-        sell = order_book['bids']
+        buy = order_book["asks"]
+        sell = order_book["bids"]
         if not buy or not sell:
             raise NoPriceFound()
         return buy, sell

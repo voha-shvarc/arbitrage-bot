@@ -30,4 +30,3 @@ class AbstractExchange(ABC):
 
 class NoPriceFound(Exception):
     pass
-

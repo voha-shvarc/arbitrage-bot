@@ -7,8 +7,17 @@ from sqlalchemy.orm import joinedload
 
 from celery_app.tasks import monitor_bundle
 from db.base import Session
-from db.models import Pair, Exchange, CoinNetworkExchange, Coin, Network, PairExchange, ProfitBundle, ProfitBundleItem, \
-    BundleStatus
+from db.models import (
+    Pair,
+    Exchange,
+    CoinNetworkExchange,
+    Coin,
+    Network,
+    PairExchange,
+    ProfitBundle,
+    ProfitBundleItem,
+    BundleStatus,
+)
 from exchanges.abstract import NoPriceFound
 from .price_analyzer import PriceAnalyzer
 
@@ -48,75 +57,96 @@ class ExchangePairAnalyzer:
 
             if base_to_second_network and self.base_exchange.NAME != "GateIO":
                 buy_price_analyzer = PriceAnalyzer(
-                    buy_price=base_exchange_price[0], sell_price=pair_exchange_price[1], network=base_to_second_network
+                    buy_price=base_exchange_price[0],
+                    sell_price=pair_exchange_price[1],
+                    network=base_to_second_network,
                 )
                 try:
                     buy_price_analyzer.run()
                 except Exception as e:
                     error_log.exception(e)
 
-                if buy_price_analyzer.profit > self.BASE_USDT_PROFIT and buy_price_analyzer.to_use_usdt > self.MIN_LIQUID_AMOUNT:
+                if (
+                    buy_price_analyzer.profit > self.BASE_USDT_PROFIT
+                    and buy_price_analyzer.to_use_usdt > self.MIN_LIQUID_AMOUNT
+                ):
                     self._start_monitoring(pair, buy_price_analyzer)
 
             if second_to_base_network and self.pair_exchange.NAME != "GateIO":
                 sell_price_analyzer = PriceAnalyzer(
-                    buy_price=pair_exchange_price[0], sell_price=base_exchange_price[1], network=second_to_base_network
+                    buy_price=pair_exchange_price[0],
+                    sell_price=base_exchange_price[1],
+                    network=second_to_base_network,
                 )
                 try:
                     sell_price_analyzer.run()
                 except Exception as e:
                     error_log.exception(e)
 
-                if sell_price_analyzer.profit > self.BASE_USDT_PROFIT and sell_price_analyzer.to_use_usdt > self.MIN_LIQUID_AMOUNT:
+                if (
+                    sell_price_analyzer.profit > self.BASE_USDT_PROFIT
+                    and sell_price_analyzer.to_use_usdt > self.MIN_LIQUID_AMOUNT
+                ):
                     self._start_monitoring(pair, sell_price_analyzer, from_base=False)
 
     def _get_common_pairs(self):
         with Session() as session:
-            subquery = session.query(PairExchange.pair_id).join(Exchange) \
-                .filter(Exchange.id == self.base_exchange.db_id)
-            pairs = session.query(Pair).join(PairExchange).join(Exchange) \
-                .filter(Exchange.id == self.pair_exchange.db_id, Pair.id.in_(subquery)) \
-                .options(joinedload(Pair.base_coin), joinedload(Pair.quote_coin)) \
+            subquery = (
+                session.query(PairExchange.pair_id).join(Exchange).filter(Exchange.id == self.base_exchange.db_id)
+            )
+            pairs = (
+                session.query(Pair)
+                .join(PairExchange)
+                .join(Exchange)
+                .filter(Exchange.id == self.pair_exchange.db_id, Pair.id.in_(subquery))
+                .options(joinedload(Pair.base_coin), joinedload(Pair.quote_coin))
                 .all()
+            )
             return pairs
 
     def _get_best_networks(self, coin: Coin) -> Tuple[CoinNetworkExchange, CoinNetworkExchange]:
         with Session() as session:
-            query = session.query(CoinNetworkExchange.network_id, func.array_agg(CoinNetworkExchange.id)) \
-                .join(Exchange).join(Coin) \
-                .filter(Exchange.id.in_([self.pair_exchange.db_id, self.base_exchange.db_id]),
-                        Coin.name == coin.name) \
-                .group_by(CoinNetworkExchange.network_id) \
+            query = (
+                session.query(CoinNetworkExchange.network_id, func.array_agg(CoinNetworkExchange.id))
+                .join(Exchange)
+                .join(Coin)
+                .filter(Exchange.id.in_([self.pair_exchange.db_id, self.base_exchange.db_id]), Coin.name == coin.name)
+                .group_by(CoinNetworkExchange.network_id)
                 .having(func.count(CoinNetworkExchange.id) == 2)
+            )
 
             nets_mapping = {}
             for network_id, coin_network_exchange_ids in query:
                 network: Network = session.query(Network).get(network_id)
-                coin_network_exchange_qs = session.query(Exchange.name, CoinNetworkExchange) \
-                    .join(Exchange) \
-                    .filter(CoinNetworkExchange.id.in_(coin_network_exchange_ids)) \
+                coin_network_exchange_qs = (
+                    session.query(Exchange.name, CoinNetworkExchange)
+                    .join(Exchange)
+                    .filter(CoinNetworkExchange.id.in_(coin_network_exchange_ids))
                     .options(joinedload(CoinNetworkExchange.network))
+                )
                 nets_mapping[network.name] = {
                     exchange_name: coin_network_exchange
                     for exchange_name, coin_network_exchange in coin_network_exchange_qs
                 }
 
         available_nets_to_transfer_from_base_to_second = [
-            nets[self.base_exchange.NAME] for net_name, nets in nets_mapping.items()
+            nets[self.base_exchange.NAME]
+            for net_name, nets in nets_mapping.items()
             if nets[self.base_exchange.NAME].can_withdraw and nets[self.pair_exchange.NAME].can_deposit
         ]
         available_nets_to_transfer_from_second_to_base = [
-            nets[self.pair_exchange.NAME] for net_name, nets in nets_mapping.items()
+            nets[self.pair_exchange.NAME]
+            for net_name, nets in nets_mapping.items()
             if nets[self.pair_exchange.NAME].can_withdraw and nets[self.base_exchange.NAME].can_deposit
         ]
 
         best_base_to_second_network = min(
             available_nets_to_transfer_from_base_to_second or [None],
-            key=lambda net: net.withdraw_fee if net else None
+            key=lambda net: net.withdraw_fee if net else None,
         )
         best_second_to_base_network = min(
             available_nets_to_transfer_from_second_to_base or [None],
-            key=lambda net: net.withdraw_fee if net else None
+            key=lambda net: net.withdraw_fee if net else None,
         )
 
         return best_base_to_second_network, best_second_to_base_network
@@ -128,13 +158,17 @@ class ExchangePairAnalyzer:
             from_exchange_id, to_exchange_id = self.pair_exchange.db_id, self.base_exchange.db_id
 
         with Session() as session:
-            same_processing_bundle = session.query(exists().where(
-                and_(ProfitBundle.status == BundleStatus.in_progress,
-                     ProfitBundle.coin_network_exchange_id == price_analyzer.network.id,
-                     ProfitBundle.pair_id == pair.id,
-                     ProfitBundle.base_exchange_id == from_exchange_id,
-                     ProfitBundle.pair_exchange_id == to_exchange_id)
-            )).scalar()
+            same_processing_bundle = session.query(
+                exists().where(
+                    and_(
+                        ProfitBundle.status == BundleStatus.in_progress,
+                        ProfitBundle.coin_network_exchange_id == price_analyzer.network.id,
+                        ProfitBundle.pair_id == pair.id,
+                        ProfitBundle.base_exchange_id == from_exchange_id,
+                        ProfitBundle.pair_exchange_id == to_exchange_id,
+                    )
+                )
+            ).scalar()
             if same_processing_bundle:
                 return False
 

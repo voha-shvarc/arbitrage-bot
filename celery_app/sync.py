@@ -26,11 +26,13 @@ def sync_coin_exchange_networks():
                 for i, network_dataclass in enumerate(cen_dataclass.networks):
                     network, created = get_or_create(session, Network, name=network_dataclass.name)
 
-                    coin_network_exchange = (session.query(CoinNetworkExchange.id)
-                                             .filter(CoinNetworkExchange.exchange_id == exchange.id)
-                                             .filter(CoinNetworkExchange.coin_id == coin.id)
-                                             .filter(CoinNetworkExchange.network_id == network.id)
-                                             .one_or_none())
+                    coin_network_exchange = (
+                        session.query(CoinNetworkExchange.id)
+                        .filter(CoinNetworkExchange.exchange_id == exchange.id)
+                        .filter(CoinNetworkExchange.coin_id == coin.id)
+                        .filter(CoinNetworkExchange.network_id == network.id)
+                        .one_or_none()
+                    )
 
                     new = CoinNetworkExchange(**cen_dataclass.to_db(exchange, coin, network, i))
                     if not coin_network_exchange:
@@ -41,22 +43,26 @@ def sync_coin_exchange_networks():
         session.commit()
 
     with Session() as session:
-        subq = session.query(CoinNetworkExchange.id) \
-            .join(CoinNetworkExchange.coin) \
-            .join(CoinNetworkExchange.exchange) \
-            .join(CoinNetworkExchange.network) \
+        subq = (
+            session.query(CoinNetworkExchange.id)
+            .join(CoinNetworkExchange.coin)
+            .join(CoinNetworkExchange.exchange)
+            .join(CoinNetworkExchange.network)
             .filter(
                 or_(
                     and_(Exchange.name == "GateIO", Coin.name == "GTC"),
-                    and_(Network.name == 'BSC', Coin.name == 'BABYDOGE'),
-                    and_(Coin.name == "PEPE2")
+                    and_(Network.name == "BSC", Coin.name == "BABYDOGE"),
+                    and_(Coin.name == "PEPE2"),
                 )
             )
-        session.query(CoinNetworkExchange).filter(CoinNetworkExchange.id.in_(subq)).update({"can_withdraw": False}, synchronize_session=False)
+        )
+        session.query(CoinNetworkExchange).filter(CoinNetworkExchange.id.in_(subq)).update(
+            {"can_withdraw": False}, synchronize_session=False
+        )
 
-        session.query(CoinNetworkExchange) \
-            .filter(CoinNetworkExchange.withdraw_fee == None) \
-            .update({"can_withdraw": False, "withdraw_fee": 0}, synchronize_session=False)
+        session.query(CoinNetworkExchange).filter(CoinNetworkExchange.withdraw_fee == None).update(
+            {"can_withdraw": False, "withdraw_fee": 0}, synchronize_session=False
+        )
 
         session.commit()
 
@@ -73,11 +79,13 @@ def sync_pairs():
             pairs = exchange_api.get_trading_pairs()
             base_coins = {pair.base_coin for pair in pairs}
 
-            existing_base_coins = session.query(Coin.name) \
-                .join(Pair, Coin.id == Pair.base_coin_id) \
-                .join(PairExchange) \
-                .filter(PairExchange.exchange_id == exchange.id) \
+            existing_base_coins = (
+                session.query(Coin.name)
+                .join(Pair, Coin.id == Pair.base_coin_id)
+                .join(PairExchange)
+                .filter(PairExchange.exchange_id == exchange.id)
                 .all()
+            )
 
             solution_temporary = [coin.name for coin in existing_base_coins]
             diff_coins = base_coins.difference(solution_temporary)

@@ -73,31 +73,32 @@ class PriceAnalyzer:
                 break
 
         if self.coin_available_amount:
-            self.fees = (self.network.withdraw_fee + (self.exchange_commission * self.coin_available_amount)) * self.avg_sell_price
+            self.fees = (
+                self.network.withdraw_fee + (self.exchange_commission * self.coin_available_amount)
+            ) * self.avg_sell_price
             self.profit = self.base_profit - self.fees
 
     @retry(tries=3, delay=1)
     def report(self, base_exchange_name, pair_exchange_name, pair, celery_source=False):
-        filename = f'{pair.default_name}_price_info.json'
-        with open(filename, 'w') as file:
-            data = {
-                'buy': self.buy_prices,
-                'sell': self.sell_prices
-            }
+        filename = f"{pair.default_name}_price_info.json"
+        with open(filename, "w") as file:
+            data = {"buy": self.buy_prices, "sell": self.sell_prices}
             json.dump(data, file)
 
-        message = (f"{base_exchange_name} -> {pair_exchange_name}.\n"
-                   f"<b>Pair</b>: {pair.default_name}. <b>Network</b>: {self.network.network.name}\n"
-                   f"<b>To Buy</b>: {round(self.to_use_usdt, 3)}\n"
-                   f"<b>Avg Spread</b>: {round(self.avg_spread * 100, 3)}%\n"
-                   f"<b>Base profit:</b> {round(self.base_profit, 3)}.\n"
-                   f"<b>Total Fee:</b> {round(self.fees, 3)}\n"
-                   f"<b>Profit</b>: <u>{round(self.profit, 3)} USDT</u>"
-                   f"\n{celery_source = }")
+        message = (
+            f"{base_exchange_name} -> {pair_exchange_name}.\n"
+            f"<b>Pair</b>: {pair.default_name}. <b>Network</b>: {self.network.network.name}\n"
+            f"<b>To Buy</b>: {round(self.to_use_usdt, 3)}\n"
+            f"<b>Avg Spread</b>: {round(self.avg_spread * 100, 3)}%\n"
+            f"<b>Base profit:</b> {round(self.base_profit, 3)}.\n"
+            f"<b>Total Fee:</b> {round(self.fees, 3)}\n"
+            f"<b>Profit</b>: <u>{round(self.profit, 3)} USDT</u>"
+            f"\n{celery_source = }"
+        )
 
         admin_ids = ["683204904", "703482485"]
         tg_bot = TeleBot("6162670103:AAFbm6YG2zHLR8mUj1Fr430yxMm6Tp2fCoo")
-        with open(filename, 'rb') as file:
+        with open(filename, "rb") as file:
             for admin_id in admin_ids:
                 tg_bot.send_message(admin_id, message, parse_mode="HTML")
                 tg_bot.send_document(admin_id, file)
@@ -111,5 +112,5 @@ class PriceAnalyzer:
             "avg_spread": self.avg_spread,
             "base_profit": self.base_profit,
             "total_fee": self.fees,
-            "profit": self.profit
+            "profit": self.profit,
         }

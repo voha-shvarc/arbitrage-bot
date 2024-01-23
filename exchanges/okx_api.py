@@ -23,8 +23,11 @@ class OkxAPI(AbstractExchange):
     @retry(delay=1, tries=2)
     def get_trading_pairs(self) -> list:
         pairs_info = self.public_data_client.get_instruments(instType="SPOT")
-        trading_pairs = [TradingPair(base_coin=pair['baseCcy'], quote_coin=pair['quoteCcy'], exchange=self.NAME)
-                         for pair in pairs_info['data'] if pair['instId'].endswith("USDT")]
+        trading_pairs = [
+            TradingPair(base_coin=pair["baseCcy"], quote_coin=pair["quoteCcy"], exchange=self.NAME)
+            for pair in pairs_info["data"]
+            if pair["instId"].endswith("USDT")
+        ]
         return trading_pairs
 
     def get_coin_exchange_networks(self):
@@ -37,10 +40,10 @@ class OkxAPI(AbstractExchange):
     @retry(delay=1, tries=2)
     def get_price(self, pair, limit=20):
         order_book = self.market_client.get_orderbook(instId=pair.okx_name, sz=limit)
-        if not order_book['data']:
+        if not order_book["data"]:
             raise NoPriceFound()
-        buy = order_book['data'][0]['asks']
-        sell = order_book['data'][0]['bids']
+        buy = order_book["data"][0]["asks"]
+        sell = order_book["data"][0]["bids"]
         if not buy or not sell:
             raise NoPriceFound()
         return buy, sell
