@@ -24,6 +24,10 @@ jobs:
     runs-on: ubuntu-latest
     needs: lint
     if: github.event_name == 'push'
+    env:
+      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+      APP_IMAGE_NAME: ${{ secrets.APP_IMAGE_NAME }}
+      DB_IMAGE_NAME: ${{ secrets.DB_IMAGE_NAME }}
     steps:
       - uses: actions/checkout@v4
       - name: "Login to Docker"
@@ -31,23 +35,26 @@ jobs:
           docker login -u ${{ secrets.DOCKER_LOGIN }} -p ${{ secrets.DOCKER_PASSWORD }}
       - name: "Build and push"
         run: |
-          docker-compose build --push
+          docker-compose build
+          docker-compose push
 
   deploy:
     name: "Deploy"
     runs-on: ubuntu-latest
     needs: build_and_push
-    if: github.evnet_name == 'push'
+    if: github.event_name == 'push'
     steps:
-      - uses: appleboy/ssh-action@v1.0.3
+      - id: 'auth'
+        uses: 'google-github-actions/auth@v2'
         with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USERNAME }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            docker login -u ${{ secrets.DOCKER_LOGIN }} -p ${{ secrets.DOCKER_PASSWORD }}
-            # need for swarm to read a docker-compose.yml
-            export $(cat .env)
+          credentials_json: '${{ secrets.GCP_JSON }}'
+      - uses: google-github-actions/ssh-compute@v1.1.0
+        with:
+          instance_name: ${{ secrets.INSTANCE_NAME }}
+          zone: ${{ secrets.INSTANCE_ZONE }}
+          ssh_private_key: ${{ secrets.SSH_PRIVATE_KEY }}
+          command: |
+            cd bot
+            git pull
             
-            docker swarm init
-            docker stack deploy --with-auth-registry -c docker-compose.yml app_stack
+            docker-compose up -d --pull always
