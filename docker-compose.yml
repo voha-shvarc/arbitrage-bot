@@ -8,6 +8,8 @@ services:
     deploy:
       replicas: 3
     command: ["/app/docker/bot.sh"]
+    volumes:
+      - .env:/app/.env
     networks:
       - main
     depends_on:
@@ -41,6 +43,8 @@ services:
     image: ${APP_IMAGE_NAME}
     restart: always
     command: ["/app/docker/celery.sh", "celery"]
+    volumes:
+      - .env:/app/.env
     networks:
       - main
     depends_on:
@@ -51,6 +55,8 @@ services:
     image: ${APP_IMAGE_NAME}
     restart: always
     command: ["/app/docker/celery.sh", "beat"]
+    volumes:
+      - .env:/app/.env
     networks:
       - main
     depends_on:
@@ -64,6 +70,8 @@ services:
       - FLOWER_UNAUTHENTICATED_API=True
     restart: always
     command: ["/app/docker/celery.sh", "flower"]
+    volumes:
+      - .env:/app/.env
     ports:
       - "5555:5555"
     networks:
