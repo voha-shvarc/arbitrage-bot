@@ -44,7 +44,8 @@ services:
     restart: always
     command: ["/app/docker/celery.sh", "celery"]
     volumes:
-      - .env:/app/.env
+      - ./.env:/app/.env:ro
+      - ./service_account.json:/app/service_account.json:ro
     networks:
       - main
     depends_on:
