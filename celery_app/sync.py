@@ -52,7 +52,8 @@ def sync_coin_exchange_networks():
                 or_(
                     and_(Exchange.name == "GateIO", Coin.name == "GTC"),
                     and_(Network.name == "BSC", Coin.name == "BABYDOGE"),
-                    and_(Coin.name == "PEPE2"),
+                    Coin.name == "PEPE2",
+                    and_(Exchange.name == "ByBit", Coin.name == "VPAD"),
                 )
             )
         )
