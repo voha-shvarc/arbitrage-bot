@@ -18,7 +18,7 @@ from db.models import (
     ProfitBundleItem,
     BundleStatus,
 )
-from exchanges.abstract import NoPriceFound
+from abstract import NoPriceFound
 from .price_analyzer import PriceAnalyzer
 
 log = logging.getLogger("output")
