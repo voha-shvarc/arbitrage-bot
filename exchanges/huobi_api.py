@@ -5,7 +5,7 @@ from huobi.client.market import MarketClient
 from huobi.constant import InstrumentStatus, DepthStep
 
 from db.structs import CoinNetworkExchangeDC, TradingPair
-from exchanges.abstract import AbstractExchange, NoPriceFound
+from abstract import AbstractExchange, NoPriceFound
 
 
 class HuobiAPI(AbstractExchange):

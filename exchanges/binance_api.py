@@ -3,7 +3,7 @@ from typing import List
 from binance.spot import Spot
 
 from db.structs import CoinNetworkExchangeDC, TradingPair
-from exchanges.abstract import AbstractExchange, NoPriceFound
+from abstract import AbstractExchange, NoPriceFound
 
 
 class BinanceAPI(AbstractExchange):

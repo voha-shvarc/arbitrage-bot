@@ -4,7 +4,7 @@ from okx.PublicData import PublicAPI
 from retry import retry
 
 from db.structs import CoinNetworkExchangeDC, TradingPair
-from exchanges.abstract import AbstractExchange, NoPriceFound
+from abstract import AbstractExchange, NoPriceFound
 
 
 class OkxAPI(AbstractExchange):

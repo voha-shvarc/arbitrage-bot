@@ -3,7 +3,7 @@ from typing import List
 from pybit.unified_trading import HTTP
 
 from db.structs import CoinNetworkExchangeDC, TradingPair
-from exchanges.abstract import AbstractExchange, NoPriceFound
+from abstract import AbstractExchange, NoPriceFound
 
 
 class BybitAPI(AbstractExchange):

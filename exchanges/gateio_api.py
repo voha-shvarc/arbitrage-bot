@@ -3,7 +3,7 @@ from typing import List
 from gate_api import Configuration, ApiClient, SpotApi
 
 from db.structs import CoinNetworkExchangeDC, TradingPair
-from exchanges.abstract import AbstractExchange, NoPriceFound
+from abstract import AbstractExchange, NoPriceFound
 
 
 class GateIOAPI(AbstractExchange):
