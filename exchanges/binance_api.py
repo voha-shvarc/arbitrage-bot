@@ -42,7 +42,5 @@ class BinanceAPI(AbstractExchange):
         return buy, sell
 
     def get_coin_exchange_networks(self):
-        coins_data = self.client.coin_info()
-
-        for coin_data in coins_data:
+        for coin_data in self.client.coin_info():
             yield CoinNetworkExchangeDC.from_binance(coin_data)
