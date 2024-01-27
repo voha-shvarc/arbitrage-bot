@@ -76,7 +76,7 @@ class Pair(Base):
         return f"{self.base_coin.name}{self.quote_coin.name}"
 
     @property
-    def okx_name(self):
+    def dashed_name(self):
         return f"{self.base_coin.name}-{self.quote_coin.name}"
 
     @property

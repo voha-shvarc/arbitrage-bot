@@ -39,7 +39,7 @@ class OkxAPI(AbstractExchange):
 
     @retry(delay=1, tries=2)
     def get_price(self, pair, limit=20):
-        order_book = self.market_client.get_orderbook(instId=pair.okx_name, sz=limit)
+        order_book = self.market_client.get_orderbook(instId=pair.dashed_name, sz=limit)
         if not order_book["data"]:
             raise NoPriceFound()
         buy = order_book["data"][0]["asks"]

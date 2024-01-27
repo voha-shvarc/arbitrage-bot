@@ -66,6 +66,15 @@ class NetworkExchange:
 
         return cls(name.upper(), can_deposit, can_withdraw, withdraw_fee, 1)
 
+    @classmethod
+    def from_kucoin(cls, data):
+        net_name = data["chainName"]
+        can_deposit = data["isDepositEnabled"]
+        can_withdraw = data["isWithdrawEnabled"]
+        withdraw_fee = data["withdrawalMinFee"]
+
+        return cls(net_name, can_deposit, can_withdraw, withdraw_fee, 1)
+
 
 @dataclass
 class CoinNetworkExchangeDC:
@@ -125,6 +134,16 @@ class CoinNetworkExchangeDC:
         ]
 
         return cls(coin_name.upper(), "Huobi", networks)
+
+    @classmethod
+    def from_kucoin(cls, data):
+        coin_name = data["currency"]
+        if data["chains"]:
+            networks = [NetworkExchange.from_kucoin(chain_data) for chain_data in data["chains"]]
+        else:
+            networks = []
+
+        return cls(coin_name, "KuCoin", networks)
 
 
 @dataclass
