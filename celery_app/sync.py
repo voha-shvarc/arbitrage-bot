@@ -40,9 +40,10 @@ def sync_coin_exchange_networks():
                     else:
                         new.id = coin_network_exchange.id
                         session.merge(new)
-        session.commit()
+                        session.commit()
 
-    with Session() as session:
+        _run_networks_mapping(session)
+
         subq = (
             session.query(CoinNetworkExchange.id)
             .join(CoinNetworkExchange.coin)
@@ -96,3 +97,124 @@ def sync_pairs():
                 pair_exchange, _ = get_or_create(session, PairExchange, pair_id=pair.id, exchange_id=exchange.id)
 
         session.commit()
+
+
+def _run_networks_mapping(session: Session):
+    data = {
+        "Avalanche": ["AVAX", "XAVAX"],
+        "AVAXC": ["AVAXC", "AVAX_C", "Avalanche C", "CCHAINAVAX", "CAVAX", "AVAXCCHAIN"],
+        "Bitcoin": ["BTC", "Bitcoin"],
+        "Bitcoin Cash": ["BCH", "BitcoinCash"],
+        "Bitcoin SV": ["BSV", "Bitcoin SV"],
+        "Cardano": ["ADA", "Cardano"],
+        "Cosmos": ["ATOM", "Cosmos", "ATOM1"],
+        "Dogecoin": ["DOGE", "Dogecoin"],
+        "Ethereum": ["ETH", "ERC20", "Ethereum"],
+        "Ethereum Classic": ["ETC", "Ethereum Classic"],
+        "Litecoin": ["LTC", "Litecoin"],
+        "Polygon": ["MATIC", "Polygon", "MATIC1"],
+        "Ripple": ["XRP", "Ripple"],
+        "Solana": ["SOL", "Solana", "SOLANA"],
+        "Stellar": ["XLM", "Stellar Lumens"],
+        "Tron": ["TRX", "TRX1", "TRC20"],
+        "Zcash": ["ZEC", "Zcash"],
+        "Arbitrum": ["ARB", "ARBI", "Arbitrum One", "ARBEVM", "ARBIETH", "ARBITRUM"],
+        "ARBINOVA": ["ARBINOVA", "ARBNOVA"],
+        "Optimism": ["OP", "Optimism", "OPETH", "OPTETH", "OPTIMISM", "Optimism (V2)"],
+        "Fantom": ["FTM", "Fantom"],
+        "Algorand": ["ALGO", "Algorand", "ALGOUSDT"],
+        "Aptos": ["APT", "Aptos"],
+        "Arweave": ["AR", "Arweave"],
+        "Chiliz": ["CHZ", "Chiliz Chain"],
+        "Astar": ["ASTR", "Astar"],
+        "Klaytn": ["KLAY", "Klaytn"],
+        "CFX": ["CFX", "CFX_EVM"],
+        "Casper": ["CSPR", "Casper"],
+        "Cortex": ["CTXC", "CTXC1", "Cortex"],
+        "Dash": ["DASH", "Digital Cash"],
+        "Decred": ["DCR", "Decred"],
+        "Digibyte": ["DGB", "Digibyte"],
+        "Polkadot": ["DOT", "Polkadot"],
+        "Elrond": ["EGLD", "Elrond"],
+        "Filecoin": ["FIL", "Filecoin"],
+        "Flare": ["FLR", "Flare"],
+        "Moonbeam": ["GLMR", "Moonbeam"],
+        "Hedera": ["HBAR", "Hedera"],
+        "HyperCash": ["HC", "HyperCash"],
+        "Dfinity": ["ICP", "Dfinity"],
+        "ICON": ["ICX", "ICON"],
+        "MIOTA": ["IOTA", "MIOTA"],
+        "Kadena": ["KDA", "Kadena"],
+        "Kusama": ["KSM", "Kusama"],
+        "Lisk": ["LSK", "Lisk", "LSK1"],
+        "Terra": ["LUNA", "Terra", "LUNANEW", "TERRA"],
+        "Terra Classic": ["LUNC", "Terra Classic"],
+        "Mina": ["MINA", "Mina"],
+        "Moonriver": ["MOVR", "Moonriver"],
+        "NEO": ["NEO", "NEO1"],
+        "NEO3": ["NEO3", "N3"],
+        "Ontology": ["ONT", "ONT2", "ONG", "Ontology"],
+        "Quantum": ["QTUM", "Quantum"],
+        "Ronin": ["RON", "Ronin"],
+        "Ravencoin": ["RVN", "Ravencoin"],
+        "Siacoin": ["SC", "Siacoin"],
+        "Theta": ["THETA", "Theta", "THETA1"],
+        "Tezos": ["XTZ", "Tezos"],
+        "Zilliqa": ["ZIL", "Zilliqa", "ZIL1"],
+        "Chia": ["XCH", "Chia"],
+        "New Economy Movement": ["XEM", "NEM"],
+        "Nano": ["NANO", "Nano"],
+        "Starknet": ["STARKNET", "Starknet"],
+        "zkSyncEra": ["zkSync Era", "ZKSYNCERA"],
+        "Base": ["BASE", "Base", "BASEEVM", "BASEETH"],
+        "Linea": ["LINEA", "Linea", "LINEAETH"],
+        "XYM": ["XYM", "XYM1"],
+        "XMR": ["XMR", "XMR1"],
+        "XEC": ["XEC", "XEC1"],
+        "WTC": ["WTC", "WTC1"],
+        "WEMIX": ["WEMIX", "WEMIX1"],
+        "WICC": ["WICC", "WICC1"],
+        "WAX": ["Wax", "WAXP", "WAX", "WAX1"],
+        "VSYS": ["VSYS", "VSYSTEMS"],
+        "Calestia": ["Calestia", "CALESTIA", "TIA"],
+        "TENET": ["TENET", "TENET1"],
+        "SXP": ["SXP", "SXP1"],
+        "STX": ["STX", "l"],
+        "METIS": ["Metis", "METIS"],
+        "STEP": ["STEP", "Step Network"],
+        "cro": ["CRO", "CRO2", "Crypto"],
+        "cru": ["CRU", "CRU1"],
+        "dbc": ["DBC", "DBC1"],
+        "ae": ["AE", "AE1"],
+        "band": ["BAND", "BAND2"],
+        "btt": ["BTT", "BTT2"],
+        "elf": ["AELF", "ELF", "ELF1"],
+        "em": ["EM1", "Eminer"],
+        "enj": ["ENJ", "ENJ1", "Enjin Relay Chain"],
+        "eos": ["EOS", "EOS1"],
+        "fitfi": ["FITFI", "FITFI1"],
+        "fsn": ["FSN", "FSN1"],
+        "ht": ["HT", "HT2"],
+        "icx": ["ICON", "ICX1"],
+        "iost": ["IOST", "IOST1"],
+        "iota": ["IOTA1", "MIOTA"],
+        "iris": ["IRIS", "IRIS1"],
+        "kava": ["KAVA", "KAVA10"],
+        "kda": ["KDA2", "Kadena"],
+        "lamb": ["LAMB", "LAMB1"],
+        "nas": ["NAS", "NAS1"],
+        "nuls": ["NULS", "NULS1"],
+        "one": ["Harmony", "ONE", "ONE1"],
+        "polyx": ["POLY1", "POLYX"],
+        "seele": ["SEELE", "SEELE2"],
+        "smt": ["SMT", "SMT2"],
+        "BSC": ["BSC", "BNB1"],
+    }
+
+    for base_network, networks in data.items():
+        base_net, created = get_or_create(session, Network, name=base_network)
+        network_ids = session.query(Network.id).filter(Network.name.in_(networks)).subquery()
+
+        session.query(CoinNetworkExchange).filter(CoinNetworkExchange.network_id.in_(network_ids)).update(
+            {"base_network_id": base_net.id}, synchronize_session=False
+        )

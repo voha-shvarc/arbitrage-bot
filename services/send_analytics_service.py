@@ -34,13 +34,14 @@ class SendAnalyticsService:
 
     def send_to_spreadsheet(self):
         body = {"values": self._get_rows()}
-        print(f"body sent - {body}")
-        self.sheets_service.values().append(
-            spreadsheetId=self.spreadsheet_id,
-            range=f"{self.sheet_name}!{self.cell_range}",
-            valueInputOption="USER_ENTERED",
-            body=body,
-        ).execute()
+        print(f"body to send - {body}")
+        if body["values"]:
+            self.sheets_service.values().append(
+                spreadsheetId=self.spreadsheet_id,
+                range=f"{self.sheet_name}!{self.cell_range}",
+                valueInputOption="USER_ENTERED",
+                body=body,
+            ).execute()
 
     def _get_cell_range(self):
         result = (
