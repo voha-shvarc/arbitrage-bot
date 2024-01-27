@@ -107,11 +107,11 @@ class ExchangePairAnalyzer:
     def _get_best_networks(self, coin: Coin) -> Tuple[CoinNetworkExchange, CoinNetworkExchange]:
         with Session() as session:
             query = (
-                session.query(CoinNetworkExchange.network_id, func.array_agg(CoinNetworkExchange.id))
+                session.query(CoinNetworkExchange.base_network_id, func.array_agg(CoinNetworkExchange.id))
                 .join(Exchange)
                 .join(Coin)
                 .filter(Exchange.id.in_([self.pair_exchange.db_id, self.base_exchange.db_id]), Coin.name == coin.name)
-                .group_by(CoinNetworkExchange.network_id)
+                .group_by(CoinNetworkExchange.base_network_id)
                 .having(func.count(CoinNetworkExchange.id) == 2)
             )
 
@@ -120,7 +120,7 @@ class ExchangePairAnalyzer:
                 network: Network = session.query(Network).get(network_id)
                 coin_network_exchange_qs = (
                     session.query(Exchange.name, CoinNetworkExchange)
-                    .join(Exchange)
+                    .join(CoinNetworkExchange.exchange)
                     .filter(CoinNetworkExchange.id.in_(coin_network_exchange_ids))
                     .options(joinedload(CoinNetworkExchange.network))
                 )
@@ -140,14 +140,17 @@ class ExchangePairAnalyzer:
             if nets[self.pair_exchange.NAME].can_withdraw and nets[self.base_exchange.NAME].can_deposit
         ]
 
-        best_base_to_second_network = min(
-            available_nets_to_transfer_from_base_to_second or [None],
-            key=lambda net: net.withdraw_fee if net else None,
-        )
-        best_second_to_base_network = min(
-            available_nets_to_transfer_from_second_to_base or [None],
-            key=lambda net: net.withdraw_fee if net else None,
-        )
+        try:
+            best_base_to_second_network = min(
+                available_nets_to_transfer_from_base_to_second or [None],
+                key=lambda net: net.withdraw_fee if net else None,
+            )
+            best_second_to_base_network = min(
+                available_nets_to_transfer_from_second_to_base or [None],
+                key=lambda net: net.withdraw_fee if net else None,
+            )
+        except TypeError:
+            return None, None
 
         return best_base_to_second_network, best_second_to_base_network
 

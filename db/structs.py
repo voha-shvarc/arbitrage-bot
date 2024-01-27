@@ -58,12 +58,13 @@ class NetworkExchange:
         return cls(name, can_deposit, can_withdraw, withdraw_fee, 1)
 
     @classmethod
-    def from_huobi(cls, network: Chain, net_name):
+    def from_huobi(cls, network: Chain):
+        name = network.baseChain or network.chain
         can_deposit = network.depositStatus == ChainDepositStatus.ALLOWED
         can_withdraw = network.withdrawStatus == ChainWithdrawStatus.ALLOWED
         withdraw_fee = network.transactFeeWithdraw
 
-        return cls(net_name, can_deposit, can_withdraw, withdraw_fee, 1)
+        return cls(name.upper(), can_deposit, can_withdraw, withdraw_fee, 1)
 
 
 @dataclass
@@ -78,6 +79,7 @@ class CoinNetworkExchangeDC:
             "exchange_id": exchange.id,
             "coin_id": coin.id,
             "network_id": network.id,
+            "base_network_id": network.id,
             "can_deposit": net.can_deposit,
             "can_withdraw": net.can_withdraw,
             "withdraw_fee": net.withdraw_fee,
@@ -109,7 +111,9 @@ class CoinNetworkExchangeDC:
     @classmethod
     def from_gateio(cls, data: Currency):
         coin_name = data.currency.split("_")[0]
-        networks = [NetworkExchange.from_gateio(data)]
+        networks = []
+        if data.chain:
+            networks.append(NetworkExchange.from_gateio(data))
 
         return cls(coin_name, "GateIO", networks)
 
@@ -117,27 +121,10 @@ class CoinNetworkExchangeDC:
     def from_huobi(cls, data: ReferenceCurrency):
         coin_name = data.currency
         networks = [
-            NetworkExchange.from_huobi(network, net_name)
-            for network in data.chains
-            if network.withdrawFeeType == "fixed"
-            for net_name in cls._get_huobi_network_names(network, coin_name)
+            NetworkExchange.from_huobi(network) for network in data.chains if network.withdrawFeeType == "fixed"
         ]
 
         return cls(coin_name.upper(), "Huobi", networks)
-
-    @staticmethod
-    def _get_huobi_network_names(network, coin_name):
-        names = set()
-        if network.baseChain:
-            names.add(network.baseChain)
-        if network.baseChainProtocol and network.baseChainProtocol != "-":
-            names.add(network.baseChainProtocol)
-
-        chain_name = network.chain.replace(coin_name, "")
-        if chain_name:
-            names.add(chain_name.upper())
-
-        return names
 
 
 @dataclass

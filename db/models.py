@@ -23,7 +23,7 @@ class Network(Base):
     __tablename__ = "networks"
 
     id = Column(Integer, primary_key=True)
-    name = Column(String(50), nullable=False)
+    name = Column(String(50), index=True, nullable=False)
     created_at = db_created()
     updated_at = db_updated()
 
@@ -44,6 +44,7 @@ class CoinNetworkExchange(Base):
     exchange_id = Column(ForeignKey("exchanges.id"), index=True)
     coin_id = Column(ForeignKey("coins.id"), index=True)
     network_id = Column(ForeignKey("networks.id"), index=True)
+    base_network_id = Column(ForeignKey("networks.id"), index=True)
 
     arrival_time = Column(Integer)
     withdraw_fee = Column(Float, default=0, server_default="0")
@@ -52,9 +53,10 @@ class CoinNetworkExchange(Base):
     created_at = db_created()
     updated_at = db_updated()
 
-    coin = relationship("Coin", uselist=False)
-    network = relationship("Network", uselist=False)
     exchange = relationship("Exchange", uselist=False)
+    coin = relationship("Coin", uselist=False)
+    network = relationship("Network", uselist=False, foreign_keys=[network_id])
+    base_network = relationship("Network", uselist=False, foreign_keys=[base_network_id])
 
 
 class Pair(Base):
