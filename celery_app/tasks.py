@@ -8,7 +8,7 @@ from analyze.price_analyzer import PriceAnalyzer
 from celery_app.conf import app
 from db.base import Session
 from db.models import Pair, CoinNetworkExchange, ProfitBundle, ProfitBundleItem, BundleStatus
-from exchanges import BinanceAPI, BybitAPI, OkxAPI, GateIOAPI, HuobiAPI
+from exchanges import BinanceAPI, BybitAPI, OkxAPI, GateIOAPI, HuobiAPI, KuCoinAPI
 from services.send_analytics_service import SendAnalyticsService
 
 config = dotenv_values(".env")
@@ -19,6 +19,7 @@ exchange_mapping = {
     HuobiAPI.NAME: HuobiAPI,
     GateIOAPI.NAME: GateIOAPI,
     OkxAPI.NAME: OkxAPI,
+    KuCoinAPI.NAME: KuCoinAPI,
 }
 
 BASE_USDT_PROFIT = 4  # 4 USDT
