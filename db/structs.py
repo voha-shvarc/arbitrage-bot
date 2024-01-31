@@ -75,6 +75,15 @@ class NetworkExchange:
 
         return cls(net_name, can_deposit, can_withdraw, withdraw_fee, 1)
 
+    @classmethod
+    def from_bitget(cls, data):
+        net_name = data["chain"]
+        can_deposit = True if data["rechargeable"] == "true" else False
+        can_withdraw = True if data["withdrawable"] == "true" else False
+        withdraw_fee = float(data["withdrawFee"])
+
+        return cls(net_name, can_deposit, can_withdraw, withdraw_fee, 1)
+
 
 @dataclass
 class CoinNetworkExchangeDC:
@@ -144,6 +153,13 @@ class CoinNetworkExchangeDC:
             networks = []
 
         return cls(coin_name, "KuCoin", networks)
+
+    @classmethod
+    def from_bitget(cls, data):
+        coin_name = data["coinName"]
+        networks = [NetworkExchange.from_bitget(chain_data) for chain_data in data["chains"]]
+
+        return cls(coin_name, "Bitget", networks)
 
 
 @dataclass

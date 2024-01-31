@@ -87,6 +87,10 @@ class Pair(Base):
     def huobi_name(self):
         return f"{self.base_coin.name.lower()}{self.quote_coin.name.lower()}"
 
+    @property
+    def bitget_name(self):
+        return f"{self.base_coin.name}{self.quote_coin.name}_SPBL"
+
 
 class PairExchange(Base):
     __tablename__ = "pair_exchanges"
