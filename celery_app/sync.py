@@ -7,11 +7,11 @@ from db.models import Exchange, PairExchange, Coin
 from db.models import Network
 from db.models import Pair, CoinNetworkExchange
 from db.utils import get_or_create
-from exchanges import BinanceAPI, BybitAPI, OkxAPI, GateIOAPI, HuobiAPI, KuCoinAPI
+from exchanges import BinanceAPI, BybitAPI, OkxAPI, GateIOAPI, HuobiAPI, KuCoinAPI, BitgetAPI
 
 config = dotenv_values(".env")
 
-EXCHANGES = {BinanceAPI, BybitAPI, OkxAPI, GateIOAPI, HuobiAPI, KuCoinAPI}
+EXCHANGES = {BinanceAPI, BybitAPI, OkxAPI, GateIOAPI, HuobiAPI, KuCoinAPI, BitgetAPI}
 
 
 @app.task

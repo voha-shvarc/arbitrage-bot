@@ -4,7 +4,7 @@ import random
 from dotenv import dotenv_values
 
 from analyze.analyzer import ExchangePairAnalyzer
-from exchanges import BinanceAPI, BybitAPI, OkxAPI, GateIOAPI, HuobiAPI, KuCoinAPI
+from exchanges import BinanceAPI, BybitAPI, OkxAPI, GateIOAPI, HuobiAPI, KuCoinAPI, BitgetAPI
 
 log_file = "error.log"
 formatt = logging.Formatter("%(asctime)s - %(message)s")
@@ -21,7 +21,8 @@ handler = logging.FileHandler(log_file)
 handler.setFormatter(formatt)
 log.addHandler(handler)
 
-EXCHANGES = [BinanceAPI, BybitAPI, OkxAPI, GateIOAPI, HuobiAPI, KuCoinAPI]
+# EXCHANGES = [BinanceAPI, BybitAPI, OkxAPI, GateIOAPI, HuobiAPI, KuCoinAPI, BitgetAPI]
+EXCHANGES = [BitgetAPI]
 
 
 def main():
