@@ -110,7 +110,11 @@ class ExchangePairAnalyzer:
                 session.query(CoinNetworkExchange.base_network_id, func.array_agg(CoinNetworkExchange.id))
                 .join(Exchange)
                 .join(Coin)
-                .filter(Exchange.id.in_([self.pair_exchange.db_id, self.base_exchange.db_id]), Coin.name == coin.name)
+                .filter(
+                    Exchange.id.in_([self.pair_exchange.db_id, self.base_exchange.db_id]),
+                    Coin.name == coin.name,
+                    CoinNetworkExchange.withdraw_fee != None,
+                )
                 .group_by(CoinNetworkExchange.base_network_id)
                 .having(func.count(CoinNetworkExchange.id) == 2)
             )

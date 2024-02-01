@@ -40,7 +40,6 @@ def sync_coin_exchange_networks():
                     else:
                         new.id = coin_network_exchange.id
                         session.merge(new)
-                        session.commit()
 
         _run_networks_mapping(session)
 
@@ -60,10 +59,6 @@ def sync_coin_exchange_networks():
         )
         session.query(CoinNetworkExchange).filter(CoinNetworkExchange.id.in_(subq)).update(
             {"can_withdraw": False}, synchronize_session=False
-        )
-
-        session.query(CoinNetworkExchange).filter(CoinNetworkExchange.withdraw_fee == None).update(
-            {"can_withdraw": False, "withdraw_fee": 0}, synchronize_session=False
         )
 
         session.commit()
@@ -213,7 +208,7 @@ def _run_networks_mapping(session: Session):
 
     for base_network, networks in data.items():
         base_net, created = get_or_create(session, Network, name=base_network)
-        network_ids = session.query(Network.id).filter(Network.name.in_(networks)).subquery()
+        network_ids = session.query(Network.id).filter(Network.name.in_(networks))
 
         session.query(CoinNetworkExchange).filter(CoinNetworkExchange.network_id.in_(network_ids)).update(
             {"base_network_id": base_net.id}, synchronize_session=False
