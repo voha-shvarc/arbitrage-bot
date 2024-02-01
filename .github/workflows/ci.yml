@@ -58,3 +58,4 @@ jobs:
             git pull
             
             docker-compose up -d --pull always
+            yes | docker image prune
