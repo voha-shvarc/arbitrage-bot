@@ -6,7 +6,7 @@ services:
     image: ${APP_IMAGE_NAME}
     restart: on-failure
     deploy:
-      replicas: 4
+      replicas: 6
     command: ["/app/docker/bot.sh"]
     volumes:
       - .env:/app/.env
