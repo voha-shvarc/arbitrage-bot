@@ -113,7 +113,6 @@ class ExchangePairAnalyzer:
                 .filter(
                     Exchange.id.in_([self.pair_exchange.db_id, self.base_exchange.db_id]),
                     Coin.name == coin.name,
-                    CoinNetworkExchange.withdraw_fee != None,
                 )
                 .group_by(CoinNetworkExchange.base_network_id)
                 .having(func.count(CoinNetworkExchange.id) == 2)
@@ -149,12 +148,16 @@ class ExchangePairAnalyzer:
                 available_nets_to_transfer_from_base_to_second or [None],
                 key=lambda net: net.withdraw_fee if net else None,
             )
+        except TypeError:
+            best_base_to_second_network = None
+
+        try:
             best_second_to_base_network = min(
                 available_nets_to_transfer_from_second_to_base or [None],
                 key=lambda net: net.withdraw_fee if net else None,
             )
         except TypeError:
-            return None, None
+            best_second_to_base_network = None
 
         return best_base_to_second_network, best_second_to_base_network
 
