@@ -46,9 +46,8 @@ def monitor_bundle(self, bundle_id):
             .get(bundle_id)
         )
 
-    base_exchange = exchange_mapping[bundle.base_exchange.name](config)
-    pair_exchange = exchange_mapping[bundle.pair_exchange.name](config)
-
+    base_exchange = exchange_mapping[bundle.base_exchange.name](config, {})
+    pair_exchange = exchange_mapping[bundle.pair_exchange.name](config, {})
     base_exchange_price = base_exchange.get_price(bundle.pair)
     pair_exchange_price = pair_exchange.get_price(bundle.pair)
 

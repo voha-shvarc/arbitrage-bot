@@ -1,6 +1,14 @@
 from celery import Celery
+from dotenv import load_dotenv
+import os
 
-app = Celery("tasks", include=["celery_app.sync", "celery_app.tasks"], broker="redis://redis:6379")
+load_dotenv()
+
+app = Celery(
+    "tasks",
+    include=["celery_app.sync", "celery_app.tasks"],
+    broker=f"redis://{os.getenv('REDIS_HOST')}:{os.getenv('REDIS_PORT')}"
+)
 
 
 app.conf.beat_schedule = {

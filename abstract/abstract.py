@@ -18,7 +18,7 @@ class AbstractExchange(ABC):
         pass
 
     @abstractmethod
-    def get_price(self, pair, limit=10):
+    async def get_price(self, pair, limit=10):
         pass
 
     @abstractmethod

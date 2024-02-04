@@ -1,3 +1,7 @@
+import base64
+import hashlib
+import hmac
+import time
 from typing import List
 
 from kucoin.client import MarketData
@@ -8,12 +12,15 @@ from db.structs import CoinNetworkExchangeDC, TradingPair
 
 class KuCoinAPI(AbstractExchange):
     NAME = "KuCoin"
+    base_url = "https://api.kucoin.com"
 
-    def __init__(self, config):
-        api_key = config["KUCOIN_API_KEY"]
-        api_secret = config["KUCOIN_API_SECRET"]
-        api_passphrase = config["KUCOIN_API_PASSPHRASE"]
-        self.client = MarketData(api_key, api_secret, api_passphrase)
+    def __init__(self, config, connection):
+        self.connection = connection
+
+        self.api_key = config["KUCOIN_API_KEY"]
+        self.api_secret = config["KUCOIN_API_SECRET"]
+        self.api_passphrase = config["KUCOIN_API_PASSPHRASE"]
+        self.client = MarketData(self.api_key, self.api_secret, self.api_passphrase)
 
     def get_trading_pairs(self) -> List[TradingPair]:
         pairs_info = self.client.get_symbol_list_v2()
@@ -38,6 +45,53 @@ class KuCoinAPI(AbstractExchange):
         if not buy or not sell:
             raise NoPriceFound()
         return buy, sell
+
+    async def async_get_price(self, symbol, limit=10):
+        url = self.base_url + "/api/v3/market/orderbook/level2_20"
+        uri_path = f"/api/v3/market/orderbook/level2_20?symbol={symbol.dashed_name}"
+        body = {
+            "symbol": symbol.dashed_name,
+        }
+        now_time = int(time.time()) * 1000
+        sign = self.sign(self.pre_hash(now_time, "GET", uri_path, ""))
+        passphrase = base64.b64encode(
+            hmac.new(self.api_secret.encode('utf-8'), self.api_passphrase.encode("utf-8"), hashlib.sha256).digest()
+        )
+        headers = self.get_header(sign, now_time, passphrase)
+
+        response = await self.connection.get(url, params=body, headers=headers)
+        data = response.json()
+
+        buy = data['data']['asks']
+        sell = data['data']['bids']
+        if not buy or not sell:
+            raise NoPriceFound()
+
+        return buy, sell
+
+    def sign(self, message):
+        mac = hmac.new(bytes(self.api_secret, encoding='utf8'), bytes(message, encoding='utf-8'), digestmod='sha256')
+        d = mac.digest()
+        return base64.b64encode(d)
+
+    @staticmethod
+    def pre_hash(timestamp, method, request_path, body):
+        return str(timestamp) + str.upper(method) + request_path + body
+
+    @staticmethod
+    def get_timestamp():
+        return int(time.time()) * 1000
+
+    def get_header(self, sign, timestamp, passphrase):
+        header = dict()
+        header['Content-Type'] = "application/json"
+        header['KC-API-KEY'] = self.api_key
+        header['KC-API-SIGN'] = sign
+        header['KC-API-TIMESTAMP'] = str(timestamp)
+        header['KC-API-PASSPHRASE'] = passphrase
+        header['KC-API-KEY-VERSION'] = "2"
+        header['User-Agent'] = "kucoin-python-sdk/1.0.0"
+        return header
 
     def get_coin_exchange_networks(self):
         for coin_data in self.client._request("GET", "/api/v3/currencies"):

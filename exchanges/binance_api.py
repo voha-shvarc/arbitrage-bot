@@ -5,17 +5,24 @@ from binance.spot import Spot
 from abstract import AbstractExchange, NoPriceFound
 from db.structs import CoinNetworkExchangeDC, TradingPair
 
+import logging
+
+
+error_log = logging.getLogger("error")
 
 class BinanceAPI(AbstractExchange):
     """For testing use different keys. more here https://testnet.binance.vision/"""
 
     NAME = "Binance"
     NOT_ALLOWED_STATUS = "BREAK"
+    base_url = "https://api.binance.com"
 
-    def __init__(self, config):
-        api_key = config["BINANCE_API_KEY"]
+    def __init__(self, config, connection):
+        self.connection = connection
+
+        self.api_key = config["BINANCE_API_KEY"]
         api_secret = config["BINANCE_API_SECRET"]
-        self.client = Spot(api_key=api_key, api_secret=api_secret)
+        self.client = Spot(api_key=self.api_key, api_secret=api_secret)
 
     def get_trading_pairs(self) -> List[TradingPair]:
         pairs_info = self.client.exchange_info(permissions=["SPOT"])
@@ -33,6 +40,10 @@ class BinanceAPI(AbstractExchange):
             and coin_data["status"] != self.NOT_ALLOWED_STATUS
         )
 
+    def get_coin_exchange_networks(self):
+        for coin_data in self.client.coin_info():
+            yield CoinNetworkExchangeDC.from_binance(coin_data)
+
     def get_price(self, pair, limit=20):
         order_book = self.client.depth(symbol=pair.default_name, limit=limit)
         buy = order_book["asks"]
@@ -41,9 +52,30 @@ class BinanceAPI(AbstractExchange):
             raise NoPriceFound()
         return buy, sell
 
-    def get_coin_exchange_networks(self):
-        for coin_data in self.client.coin_info():
-            yield CoinNetworkExchangeDC.from_binance(coin_data)
+    async def async_get_price(self, symbol, limit=20):
+        url = self.base_url + "/api/v3/depth"
+        body = {
+            "symbol": symbol.default_name,
+            "limit": limit,
+        }
+        headers = {
+            "Content-Type": "application/json;charset=utf-8",
+            "User-Agent": "binance-connector-python/3.3.1",
+            "X-MBX-APIKEY": self.api_key,
+        }
+        response = await self.connection.get(url, params=body, headers=headers)
+        data = response.json()
+
+        try:
+            buy = data["asks"]
+            sell = data["bids"]
+            if not buy or not sell:
+                raise NoPriceFound()
+
+            return buy, sell
+        except Exception as e:
+            error_log.info(f"[binance] - {data}")
+            raise NoPriceFound()
 
     def get_pair_trading_volume(self, pair) -> float:
         data = self.client.ticker_24hr(symbol=pair.default_name)

@@ -19,7 +19,7 @@ def sync_coin_exchange_networks():
     with Session() as session:
         for exchange_api in EXCHANGES:
             print(f"Syncing {exchange_api.NAME}...")
-            exchange_api = exchange_api(config)
+            exchange_api = exchange_api(config, {})
             exchange, created = get_or_create(session, Exchange, name=exchange_api.NAME)
             for cen_dataclass in exchange_api.get_coin_exchange_networks():
                 coin, created = get_or_create(session, Coin, name=cen_dataclass.coin_name)
@@ -71,7 +71,7 @@ def sync_pairs():
         quote_coin, created = get_or_create(session, Coin, name="USDT")
         for exchange_api in EXCHANGES:
             print(f"Syncing {exchange_api.NAME}...")
-            exchange_api = exchange_api(config)
+            exchange_api = exchange_api(config, {})
 
             exchange, created = get_or_create(session, Exchange, name=exchange_api.NAME)
             pairs = exchange_api.get_trading_pairs()

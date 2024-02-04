@@ -2,14 +2,21 @@ from typing import List
 
 from gate_api import Configuration, ApiClient, SpotApi
 
-from db.structs import CoinNetworkExchangeDC, TradingPair
 from abstract import AbstractExchange, NoPriceFound
+from db.structs import CoinNetworkExchangeDC, TradingPair
+import logging
+
+
+error_log = logging.getLogger("error")
 
 
 class GateIOAPI(AbstractExchange):
     NAME = "GateIO"
+    base_url = "https://api.gateio.ws"
 
-    def __init__(self, config):
+    def __init__(self, config, connection):
+        self.connection = connection
+
         api_config = ApiClient(Configuration())
         self.spot_client = SpotApi(api_config)
 
@@ -34,6 +41,31 @@ class GateIOAPI(AbstractExchange):
         if not buy or not sell:
             raise NoPriceFound()
         return buy, sell
+
+    async def async_get_price(self, symbol, limit=20):
+        url = self.base_url + "/api/v4/spot/order_book"
+        body = {
+            "currency_pair": symbol.gateio_name,
+            "limit": limit,
+        }
+        headers = {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+        }
+        response = await self.connection.get(url, params=body, headers=headers)
+        data = response.json()
+
+        try:
+            buy = data["asks"]
+            sell = data["bids"]
+        except KeyError:
+            error_log.info(f"[gateio] eror res - {data}")
+            raise NoPriceFound()
+
+        if not buy or not sell:
+            raise NoPriceFound()
+
+        return data['asks'], data['bids']
 
     def get_pair_trading_volume(self, pair) -> float:
         data = self.spot_client.list_tickers(currency_pair=pair.gateio_name)

@@ -1,24 +1,33 @@
+import base64
+import datetime
+import hmac
+
 from okx.Funding import FundingAPI
 from okx.MarketData import MarketAPI
 from okx.PublicData import PublicAPI
 from retry import retry
 
-from db.structs import CoinNetworkExchangeDC, TradingPair
 from abstract import AbstractExchange, NoPriceFound
+from db.structs import CoinNetworkExchangeDC, TradingPair
+import logging
+log = logging.getLogger("error")
 
 
 class OkxAPI(AbstractExchange):
     NAME = "OKX"
+    flag = "0"  # Production trading: 0, Demo trading: 1
+    base_url = "https://www.okx.com"
 
-    def __init__(self, config):
-        flag = "0"  # Production trading: 0, Demo trading: 1
-        api_key = config["OKX_API_KEY"]
-        api_secret = config["OKX_API_SECRET"]
-        passphrase = config["OKX_API_PASSPHRASE"]
+    def __init__(self, config, connection):
+        self.connection = connection
 
-        self.public_data_client = PublicAPI(api_key, api_secret, passphrase, flag=flag, debug=False)
-        self.market_client = MarketAPI(api_key, api_secret, passphrase, flag=flag, debug=False)
-        self.funding_client = FundingAPI(api_key, api_secret, passphrase, flag=flag, debug=False)
+        self.api_key = config["OKX_API_KEY"]
+        self.api_secret = config["OKX_API_SECRET"]
+        self.passphrase = config["OKX_API_PASSPHRASE"]
+
+        self.public_data_client = PublicAPI(self.api_key, self.api_secret, self.passphrase, flag=self.flag, debug=False)
+        self.market_client = MarketAPI(self.api_key, self.api_secret, self.passphrase, flag=self.flag, debug=False)
+        self.funding_client = FundingAPI(self.api_key, self.api_secret, self.passphrase, flag=self.flag, debug=False)
 
     @retry(delay=1, tries=2)
     def get_trading_pairs(self) -> list:
@@ -47,6 +56,55 @@ class OkxAPI(AbstractExchange):
         if not buy or not sell:
             raise NoPriceFound()
         return buy, sell
+
+    @retry(delay=1, tries=2)
+    async def async_get_price(self, symbol, limit=10):
+        url = self.base_url + "/api/v5/market/books"
+        body = {
+            "instId": symbol.dashed_name,
+            "sz": limit,
+        }
+        timestamp = self.get_timestamp()
+        sign = self.sign(self.pre_hash(timestamp, "GET", url, ""))
+        header = self.get_header(sign, timestamp)
+        response = await self.connection.get(url, params=body, headers=header)
+        data = response.json()
+
+        try:
+            buy = data['data'][0]['asks']
+            sell = data['data'][0]['bids']
+        except Exception:
+            log.error(f"[okx] {response.text}")
+            raise NoPriceFound()
+        if not buy or not sell:
+            raise NoPriceFound()
+
+        return buy, sell
+
+    @staticmethod
+    def get_timestamp():
+        now = datetime.datetime.utcnow()
+        t = now.isoformat("T", "milliseconds")
+        return t + "Z"
+
+    def sign(self, message):
+        mac = hmac.new(bytes(self.api_secret, encoding='utf8'), bytes(message, encoding='utf-8'), digestmod='sha256')
+        d = mac.digest()
+        return base64.b64encode(d)
+
+    @staticmethod
+    def pre_hash(timestamp, method, request_path, body):
+        return str(timestamp) + str.upper(method) + request_path + body
+
+    def get_header(self, sign, timestamp):
+        header = dict()
+        header['Content-Type'] = "application/json"
+        header['OK-ACCESS-KEY'] = self.api_key
+        header['OK-ACCESS-SIGN'] = sign
+        header['OK-ACCESS-TIMESTAMP'] = str(timestamp)
+        header['OK-ACCESS-PASSPHRASE'] = self.passphrase
+        header['x-simulated-trading'] = self.flag
+        return header
 
     def get_pair_trading_volume(self, pair) -> float:
         data = self.market_client.get_ticker(instId=pair.dashed_name)

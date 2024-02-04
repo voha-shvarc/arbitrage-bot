@@ -1,10 +1,13 @@
 import logging
+import time
 
-from dotenv import dotenv_values
+import asyncio
+import httpx
 from redis import Redis
+from dotenv import dotenv_values
 
 from analyze.analyzer import ExchangePairAnalyzer
-from exchanges import BinanceAPI, BybitAPI, OkxAPI, GateIOAPI, HuobiAPI, KuCoinAPI, BitgetAPI
+from exchanges import OkxAPI, BybitAPI, BitgetAPI, HuobiAPI, BinanceAPI, KuCoinAPI, GateIOAPI
 
 log_file = "error.log"
 formatt = logging.Formatter("%(asctime)s - %(message)s")
@@ -24,23 +27,23 @@ log.addHandler(handler)
 
 EXCHANGES_MAPPING = {
     BinanceAPI.NAME: BinanceAPI,
-    BybitAPI.NAME: BybitAPI,
     HuobiAPI.NAME: HuobiAPI,
-    GateIOAPI.NAME: GateIOAPI,
-    OkxAPI.NAME: OkxAPI,
     KuCoinAPI.NAME: KuCoinAPI,
+    GateIOAPI.NAME: GateIOAPI,
     BitgetAPI.NAME: BitgetAPI,
+    OkxAPI.NAME: OkxAPI,
+    BybitAPI.NAME: BybitAPI,
 }
 
 
 def get_exchanges_combinations():
-    pairs = set()
+    pairs = list()
     circle_exchanges = list(EXCHANGES_MAPPING.keys())
     while len(circle_exchanges) > 1:
         base_exchange = circle_exchanges.pop(0)
 
         for pair_exchange in circle_exchanges:
-            pairs.add(f"{base_exchange},{pair_exchange}")
+            pairs.append(f"{base_exchange},{pair_exchange}")
 
     return pairs
 
@@ -55,22 +58,25 @@ def get_exchanges_api_from_redis(redis_client):
     return EXCHANGES_MAPPING[base_exchange_name], EXCHANGES_MAPPING[pair_exchange_name]
 
 
-def main():
+async def main():
     config = dotenv_values(".env")
     redis_client = Redis(host=config["REDIS_HOST"], port=config["REDIS_PORT"], decode_responses=True)
 
     while True:
+        start = time.time()
+        connection = httpx.AsyncClient()
         base_exchange, pair_exchange = get_exchanges_api_from_redis(redis_client)
         log.info(f"Analyze {base_exchange.NAME}, {pair_exchange.NAME}")
-
-        analyzer = ExchangePairAnalyzer(base_exchange(config), pair_exchange(config))
         try:
-            analyzer.run()
+            await ExchangePairAnalyzer(base_exchange(config, connection), pair_exchange(config, connection)).run()
         except Exception as e:
             log_er.exception(e)
-        finally:
-            redis_client.lpush("exchange_pairs", f"{base_exchange.NAME},{pair_exchange.NAME}")
+
+        await connection.aclose()
+
+        end = time.time()
+        log.info(f"one cycle took {end - start} seconds")
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())

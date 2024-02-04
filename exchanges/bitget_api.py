@@ -1,20 +1,29 @@
+import base64
+import hmac
+import time
 from typing import List
-
-from .bitget.v1.spot.market_api import MarketApi
 
 from abstract import AbstractExchange, NoPriceFound
 from db.structs import CoinNetworkExchangeDC, TradingPair
+from .bitget.v1.spot.market_api import MarketApi
+
+
+import logging
+log = logging.getLogger("error")
 
 
 class BitgetAPI(AbstractExchange):
     NAME = "Bitget"
     ALLOWED_STATUS = "online"
+    base_url = "https://api.bitget.com"
 
-    def __init__(self, config):
-        api_key = config["BITGET_API_KEY"]
-        api_secret = config["BITGET_API_SECRET"]
-        api_passphrase = config["BITGET_API_PASSPHRASE"]
-        self.client = MarketApi(api_key=api_key, api_secret_key=api_secret, passphrase=api_passphrase)
+    def __init__(self, config, connection):
+        self.connection = connection
+
+        self.api_key = config["BITGET_API_KEY"]
+        self.api_secret = config["BITGET_API_SECRET"]
+        self.api_passphrase = config["BITGET_API_PASSPHRASE"]
+        self.client = MarketApi(api_key=self.api_key, api_secret_key=self.api_secret, passphrase=self.api_passphrase)
 
     def get_trading_pairs(self) -> List[TradingPair]:
         pairs_info = self.client.products(params={})
@@ -27,6 +36,10 @@ class BitgetAPI(AbstractExchange):
 
     def _is_valid_pair(self, pair_data):
         return pair_data["quoteCoin"] == "USDT" and pair_data["status"] == self.ALLOWED_STATUS
+
+    def get_coin_exchange_networks(self):
+        for coin_data in self.client.currencies(params={})["data"]:
+            yield CoinNetworkExchangeDC.from_bitget(coin_data)
 
     def get_price(self, pair, limit=20):
         data = {
@@ -41,9 +54,50 @@ class BitgetAPI(AbstractExchange):
             raise NoPriceFound()
         return buy, sell
 
-    def get_coin_exchange_networks(self):
-        for coin_data in self.client.currencies(params={})["data"]:
-            yield CoinNetworkExchangeDC.from_bitget(coin_data)
+    async def async_get_price(self, symbol, limit=10):
+        url = self.base_url + "/api/spot/v1/market/depth"
+        body = {
+            "symbol": symbol.bitget_name,
+            "limit": limit,
+        }
+        timestamp = self.get_timestamp()
+        sign = self.sign(self.pre_hash(timestamp, "GET", url, ""))
+        header = self.get_header(sign, timestamp)
+        response = await self.connection.get(url, params=body, headers=header)
+        data = response.json()
+
+        try:
+            buy = data['data']['asks']
+            sell = data['data']['bids']
+        except Exception:
+            log.error(f"[bitget] - {response.text}")
+            raise NoPriceFound()
+        if not buy or not sell:
+            raise NoPriceFound()
+
+        return buy, sell
+
+    def sign(self, message):
+        mac = hmac.new(bytes(self.api_secret, encoding='utf8'), bytes(message, encoding='utf-8'), digestmod='sha256')
+        d = mac.digest()
+        return str(base64.b64encode(d), "utf8")
+
+    @staticmethod
+    def pre_hash(timestamp, method, request_path, body):
+        return str(timestamp) + str.upper(method) + request_path + body
+
+    @staticmethod
+    def get_timestamp():
+        return int(time.time() * 1000)
+
+    def get_header(self, sign, timestamp):
+        header = dict()
+        header['Content-Type'] = "application/json"
+        header['ACCESS-KEY'] = self.api_key
+        header['ACCESS-SIGN'] = sign
+        header['ACCESS-TIMESTAMP'] = str(timestamp)
+        header['ACCESS-PASSPHRASE'] = self.api_passphrase
+        return header
 
     def get_pair_trading_volume(self, pair) -> float:
         data = self.client.ticker({"symbol": pair.bitget_name})

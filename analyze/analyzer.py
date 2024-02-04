@@ -2,9 +2,12 @@ import logging
 import time
 from typing import Tuple
 
+import asyncio
 from sqlalchemy import func, exists, and_
 from sqlalchemy.orm import joinedload
 
+from abstract import NoPriceFound
+from celery_app.tasks import monitor_bundle
 from celery_app.tasks import monitor_bundle, set_bundle_volume_statistics
 from db.base import Session
 from db.models import (
@@ -33,7 +36,56 @@ class ExchangePairAnalyzer:
         self.base_exchange = base_exchange
         self.pair_exchange = pair_exchange
 
-    def run(self):
+    async def manage_pair(self, pair):
+        try:
+            base_exchange_price = await self.base_exchange.async_get_price(pair)
+            pair_exchange_price = await self.pair_exchange.async_get_price(pair)
+        except NoPriceFound:
+            log.info("skip")
+            return
+
+        base_to_second_network, second_to_base_network = self._get_best_networks(pair.base_coin)
+        if not base_to_second_network and not second_to_base_network:
+            log.info("no network found")
+            return
+
+        if base_to_second_network and self.base_exchange.NAME != "GateIO":
+            buy_price_analyzer = PriceAnalyzer(
+                buy_price=base_exchange_price[0],
+                sell_price=pair_exchange_price[1],
+                network=base_to_second_network,
+            )
+            try:
+                buy_price_analyzer.run()
+            except Exception as e:
+                error_log.exception(e)
+
+            if (
+                    buy_price_analyzer.profit > self.BASE_USDT_PROFIT
+                    and buy_price_analyzer.to_use_usdt > self.MIN_LIQUID_AMOUNT
+            ):
+                self._start_monitoring(pair, buy_price_analyzer)
+
+        if second_to_base_network and self.pair_exchange.NAME != "GateIO":
+            sell_price_analyzer = PriceAnalyzer(
+                buy_price=pair_exchange_price[0],
+                sell_price=base_exchange_price[1],
+                network=second_to_base_network,
+            )
+            try:
+                sell_price_analyzer.run()
+            except Exception as e:
+                error_log.exception(e)
+
+            if (
+                    sell_price_analyzer.profit > self.BASE_USDT_PROFIT
+                    and sell_price_analyzer.to_use_usdt > self.MIN_LIQUID_AMOUNT
+            ):
+                self._start_monitoring(pair, sell_price_analyzer, from_base=False)
+
+    async def run(self):
+        running_tasks = set()
+        loop = asyncio.get_event_loop()
         common_pairs = self._get_common_pairs()
         log.info(f"Found {len(common_pairs)} common pairs")
         if len(common_pairs) == 0:
@@ -42,52 +94,21 @@ class ExchangePairAnalyzer:
 
         for pair in common_pairs:
             log.info(f"processing {pair.default_name}")
+            task = loop.create_task(self.manage_pair(pair))
+            if self.base_exchange.NAME in ["GateIO"] or self.pair_exchange.NAME in ["GateIO"]:
+                await asyncio.sleep(0.053)
+            elif self.base_exchange.NAME in ["OKX", "Bitget"] or self.pair_exchange.NAME in ["OKX", "Bitget"]:
+                await asyncio.sleep(0.075)
+            elif self.base_exchange.NAME in ["KuCoin"] or self.pair_exchange.NAME in ["KuCoin"]:
+                await asyncio.sleep(0.023)
+            else:
+                await asyncio.sleep(0.01)
 
-            base_to_second_network, second_to_base_network = self._get_best_networks(pair.base_coin)
-            if not base_to_second_network and not second_to_base_network:
-                log.info("no network found")
-                continue
+            running_tasks.add(task)
 
-            try:
-                base_exchange_price = self.base_exchange.get_price(pair)
-                pair_exchange_price = self.pair_exchange.get_price(pair)
-            except NoPriceFound:
-                log.info("skip")
-                continue
-
-            if base_to_second_network and self.base_exchange.NAME != "GateIO":
-                buy_price_analyzer = PriceAnalyzer(
-                    buy_price=base_exchange_price[0],
-                    sell_price=pair_exchange_price[1],
-                    network=base_to_second_network,
-                )
-                try:
-                    buy_price_analyzer.run()
-                except Exception as e:
-                    error_log.exception(e)
-
-                if (
-                    buy_price_analyzer.profit > self.BASE_USDT_PROFIT
-                    and buy_price_analyzer.to_use_usdt > self.MIN_LIQUID_AMOUNT
-                ):
-                    self._start_monitoring(pair, buy_price_analyzer)
-
-            if second_to_base_network and self.pair_exchange.NAME != "GateIO":
-                sell_price_analyzer = PriceAnalyzer(
-                    buy_price=pair_exchange_price[0],
-                    sell_price=base_exchange_price[1],
-                    network=second_to_base_network,
-                )
-                try:
-                    sell_price_analyzer.run()
-                except Exception as e:
-                    error_log.exception(e)
-
-                if (
-                    sell_price_analyzer.profit > self.BASE_USDT_PROFIT
-                    and sell_price_analyzer.to_use_usdt > self.MIN_LIQUID_AMOUNT
-                ):
-                    self._start_monitoring(pair, sell_price_analyzer, from_base=False)
+        while running_tasks:
+            done, pending = await asyncio.wait(running_tasks, timeout=0.5)
+            running_tasks.difference_update(done)
 
     def _get_common_pairs(self):
         with Session() as session:

@@ -23,9 +23,8 @@ class SendAnalyticsService:
         "Profit",
         "Date",
         "To use (base ccy)",
-        "Percent of Total Vol",
-        "Base Exchange Total Vol (base ccy)",
-        "Pair Exchange Total Vol (base ccy)",
+        "Percent of Base Vol",
+        "Percent of Pair Vol",
     ]
 
     def __init__(self, config):
@@ -185,6 +184,12 @@ class SendAnalyticsService:
                     else:
                         percent_of_base_trading_volume = 0
 
+                    if bundle.pair_exchange_trading_volume:
+                        percent_of_pair_trading_volume = (
+                                bundle_item.to_use_base_ccy / bundle.pair_exchange_trading_volume
+                        )
+                    else:
+                        percent_of_pair_trading_volume = 0
                     row = [
                         bundle.base_exchange.name,
                         bundle.pair_exchange.name,
@@ -198,8 +203,7 @@ class SendAnalyticsService:
                         created_date,
                         round(bundle_item.to_use_base_ccy, 3),
                         f"{round(percent_of_base_trading_volume * 100, 6)} %",
-                        round(bundle.base_exchange_trading_volume, 3),
-                        round(bundle.pair_exchange_trading_volume, 3),
+                        f"{round(percent_of_pair_trading_volume * 100, 6)} %",
                     ]
                     rows.append(row)
 
