@@ -82,6 +82,37 @@ def monitor_bundle(self, bundle_id):
 
 
 @app.task
+def set_bundle_volume_statistics(bundle_id):
+    with Session() as session:
+        bundle = (
+            session.query(ProfitBundle)
+            .options(
+                joinedload(ProfitBundle.pair),
+                joinedload(ProfitBundle.pair).joinedload(Pair.base_coin),
+                joinedload(ProfitBundle.pair).joinedload(Pair.quote_coin),
+                joinedload(ProfitBundle.base_exchange),
+                joinedload(ProfitBundle.pair_exchange),
+            )
+            .get(bundle_id)
+        )
+
+        base_exchange = exchange_mapping[bundle.base_exchange.name](config)
+        pair_exchange = exchange_mapping[bundle.pair_exchange.name](config)
+
+        base_exchange_trading_volume = base_exchange.get_pair_trading_volume(bundle.pair)
+        pair_exchange_trading_volume = pair_exchange.get_pair_trading_volume(bundle.pair)
+
+        session.query(ProfitBundle).filter(ProfitBundle.id == bundle_id).update(
+            {
+                "base_exchange_trading_volume": base_exchange_trading_volume,
+                "pair_exchange_trading_volume": pair_exchange_trading_volume,
+            },
+            synchronize_session=False,
+        )
+        session.commit()
+
+
+@app.task
 def send_analytics():
     service = SendAnalyticsService(config)
     service.send_to_spreadsheet()

@@ -47,3 +47,7 @@ class OkxAPI(AbstractExchange):
         if not buy or not sell:
             raise NoPriceFound()
         return buy, sell
+
+    def get_pair_trading_volume(self, pair) -> float:
+        data = self.market_client.get_ticker(instId=pair.dashed_name)
+        return float(data["data"][0]["vol24h"])

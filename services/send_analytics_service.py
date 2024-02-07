@@ -22,6 +22,10 @@ class SendAnalyticsService:
         "Total Fee",
         "Profit",
         "Date",
+        "To use (base ccy)",
+        "Percent of Total Vol",
+        "Base Exchange Total Vol (base ccy)",
+        "Pair Exchange Total Vol (base ccy)",
     ]
 
     def __init__(self, config):
@@ -77,7 +81,7 @@ class SendAnalyticsService:
                     "startRowIndex": 0,
                     "endRowIndex": 1000,
                     "startColumnIndex": 0,
-                    "endColumnIndex": 11,
+                    "endColumnIndex": 15,
                 },
                 "cell": {
                     "userEnteredFormat": {
@@ -174,6 +178,13 @@ class SendAnalyticsService:
                 rows.extend([[]])
                 for bundle_item in bundle.items:
                     created_date = self.get_cell_str_from_utc_datetime(bundle_item.created_at)
+                    if bundle.base_exchange_trading_volume:
+                        percent_of_base_trading_volume = (
+                            bundle_item.to_use_base_ccy / bundle.base_exchange_trading_volume
+                        )
+                    else:
+                        percent_of_base_trading_volume = 0
+
                     row = [
                         bundle.base_exchange.name,
                         bundle.pair_exchange.name,
@@ -185,6 +196,10 @@ class SendAnalyticsService:
                         round(bundle_item.total_fee, 3),
                         round(bundle_item.profit, 3),
                         created_date,
+                        round(bundle_item.to_use_base_ccy, 3),
+                        f"{round(percent_of_base_trading_volume * 100, 6)} %",
+                        round(bundle.base_exchange_trading_volume, 3),
+                        round(bundle.pair_exchange_trading_volume, 3),
                     ]
                     rows.append(row)
 

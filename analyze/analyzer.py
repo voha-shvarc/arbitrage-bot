@@ -5,7 +5,7 @@ from typing import Tuple
 from sqlalchemy import func, exists, and_
 from sqlalchemy.orm import joinedload
 
-from celery_app.tasks import monitor_bundle
+from celery_app.tasks import monitor_bundle, set_bundle_volume_statistics
 from db.base import Session
 from db.models import (
     Pair,
@@ -194,6 +194,7 @@ class ExchangePairAnalyzer:
             session.add_all([bundle_item, bundle])
             session.flush()
 
+            set_bundle_volume_statistics.apply_async(args=[bundle.id], countdown=5)
             monitor_bundle.apply_async(args=[bundle.id], countdown=90)
             session.commit()
 

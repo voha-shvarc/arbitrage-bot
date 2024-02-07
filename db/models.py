@@ -113,6 +113,9 @@ class ProfitBundle(Base):
     coin_network_exchange_id = Column(ForeignKey("coin_network_exchange.id"), index=True)
     base_exchange_id = Column(ForeignKey("exchanges.id"), index=True)
     pair_exchange_id = Column(ForeignKey("exchanges.id"), index=True)
+
+    base_exchange_trading_volume = Column(Float)
+    pair_exchange_trading_volume = Column(Float)
     synced = Column(Boolean(), default=False, server_default="False", index=True)
     status = Column(
         String(20),
@@ -134,7 +137,9 @@ class ProfitBundleItem(Base):
 
     id = Column(Integer, primary_key=True)
     profit_bundle_id = Column(ForeignKey("profit_bundles.id"))
+
     to_use_usdt = Column(Float)
+    to_use_base_ccy = Column(Float)
     avg_spread = Column(Float)
     base_profit = Column(Float)
     total_fee = Column(Float)

@@ -21,6 +21,10 @@ class AbstractExchange(ABC):
     def get_price(self, pair, limit=10):
         pass
 
+    @abstractmethod
+    def get_pair_trading_volume(self, pair) -> float:
+        pass
+
     @property
     def db_id(self):
         with Session() as session:
