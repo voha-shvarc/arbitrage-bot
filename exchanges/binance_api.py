@@ -2,8 +2,8 @@ from typing import List
 
 from binance.spot import Spot
 
-from db.structs import CoinNetworkExchangeDC, TradingPair
 from abstract import AbstractExchange, NoPriceFound
+from db.structs import CoinNetworkExchangeDC, TradingPair
 
 
 class BinanceAPI(AbstractExchange):
@@ -44,3 +44,7 @@ class BinanceAPI(AbstractExchange):
     def get_coin_exchange_networks(self):
         for coin_data in self.client.coin_info():
             yield CoinNetworkExchangeDC.from_binance(coin_data)
+
+    def get_pair_trading_volume(self, pair) -> float:
+        data = self.client.ticker_24hr(symbol=pair.default_name)
+        return float(data["volume"])

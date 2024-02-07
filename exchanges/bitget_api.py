@@ -44,3 +44,7 @@ class BitgetAPI(AbstractExchange):
     def get_coin_exchange_networks(self):
         for coin_data in self.client.currencies(params={})["data"]:
             yield CoinNetworkExchangeDC.from_bitget(coin_data)
+
+    def get_pair_trading_volume(self, pair) -> float:
+        data = self.client.ticker({"symbol": pair.bitget_name})
+        return float(data["data"]["baseVol"])

@@ -42,3 +42,7 @@ class HuobiAPI(AbstractExchange):
         if not buy or not sell:
             raise NoPriceFound()
         return buy, sell
+
+    def get_pair_trading_volume(self, pair) -> float:
+        data = self.price_client.get_market_detail_merged(symbol=pair.huobi_name)
+        return data.amount

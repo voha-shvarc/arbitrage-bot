@@ -42,3 +42,7 @@ class KuCoinAPI(AbstractExchange):
     def get_coin_exchange_networks(self):
         for coin_data in self.client._request("GET", "/api/v3/currencies"):
             yield CoinNetworkExchangeDC.from_kucoin(coin_data)
+
+    def get_pair_trading_volume(self, pair) -> float:
+        data = self.client.get_24h_stats(symbol=pair.dashed_name)
+        return float(data["vol"])

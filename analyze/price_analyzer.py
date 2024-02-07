@@ -109,6 +109,7 @@ class PriceAnalyzer:
     def to_db(self):
         return {
             "to_use_usdt": self.to_use_usdt,
+            "to_use_base_ccy": self.coin_available_amount,
             "avg_spread": self.avg_spread,
             "base_profit": self.base_profit,
             "total_fee": self.fees,

@@ -2,8 +2,8 @@ from typing import List
 
 from pybit.unified_trading import HTTP
 
-from db.structs import CoinNetworkExchangeDC, TradingPair
 from abstract import AbstractExchange, NoPriceFound
+from db.structs import CoinNetworkExchangeDC, TradingPair
 
 
 class BybitAPI(AbstractExchange):
@@ -38,3 +38,7 @@ class BybitAPI(AbstractExchange):
         if not buy or not sell:
             raise NoPriceFound()
         return buy, sell
+
+    def get_pair_trading_volume(self, pair) -> float:
+        data = self.session.get_tickers(symbol=pair.default_name, category="spot")
+        return float(data["result"]["list"][0]["volume24h"])

@@ -34,3 +34,7 @@ class GateIOAPI(AbstractExchange):
         if not buy or not sell:
             raise NoPriceFound()
         return buy, sell
+
+    def get_pair_trading_volume(self, pair) -> float:
+        data = self.spot_client.list_tickers(currency_pair=pair.gateio_name)
+        return float(data[0].base_volume)
