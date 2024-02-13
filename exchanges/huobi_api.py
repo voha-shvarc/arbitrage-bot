@@ -2,7 +2,7 @@ from typing import List
 
 from huobi.client.generic import GenericClient
 from huobi.client.market import MarketClient
-from huobi.constant import InstrumentStatus
+from huobi.constant import InstrumentStatus, DepthStep
 
 from abstract import AbstractExchange, NoPriceFound
 from db.structs import CoinNetworkExchangeDC, TradingPair
