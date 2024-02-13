@@ -95,10 +95,12 @@ class ExchangePairAnalyzer:
         for pair in common_pairs:
             log.info(f"processing {pair.default_name}")
             task = loop.create_task(self.manage_pair(pair))
-            if self.base_exchange.NAME in ["GateIO"] or self.pair_exchange.NAME in ["GateIO"]:
+            if self.base_exchange.NAME in ["Bitget"] or self.pair_exchange.NAME in ["Bitget"]:
+                await asyncio.sleep(0.9)
+            elif self.base_exchange.NAME in ["OKX"] or self.pair_exchange.NAME in ["OKX"]:
+                await asyncio.sleep(0.08)
+            elif self.base_exchange.NAME in ["GateIO"] or self.pair_exchange.NAME in ["GateIO"]:
                 await asyncio.sleep(0.053)
-            elif self.base_exchange.NAME in ["OKX", "Bitget"] or self.pair_exchange.NAME in ["OKX", "Bitget"]:
-                await asyncio.sleep(0.075)
             elif self.base_exchange.NAME in ["KuCoin"] or self.pair_exchange.NAME in ["KuCoin"]:
                 await asyncio.sleep(0.023)
             else:
