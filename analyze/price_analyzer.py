@@ -12,7 +12,6 @@ class PriceAnalyzer:
     BASE_SPREAD = 0.004  # 0.4%
     EXCHANGE_BUY_COMMISSION = 0.001  # 0.1%
     EXCHANGE_SELL_COMMISSION = 0.001  # 0.1%
-    MAX_USDT_AMOUNT = 2000
 
     def __init__(self, buy_price, sell_price, network: CoinNetworkExchange):
         self.exchange_commission = self.EXCHANGE_BUY_COMMISSION + self.EXCHANGE_SELL_COMMISSION
@@ -24,6 +23,7 @@ class PriceAnalyzer:
         self.base_profit = 0
         self.profit = 0
         self.fees = 0
+        self.is_exhausted = False
         self.profit_sell_prices = set()
         self.spreads = []
 
@@ -45,7 +45,7 @@ class PriceAnalyzer:
         sell_p = None
         b_prices = self.buy_prices.copy()
         s_prices = self.sell_prices.copy()
-        while b_prices and s_prices and self.to_use_usdt < self.MAX_USDT_AMOUNT:
+        while b_prices and s_prices:
             if not buy_p:
                 buy_data = b_prices.pop(0)
                 buy_p = Price(float(buy_data[0]), float(buy_data[1]))
@@ -71,6 +71,9 @@ class PriceAnalyzer:
                     buy_p = None
             else:
                 break
+
+        if not b_prices or not s_prices:
+            self.is_exhausted = True
 
         if self.coin_available_amount:
             self.fees = (
@@ -114,4 +117,5 @@ class PriceAnalyzer:
             "base_profit": self.base_profit,
             "total_fee": self.fees,
             "profit": self.profit,
+            "is_exhausted": self.is_exhausted,
         }

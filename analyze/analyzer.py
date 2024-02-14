@@ -30,7 +30,6 @@ error_log = logging.getLogger("error")
 
 class ExchangePairAnalyzer:
     BASE_USDT_PROFIT = 4  # 4 USDT
-    MIN_LIQUID_AMOUNT = 500  # 500 USDT
 
     def __init__(self, base_exchange, pair_exchange):
         self.base_exchange = base_exchange
@@ -62,7 +61,6 @@ class ExchangePairAnalyzer:
 
             if (
                     buy_price_analyzer.profit > self.BASE_USDT_PROFIT
-                    and buy_price_analyzer.to_use_usdt > self.MIN_LIQUID_AMOUNT
             ):
                 self._start_monitoring(pair, buy_price_analyzer)
 
@@ -79,7 +77,6 @@ class ExchangePairAnalyzer:
 
             if (
                     sell_price_analyzer.profit > self.BASE_USDT_PROFIT
-                    and sell_price_analyzer.to_use_usdt > self.MIN_LIQUID_AMOUNT
             ):
                 self._start_monitoring(pair, sell_price_analyzer, from_base=False)
 

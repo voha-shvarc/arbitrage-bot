@@ -23,8 +23,7 @@ exchange_mapping = {
     BitgetAPI.NAME: BitgetAPI,
 }
 
-BASE_USDT_PROFIT = 4  # 4 USDT
-MIN_LIQUID_AMOUNT = 500  # 500 USDT
+BASE_USDT_PROFIT = 2  # 2 USDT
 
 error_log = logging.getLogger("error")
 
@@ -60,7 +59,7 @@ def monitor_bundle(self, bundle_id):
         error_log.exception(e)
         return
 
-    if price_analyzer.profit > BASE_USDT_PROFIT and price_analyzer.to_use_usdt > MIN_LIQUID_AMOUNT:
+    if price_analyzer.profit > BASE_USDT_PROFIT:
         with Session() as session:
             bundle_item = ProfitBundleItem(**price_analyzer.to_db())
             bundle_item.profit_bundle_id = bundle.id

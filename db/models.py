@@ -144,6 +144,8 @@ class ProfitBundleItem(Base):
     base_profit = Column(Float)
     total_fee = Column(Float)
     profit = Column(Float)
+    is_exhausted = Column(Boolean, default=False, server_default="false")
+
     created_at = db_created()
     updated_at = db_updated()
 

@@ -190,12 +190,13 @@ class SendAnalyticsService:
                         )
                     else:
                         percent_of_pair_trading_volume = 0
+                    exhausted_label = ' DRY' if bundle_item.is_exhausted else ''
                     row = [
                         bundle.base_exchange.name,
                         bundle.pair_exchange.name,
                         bundle.pair.default_name,
                         bundle.coin_network_exchange.network.name,
-                        round(bundle_item.to_use_usdt, 3),
+                        f"{round(bundle_item.to_use_usdt, 3)}{exhausted_label}",
                         f"{round(bundle_item.avg_spread * 100, 3)}%",
                         round(bundle_item.base_profit, 3),
                         round(bundle_item.total_fee, 3),
