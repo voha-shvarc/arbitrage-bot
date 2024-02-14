@@ -51,10 +51,12 @@ def sync_coin_exchange_networks():
             .filter(
                 or_(
                     and_(Exchange.name == "GateIO", Coin.name == "GTC"),
-                    and_(Exchange.name == "GateIO", Coin.name == "LSD"),
-                    and_(Network.name == "BSC", Coin.name == "BABYDOGE"),
-                    Coin.name == "PEPE2",
                     and_(Exchange.name == "ByBit", Coin.name == "VPAD"),
+                    and_(Network.name == "BSC", Coin.name == "BABYDOGE"),
+                    Coin.name == "LSD",
+                    Coin.name == "PEPE2",
+                    Coin.name == "BIFI",
+                    Coin.name == "RED",
                 )
             )
         )

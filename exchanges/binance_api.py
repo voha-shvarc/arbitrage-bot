@@ -10,6 +10,7 @@ import logging
 
 error_log = logging.getLogger("error")
 
+
 class BinanceAPI(AbstractExchange):
     """For testing use different keys. more here https://testnet.binance.vision/"""
 
