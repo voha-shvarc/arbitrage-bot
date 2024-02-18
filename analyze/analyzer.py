@@ -29,7 +29,7 @@ error_log = logging.getLogger("error")
 
 
 class ExchangePairAnalyzer:
-    BASE_USDT_PROFIT = 4  # 4 USDT
+    BASE_USDT_PROFIT = 2  # 2 USDT
 
     def __init__(self, base_exchange, pair_exchange):
         self.base_exchange = base_exchange
