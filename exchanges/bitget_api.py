@@ -54,7 +54,7 @@ class BitgetAPI(AbstractExchange):
             raise NoPriceFound()
         return buy, sell
 
-    async def async_get_price(self, symbol, limit=10):
+    async def async_get_price(self, symbol, limit=20):
         url = self.base_url + "/api/spot/v1/market/depth"
         body = {
             "symbol": symbol.bitget_name,

@@ -46,7 +46,7 @@ class KuCoinAPI(AbstractExchange):
             raise NoPriceFound()
         return buy, sell
 
-    async def async_get_price(self, symbol, limit=10):
+    async def async_get_price(self, symbol, limit=20):
         url = self.base_url + "/api/v3/market/orderbook/level2_20"
         uri_path = f"/api/v3/market/orderbook/level2_20?symbol={symbol.dashed_name}"
         body = {

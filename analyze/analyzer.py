@@ -90,7 +90,6 @@ class ExchangePairAnalyzer:
             time.sleep(5)
 
         for pair in common_pairs:
-            log.info(f"processing {pair.default_name}")
             task = loop.create_task(self.manage_pair(pair))
             if self.base_exchange.NAME in ["Bitget"] or self.pair_exchange.NAME in ["Bitget"]:
                 await asyncio.sleep(0.09)

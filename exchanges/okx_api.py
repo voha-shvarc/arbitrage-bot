@@ -58,7 +58,7 @@ class OkxAPI(AbstractExchange):
         return buy, sell
 
     @retry(delay=1, tries=2)
-    async def async_get_price(self, symbol, limit=10):
+    async def async_get_price(self, symbol, limit=20):
         url = self.base_url + "/api/v5/market/books"
         body = {
             "instId": symbol.dashed_name,
