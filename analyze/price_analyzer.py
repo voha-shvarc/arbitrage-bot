@@ -58,7 +58,7 @@ class PriceAnalyzer:
             coin_available_amount = min([buy_p.amount_available, sell_p.amount_available])
             if spread > self.BASE_SPREAD:
                 self.base_profit += spread * coin_available_amount * sell_p.price
-                self.coin_available_amount = coin_available_amount
+                self.coin_available_amount += coin_available_amount
                 self.to_use_usdt += coin_available_amount * buy_p.price
                 self.profit_sell_prices.add(sell_p.price)
                 self.spreads.append(spread)
