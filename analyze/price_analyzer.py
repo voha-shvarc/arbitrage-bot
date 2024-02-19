@@ -27,6 +27,11 @@ class PriceAnalyzer:
         self.profit_sell_prices = set()
         self.spreads = []
 
+        self.min_buy_price = 0
+        self.max_buy_price = 0
+        self.min_sell_price = 0
+        self.max_sell_price = 0
+
     @property
     def avg_sell_price(self):
         if self.profit_sell_prices:
@@ -62,6 +67,14 @@ class PriceAnalyzer:
                 self.to_use_usdt += coin_available_amount * buy_p.price
                 self.profit_sell_prices.add(sell_p.price)
                 self.spreads.append(spread)
+
+                if not self.min_buy_price:
+                    self.min_buy_price = buy_p.price
+                self.max_buy_price = buy_p.price
+
+                if not self.min_sell_price:
+                    self.min_sell_price = sell_p.price
+                self.max_sell_price = sell_p.price
 
                 if buy_p.amount_available > sell_p.amount_available:
                     buy_p.amount_available -= sell_p.amount_available
@@ -110,6 +123,7 @@ class PriceAnalyzer:
         os.remove(filename)
 
     def to_db(self):
+        """Convert to ProfitBundleItem model object"""
         return {
             "to_use_usdt": self.to_use_usdt,
             "to_use_base_ccy": self.coin_available_amount,
@@ -118,4 +132,8 @@ class PriceAnalyzer:
             "total_fee": self.fees,
             "profit": self.profit,
             "is_exhausted": self.is_exhausted,
+            "base_exchange_max_price": self.max_buy_price,
+            "base_exchange_min_price": self.min_buy_price,
+            "pair_exchange_max_price": self.max_sell_price,
+            "pair_exchange_min_price": self.min_sell_price,
         }

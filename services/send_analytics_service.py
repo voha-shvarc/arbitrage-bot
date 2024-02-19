@@ -17,6 +17,10 @@ class SendAnalyticsService:
         "Pair",
         "Network",
         "To Buy",
+        "Base Min Price",
+        "Base Max Price",
+        "Pair Min Price",
+        "Pair Max Price",
         "Avg Spread",
         "Base Profit",
         "Total Fee",
@@ -80,7 +84,7 @@ class SendAnalyticsService:
                     "startRowIndex": 0,
                     "endRowIndex": 1000,
                     "startColumnIndex": 0,
-                    "endColumnIndex": 15,
+                    "endColumnIndex": 20,
                 },
                 "cell": {
                     "userEnteredFormat": {
@@ -176,7 +180,8 @@ class SendAnalyticsService:
             for bundle in bundles_qs:
                 rows.extend([[]])
                 for bundle_item in bundle.items:
-                    created_date = self.get_cell_str_from_utc_datetime(bundle_item.created_at)
+                    bundle_item: ProfitBundleItem
+
                     if bundle.base_exchange_trading_volume:
                         percent_of_base_trading_volume = (
                             bundle_item.to_use_base_ccy / bundle.base_exchange_trading_volume
@@ -190,6 +195,7 @@ class SendAnalyticsService:
                         )
                     else:
                         percent_of_pair_trading_volume = 0
+
                     exhausted_label = ' DRY' if bundle_item.is_exhausted else ''
                     row = [
                         bundle.base_exchange.name,
@@ -197,14 +203,18 @@ class SendAnalyticsService:
                         bundle.pair.default_name,
                         bundle.coin_network_exchange.network.name,
                         f"{round(bundle_item.to_use_usdt, 3)}{exhausted_label}",
+                        f"{round(bundle_item.base_exchange_min_price, 8)}",
+                        f"{round(bundle_item.base_exchange_max_price, 8)}",
+                        f"{round(bundle_item.pair_exchange_min_price, 8)}",
+                        f"{round(bundle_item.pair_exchange_max_price, 8)}",
                         f"{round(bundle_item.avg_spread * 100, 3)}%",
                         round(bundle_item.base_profit, 3),
                         round(bundle_item.total_fee, 3),
                         round(bundle_item.profit, 3),
-                        created_date,
+                        self.get_cell_str_from_utc_datetime(bundle_item.created_at),
                         round(bundle_item.to_use_base_ccy, 3),
-                        f"{round(percent_of_base_trading_volume * 100, 6)} %",
-                        f"{round(percent_of_pair_trading_volume * 100, 6)} %",
+                        f"{round(percent_of_base_trading_volume * 100, 3)} %",
+                        f"{round(percent_of_pair_trading_volume * 100, 3)} %",
                     ]
                     rows.append(row)
 
