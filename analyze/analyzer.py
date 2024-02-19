@@ -40,12 +40,12 @@ class ExchangePairAnalyzer:
             base_exchange_price = await self.base_exchange.async_get_price(pair)
             pair_exchange_price = await self.pair_exchange.async_get_price(pair)
         except NoPriceFound:
-            log.info("skip")
+            log.info(f"no price found - {pair.default_name}")
             return
 
         base_to_second_network, second_to_base_network = self._get_best_networks(pair.base_coin)
         if not base_to_second_network and not second_to_base_network:
-            log.info("no network found")
+            log.info(f"no network found - {pair.default_name}")
             return
 
         if base_to_second_network and self.base_exchange.NAME != "GateIO":
