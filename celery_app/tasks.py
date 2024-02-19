@@ -28,7 +28,7 @@ BASE_USDT_PROFIT = 2  # 2 USDT
 error_log = logging.getLogger("error")
 
 
-@app.task(bind=True, max_retries=20)
+@app.task(bind=True, max_retries=60)
 def monitor_bundle(self, bundle_id):
     with Session() as session:
         bundle = (
@@ -67,7 +67,7 @@ def monitor_bundle(self, bundle_id):
             session.commit()
 
         try:
-            raise self.retry(countdown=90)
+            raise self.retry(countdown=30)
         except MaxRetriesExceededError:
             pass
 

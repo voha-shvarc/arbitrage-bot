@@ -214,7 +214,7 @@ class ExchangePairAnalyzer:
             session.flush()
 
             set_bundle_volume_statistics.apply_async(args=[bundle.id], countdown=5)
-            monitor_bundle.apply_async(args=[bundle.id], countdown=90)
+            monitor_bundle.apply_async(args=[bundle.id], countdown=30)
             session.commit()
 
         return True
