@@ -34,7 +34,7 @@ class GateIOAPI(AbstractExchange):
             if not coin_data.delisted:
                 yield CoinNetworkExchangeDC.from_gateio(coin_data)
 
-    def get_price(self, pair, limit=20):
+    def get_price(self, pair, limit=30):
         res = self.spot_client.list_order_book(pair.gateio_name)
         buy = res.asks
         sell = res.bids
@@ -42,7 +42,7 @@ class GateIOAPI(AbstractExchange):
             raise NoPriceFound()
         return buy, sell
 
-    async def async_get_price(self, symbol, limit=20):
+    async def async_get_price(self, symbol, limit=30):
         url = self.base_url + "/api/v4/spot/order_book"
         body = {
             "currency_pair": symbol.gateio_name,

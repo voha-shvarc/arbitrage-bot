@@ -5,7 +5,7 @@ from typing import List
 
 from abstract import AbstractExchange, NoPriceFound
 from db.structs import CoinNetworkExchangeDC, TradingPair
-from .bitget.v1.spot.market_api import MarketApi
+from exchanges.bitget.v1.spot.market_api import MarketApi
 
 
 import logging
@@ -41,7 +41,7 @@ class BitgetAPI(AbstractExchange):
         for coin_data in self.client.currencies(params={})["data"]:
             yield CoinNetworkExchangeDC.from_bitget(coin_data)
 
-    def get_price(self, pair, limit=20):
+    def get_price(self, pair, limit=30):
         data = {
             "symbol": pair.bitget_name,
             "limit": limit,
@@ -54,7 +54,7 @@ class BitgetAPI(AbstractExchange):
             raise NoPriceFound()
         return buy, sell
 
-    async def async_get_price(self, symbol, limit=20):
+    async def async_get_price(self, symbol, limit=30):
         url = self.base_url + "/api/spot/v1/market/depth"
         body = {
             "symbol": symbol.bitget_name,

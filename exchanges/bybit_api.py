@@ -38,7 +38,7 @@ class BybitAPI(AbstractExchange):
             except IndexError:
                 continue
 
-    def get_price(self, pair, limit=20):
+    def get_price(self, pair, limit=30):
         res = self.session.get_orderbook(symbol=pair.default_name, limit=limit, category="spot")
         buy = res["result"]["a"]
         sell = res["result"]["b"]
@@ -46,7 +46,7 @@ class BybitAPI(AbstractExchange):
             raise NoPriceFound()
         return buy, sell
 
-    async def async_get_price(self, symbol, limit=20):
+    async def async_get_price(self, symbol, limit=30):
         url = self.base_url + "/v5/market/orderbook"
         body = {
             "symbol": symbol.default_name,

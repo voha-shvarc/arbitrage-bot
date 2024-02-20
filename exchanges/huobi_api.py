@@ -34,9 +34,9 @@ class HuobiAPI(AbstractExchange):
             if coin_data.instStatus == InstrumentStatus.NORMAL:
                 yield CoinNetworkExchangeDC.from_huobi(coin_data)
 
-    def get_price(self, pair, limit=20):
+    def get_price(self, pair, limit=30):
         try:
-            depth = self.price_client.get_pricedepth(pair.huobi_name, DepthStep.STEP0, limit)
+            depth = self.price_client.get_pricedepth(pair, DepthStep.STEP0, limit)
         except Exception:
             raise NoPriceFound()
 
@@ -51,7 +51,7 @@ class HuobiAPI(AbstractExchange):
         body = {
             "symbol": symbol.huobi_name,
             "depth": limit,
-            "type": "step0",
+            "type": DepthStep.STEP0,
         }
         response = await self.connection.get(url, params=body)
         data = response.json()

@@ -45,15 +45,15 @@ class BinanceAPI(AbstractExchange):
         for coin_data in self.client.coin_info():
             yield CoinNetworkExchangeDC.from_binance(coin_data)
 
-    def get_price(self, pair, limit=20):
-        order_book = self.client.depth(symbol=pair.default_name, limit=limit)
+    def get_price(self, pair, limit=30):
+        order_book = self.client.depth(symbol=pair, limit=limit)
         buy = order_book["asks"]
         sell = order_book["bids"]
         if not buy or not sell:
             raise NoPriceFound()
         return buy, sell
 
-    async def async_get_price(self, symbol, limit=20):
+    async def async_get_price(self, symbol, limit=30):
         url = self.base_url + "/api/v3/depth"
         body = {
             "symbol": symbol.default_name,
@@ -67,16 +67,12 @@ class BinanceAPI(AbstractExchange):
         response = await self.connection.get(url, params=body, headers=headers)
         data = response.json()
 
-        try:
-            buy = data["asks"]
-            sell = data["bids"]
-            if not buy or not sell:
-                raise NoPriceFound()
-
-            return buy, sell
-        except Exception as e:
-            error_log.info(f"[binance] - {data}")
+        buy = data["asks"]
+        sell = data["bids"]
+        if not buy or not sell:
             raise NoPriceFound()
+
+        return buy, sell
 
     def get_pair_trading_volume(self, pair) -> float:
         data = self.client.ticker_24hr(symbol=pair.default_name)

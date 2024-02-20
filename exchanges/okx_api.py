@@ -47,7 +47,7 @@ class OkxAPI(AbstractExchange):
             yield CoinNetworkExchangeDC.from_okx(coin_data)
 
     @retry(delay=1, tries=2)
-    def get_price(self, pair, limit=20):
+    def get_price(self, pair, limit=30):
         order_book = self.market_client.get_orderbook(instId=pair.dashed_name, sz=limit)
         if not order_book["data"]:
             raise NoPriceFound()
@@ -58,7 +58,7 @@ class OkxAPI(AbstractExchange):
         return buy, sell
 
     @retry(delay=1, tries=2)
-    async def async_get_price(self, symbol, limit=20):
+    async def async_get_price(self, symbol, limit=30):
         url = self.base_url + "/api/v5/market/books"
         body = {
             "instId": symbol.dashed_name,
