@@ -22,7 +22,8 @@ class PriceAnalyzer:
         self.to_use_usdt = 0
         self.base_profit = 0
         self.profit = 0
-        self.fees = 0
+        self.spot_fee = 0
+        self.network_fee = 0
         self.is_exhausted = False
         self.profit_sell_prices = set()
         self.spreads = []
@@ -34,6 +35,10 @@ class PriceAnalyzer:
 
         self.used_buy_orders = 0
         self.used_sell_orders = 0
+
+    @property
+    def total_fees(self) -> float:
+        return self.spot_fee + self.network_fee
 
     @property
     def avg_sell_price(self):
@@ -110,10 +115,10 @@ class PriceAnalyzer:
             self.used_sell_orders += 1
 
         if self.coin_available_amount:
-            self.fees = (
-                self.network.withdraw_fee + (self.exchange_commission * self.coin_available_amount)
-            ) * self.avg_sell_price
-            self.profit = self.base_profit - self.fees
+            self.spot_fee = self.exchange_commission * self.coin_available_amount * self.avg_sell_price
+            self.network_fee = self.network.withdraw_fee * self.avg_sell_price
+
+            self.profit = self.base_profit - self.total_fees
 
     @retry(tries=3, delay=1)
     def report(self, base_exchange_name, pair_exchange_name, pair, celery_source=False):
@@ -128,7 +133,7 @@ class PriceAnalyzer:
             f"<b>To Buy</b>: {round(self.to_use_usdt, 3)}\n"
             f"<b>Avg Spread</b>: {round(self.avg_spread * 100, 3)}%\n"
             f"<b>Base profit:</b> {round(self.base_profit, 3)}.\n"
-            f"<b>Total Fee:</b> {round(self.fees, 3)}\n"
+            f"<b>Total Fee:</b> {round(self.total_fees, 3)}\n"
             f"<b>Profit</b>: <u>{round(self.profit, 3)} USDT</u>"
             f"\n{celery_source = }"
         )
@@ -150,7 +155,9 @@ class PriceAnalyzer:
             "to_use_base_ccy": self.coin_available_amount,
             "avg_spread": self.avg_spread,
             "base_profit": self.base_profit,
-            "total_fee": self.fees,
+            "total_fee": self.total_fees,
+            "spot_fee": self.spot_fee,
+            "network_fee": self.network_fee,
             "profit": self.profit,
             "is_exhausted": self.is_exhausted,
 

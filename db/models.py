@@ -143,6 +143,8 @@ class ProfitBundleItem(Base):
     avg_spread = Column(Float)
     base_profit = Column(Float)
     total_fee = Column(Float)
+    spot_fee = Column(Float, server_default="0")
+    network_fee = Column(Float, server_default="0")
     profit = Column(Float)
     is_exhausted = Column(Boolean, default=False, server_default="false")
 
