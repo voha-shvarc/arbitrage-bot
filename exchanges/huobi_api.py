@@ -36,7 +36,7 @@ class HuobiAPI(AbstractExchange):
 
     def get_price(self, pair, limit=30):
         try:
-            depth = self.price_client.get_pricedepth(pair, DepthStep.STEP0, limit)
+            depth = self.price_client.get_pricedepth(pair.huobi_name, DepthStep.STEP0, limit)
         except Exception:
             raise NoPriceFound()
 
@@ -56,16 +56,15 @@ class HuobiAPI(AbstractExchange):
         response = await self.connection.get(url, params=body)
         data = response.json()
 
-        try:
-            buy = data["tick"]["asks"]
-            sell = data["tick"]["bids"]
-        except KeyError:
+        if data.get("err-msg") == "invalid symbol":
             raise NoPriceFound()
-        else:
-            if not sell or not buy:
-                raise NoPriceFound()
 
-            return buy, sell
+        buy = data["tick"]["asks"]
+        sell = data["tick"]["bids"]
+        if not sell or not buy:
+            raise NoPriceFound()
+
+        return buy, sell
 
     def get_pair_trading_volume(self, pair) -> float:
         data = self.price_client.get_market_detail_merged(symbol=pair.huobi_name)

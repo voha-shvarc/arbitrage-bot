@@ -53,7 +53,8 @@ class KuCoinAPI(AbstractExchange):
             "symbol": symbol.dashed_name,
         }
         now_time = int(time.time()) * 1000
-        sign = self.sign(self.pre_hash(now_time, "GET", uri_path, ""))
+        sign = self.sign(self.pre_hash(now_time, "GET", uri_path))
+
         passphrase = base64.b64encode(
             hmac.new(self.api_secret.encode('utf-8'), self.api_passphrase.encode("utf-8"), hashlib.sha256).digest()
         )
@@ -62,21 +63,23 @@ class KuCoinAPI(AbstractExchange):
         response = await self.connection.get(url, params=body, headers=headers)
         data = response.json()
 
+        if data.get("code") == "400002":  # invalid timestamp error
+            raise NoPriceFound()
+
         buy = data['data']['asks']
         sell = data['data']['bids']
         if not buy or not sell:
             raise NoPriceFound()
-
         return buy, sell
 
     def sign(self, message):
-        mac = hmac.new(bytes(self.api_secret, encoding='utf8'), bytes(message, encoding='utf-8'), digestmod='sha256')
+        mac = hmac.new(self.api_secret.encode("utf-8"), message.encode('utf-8'), digestmod='sha256')
         d = mac.digest()
         return base64.b64encode(d)
 
     @staticmethod
-    def pre_hash(timestamp, method, request_path, body):
-        return str(timestamp) + str.upper(method) + request_path + body
+    def pre_hash(timestamp, method, request_path):
+        return str(timestamp) + str.upper(method) + request_path
 
     @staticmethod
     def get_timestamp():

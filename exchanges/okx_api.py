@@ -9,8 +9,6 @@ from retry import retry
 
 from abstract import AbstractExchange, NoPriceFound
 from db.structs import CoinNetworkExchangeDC, TradingPair
-import logging
-log = logging.getLogger("error")
 
 
 class OkxAPI(AbstractExchange):
@@ -70,12 +68,11 @@ class OkxAPI(AbstractExchange):
         response = await self.connection.get(url, params=body, headers=header)
         data = response.json()
 
-        try:
-            buy = data['data'][0]['asks']
-            sell = data['data'][0]['bids']
-        except Exception:
-            log.error(f"[okx] {response.text}")
+        if data.get("code") == "50011":  # too many requests
             raise NoPriceFound()
+
+        buy = data['data'][0]['asks']
+        sell = data['data'][0]['bids']
         if not buy or not sell:
             raise NoPriceFound()
 

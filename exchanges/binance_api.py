@@ -5,11 +5,6 @@ from binance.spot import Spot
 from abstract import AbstractExchange, NoPriceFound
 from db.structs import CoinNetworkExchangeDC, TradingPair
 
-import logging
-
-
-error_log = logging.getLogger("error")
-
 
 class BinanceAPI(AbstractExchange):
     """For testing use different keys. more here https://testnet.binance.vision/"""
@@ -46,7 +41,7 @@ class BinanceAPI(AbstractExchange):
             yield CoinNetworkExchangeDC.from_binance(coin_data)
 
     def get_price(self, pair, limit=30):
-        order_book = self.client.depth(symbol=pair, limit=limit)
+        order_book = self.client.depth(symbol=pair.default_name, limit=limit)
         buy = order_book["asks"]
         sell = order_book["bids"]
         if not buy or not sell:

@@ -4,10 +4,6 @@ from gate_api import Configuration, ApiClient, SpotApi
 
 from abstract import AbstractExchange, NoPriceFound
 from db.structs import CoinNetworkExchangeDC, TradingPair
-import logging
-
-
-error_log = logging.getLogger("error")
 
 
 class GateIOAPI(AbstractExchange):
@@ -55,13 +51,8 @@ class GateIOAPI(AbstractExchange):
         response = await self.connection.get(url, params=body, headers=headers)
         data = response.json()
 
-        try:
-            buy = data["asks"]
-            sell = data["bids"]
-        except KeyError:
-            error_log.info(f"[gateio] eror res - {data}")
-            raise NoPriceFound()
-
+        buy = data["asks"]
+        sell = data["bids"]
         if not buy or not sell:
             raise NoPriceFound()
 

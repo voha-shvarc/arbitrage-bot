@@ -64,7 +64,7 @@ async def main():
 
     while True:
         start = time.time()
-        connection = httpx.AsyncClient()
+        connection = httpx.AsyncClient(timeout=httpx.Timeout(20.0))
         base_exchange, pair_exchange = get_exchanges_api_from_redis(redis_client)
         log.info(f"Analyze {base_exchange.NAME}, {pair_exchange.NAME}")
         try:

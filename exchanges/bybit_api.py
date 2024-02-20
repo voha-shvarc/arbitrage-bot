@@ -6,10 +6,6 @@ from abstract import AbstractExchange, NoPriceFound
 from db.structs import CoinNetworkExchangeDC, TradingPair
 
 
-import logging
-
-
-error_log = logging.getLogger("error")
 class BybitAPI(AbstractExchange):
     NAME = "ByBit"
     base_url = "https://api.bybit.com"
@@ -58,18 +54,10 @@ class BybitAPI(AbstractExchange):
             "Accept": "application/json",
         }
         response = await self.connection.get(url, params=body, headers=headers)
-        try:
-            data = response.json()
-        except Exception:
-            error_log.info(f"[bybit] - {response}")
-            raise NoPriceFound()
+        data = response.json()
 
-        try:
-            buy = data['result']['a']
-            sell = data['result']['b']
-        except KeyError as e:
-            error_log.info(f"[bybit] eror response - {data}")
-            raise NoPriceFound()
+        buy = data['result']['a']
+        sell = data['result']['b']
         if not buy or not sell:
             raise NoPriceFound()
 

@@ -8,10 +8,6 @@ from db.structs import CoinNetworkExchangeDC, TradingPair
 from exchanges.bitget.v1.spot.market_api import MarketApi
 
 
-import logging
-log = logging.getLogger("error")
-
-
 class BitgetAPI(AbstractExchange):
     NAME = "Bitget"
     ALLOWED_STATUS = "online"
@@ -66,12 +62,11 @@ class BitgetAPI(AbstractExchange):
         response = await self.connection.get(url, params=body, headers=header)
         data = response.json()
 
-        try:
-            buy = data['data']['asks']
-            sell = data['data']['bids']
-        except Exception:
-            log.error(f"[bitget] - {response.text}")
+        if not data.get("data"):
             raise NoPriceFound()
+
+        buy = data['data']['asks']
+        sell = data['data']['bids']
         if not buy or not sell:
             raise NoPriceFound()
 

@@ -1,13 +1,13 @@
+import asyncio
 import logging
 import time
 from typing import Tuple
 
-import asyncio
+from httpx import PoolTimeout
 from sqlalchemy import func, exists, and_
 from sqlalchemy.orm import joinedload
 
 from abstract import NoPriceFound
-from celery_app.tasks import monitor_bundle
 from celery_app.tasks import monitor_bundle, set_bundle_volume_statistics
 from db.base import Session
 from db.models import (
@@ -21,7 +21,6 @@ from db.models import (
     ProfitBundleItem,
     BundleStatus,
 )
-from abstract import NoPriceFound
 from .price_analyzer import PriceAnalyzer
 
 log = logging.getLogger("output")
@@ -36,16 +35,22 @@ class ExchangePairAnalyzer:
         self.pair_exchange = pair_exchange
 
     async def manage_pair(self, pair):
+        base_to_second_network, second_to_base_network = self._get_best_networks(pair.base_coin)
+        if not base_to_second_network and not second_to_base_network:
+            log.info(f"no network found - {pair.default_name}")
+            return
+
         try:
             base_exchange_price = await self.base_exchange.async_get_price(pair)
             pair_exchange_price = await self.pair_exchange.async_get_price(pair)
         except NoPriceFound:
             log.info(f"no price found - {pair.default_name}")
             return
-
-        base_to_second_network, second_to_base_network = self._get_best_networks(pair.base_coin)
-        if not base_to_second_network and not second_to_base_network:
-            log.info(f"no network found - {pair.default_name}")
+        except PoolTimeout:
+            log.info(f"pool timeout - {pair.default_name}")
+            return
+        except Exception as e:
+            error_log.exception(f"unknown error getting price - {e} - {pair.default_name}")
             return
 
         if base_to_second_network and self.base_exchange.NAME != "GateIO":
@@ -81,6 +86,9 @@ class ExchangePairAnalyzer:
                 self._start_monitoring(pair, sell_price_analyzer, from_base=False)
 
     async def run(self):
+        """
+        Limits - Bitget (20r/1s, 1r/0.05s); OKX (20r/1s)
+        """
         running_tasks = set()
         loop = asyncio.get_event_loop()
         common_pairs = self._get_common_pairs()
@@ -91,14 +99,14 @@ class ExchangePairAnalyzer:
 
         for pair in common_pairs:
             task = loop.create_task(self.manage_pair(pair))
-            if self.base_exchange.NAME in ["Bitget"] or self.pair_exchange.NAME in ["Bitget"]:
+            if self.base_exchange.NAME in ["OKX"] or self.pair_exchange.NAME in ["OKX"]:
                 await asyncio.sleep(0.09)
-            elif self.base_exchange.NAME in ["OKX"] or self.pair_exchange.NAME in ["OKX"]:
-                await asyncio.sleep(0.08)
+            elif self.base_exchange.NAME in ["Bitget"] or self.pair_exchange.NAME in ["Bitget"]:
+                await asyncio.sleep(0.07)
             elif self.base_exchange.NAME in ["GateIO"] or self.pair_exchange.NAME in ["GateIO"]:
                 await asyncio.sleep(0.053)
             elif self.base_exchange.NAME in ["KuCoin"] or self.pair_exchange.NAME in ["KuCoin"]:
-                await asyncio.sleep(0.023)
+                await asyncio.sleep(0.028)
             else:
                 await asyncio.sleep(0.01)
 
