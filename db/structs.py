@@ -179,3 +179,4 @@ class TradingPair:
 class Price:
     price: float
     amount_available: float
+    partial_exhausted: bool = False

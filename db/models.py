@@ -145,10 +145,14 @@ class ProfitBundleItem(Base):
     total_fee = Column(Float)
     profit = Column(Float)
     is_exhausted = Column(Boolean, default=False, server_default="false")
+
     base_exchange_max_price = Column(Float, server_default="0")
     base_exchange_min_price = Column(Float, server_default="0")
     pair_exchange_max_price = Column(Float, server_default="0")
     pair_exchange_min_price = Column(Float, server_default="0")
+
+    used_buy_orders = Column(Integer, server_default="0")
+    used_sell_orders = Column(Integer, server_default="0")
 
     created_at = db_created()
     updated_at = db_updated()

@@ -32,6 +32,9 @@ class PriceAnalyzer:
         self.min_sell_price = 0
         self.max_sell_price = 0
 
+        self.used_buy_orders = 0
+        self.used_sell_orders = 0
+
     @property
     def avg_sell_price(self):
         if self.profit_sell_prices:
@@ -51,10 +54,10 @@ class PriceAnalyzer:
         b_prices = self.buy_prices.copy()
         s_prices = self.sell_prices.copy()
         while b_prices and s_prices:
-            if not buy_p:
+            if not buy_p or buy_p.amount_available == 0:
                 buy_data = b_prices.pop(0)
                 buy_p = Price(float(buy_data[0]), float(buy_data[1]))
-            if not sell_p:
+            if not sell_p or sell_p.amount_available == 0:
                 sell_data = s_prices.pop(0)
                 sell_p = Price(float(sell_data[0]), float(sell_data[1]))
 
@@ -78,15 +81,33 @@ class PriceAnalyzer:
 
                 if buy_p.amount_available > sell_p.amount_available:
                     buy_p.amount_available -= sell_p.amount_available
-                    sell_p = None
-                else:
+                    sell_p.amount_available = 0
+                    buy_p.partial_exhausted = True
+
+                    self.used_sell_orders += 1
+                elif buy_p.amount_available < sell_p.amount_available:
                     sell_p.amount_available -= buy_p.amount_available
-                    buy_p = None
+                    buy_p.amount_available = 0
+                    sell_p.partial_exhausted = True
+
+                    self.used_buy_orders += 1
+                else:
+                    buy_p.amount_available = 0
+                    sell_p.amount_available = 0
+
+                    self.used_buy_orders += 1
+                    self.used_sell_orders += 1
+
             else:
                 break
 
         if not b_prices or not s_prices:
             self.is_exhausted = True
+
+        if buy_p.partial_exhausted:
+            self.used_buy_orders += 1
+        elif sell_p.partial_exhausted:
+            self.used_sell_orders += 1
 
         if self.coin_available_amount:
             self.fees = (
@@ -132,8 +153,12 @@ class PriceAnalyzer:
             "total_fee": self.fees,
             "profit": self.profit,
             "is_exhausted": self.is_exhausted,
+
             "base_exchange_max_price": self.max_buy_price,
             "base_exchange_min_price": self.min_buy_price,
             "pair_exchange_max_price": self.max_sell_price,
             "pair_exchange_min_price": self.min_sell_price,
+
+            "used_buy_orders": self.used_buy_orders,
+            "used_sell_orders": self.used_sell_orders,
         }
