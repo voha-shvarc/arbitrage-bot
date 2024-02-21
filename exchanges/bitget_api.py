@@ -1,6 +1,7 @@
 import base64
 import hmac
 import time
+from json.decoder import JSONDecodeError
 from typing import List
 
 from abstract import AbstractExchange, NoPriceFound
@@ -60,7 +61,13 @@ class BitgetAPI(AbstractExchange):
         sign = self.sign(self.pre_hash(timestamp, "GET", url, ""))
         header = self.get_header(sign, timestamp)
         response = await self.connection.get(url, params=body, headers=header)
-        data = response.json()
+        try:
+            data = response.json()
+        except JSONDecodeError:
+            import logging
+            log = logging.getLogger("error")
+            log.error(f"[bitget] - {response.text}")
+            raise NoPriceFound()
 
         if not data.get("data"):
             raise NoPriceFound()

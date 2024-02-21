@@ -1,11 +1,11 @@
-import json
-import os
-
+from aiogram import Bot
 from retry import retry
-from telebot import TeleBot
 
 from db.models import CoinNetworkExchange
 from db.structs import Price
+from tgbot.config import load_config
+from tgbot.keyboards.bundle import get_refresh_keyboard
+from tgbot.services.broadcaster import send_message
 
 
 class PriceAnalyzer:
@@ -121,32 +121,21 @@ class PriceAnalyzer:
             self.profit = self.base_profit - self.total_fees
 
     @retry(tries=3, delay=1)
-    def report(self, base_exchange_name, pair_exchange_name, pair, celery_source=False):
-        filename = f"{pair.default_name}_price_info.json"
-        with open(filename, "w") as file:
-            data = {"buy": self.buy_prices, "sell": self.sell_prices}
-            json.dump(data, file)
-
+    async def report(self, base_exchange_name, pair_exchange_name, pair, bundle_id):
         message = (
-            f"{base_exchange_name} -> {pair_exchange_name}.\n"
-            f"<b>Pair</b>: {pair.default_name}. <b>Network</b>: {self.network.network.name}\n"
-            f"<b>To Buy</b>: {round(self.to_use_usdt, 3)}\n"
-            f"<b>Avg Spread</b>: {round(self.avg_spread * 100, 3)}%\n"
-            f"<b>Base profit:</b> {round(self.base_profit, 3)}.\n"
-            f"<b>Total Fee:</b> {round(self.total_fees, 3)}\n"
-            f"<b>Profit</b>: <u>{round(self.profit, 3)} USDT</u>"
-            f"\n{celery_source = }"
+            f"<b>{base_exchange_name} -> {pair_exchange_name} | {self.to_use_usdt:.2f}$ +{self.profit:.2f}$ ({self.avg_spread * 100:.2f}%)</b>\n\n"
+            f"<b>{pair.dashed_name}</b> | <b>{self.network.base_network.name}</b>\n\n"
+            f"📕 {base_exchange_name} | spot | deposit\n"
+            f"📈 [ {round(self.min_buy_price, 12)}-{round(self.max_buy_price, 12)} ] | {self.used_buy_orders} orders\n\n"
+            f"📗 {pair_exchange_name} | spot | deposit\n"
+            f"📈 [ {round(self.min_sell_price, 12)}-{round(self.max_sell_price, 12)} ] | {self.used_sell_orders} orders\n\n"
+            f"‼️️ Spot Fee: <b>{self.spot_fee:.2f}$</b> | Network Fee: <b>{self.network_fee:.2f}$</b>"
         )
 
-        admin_ids = ["683204904", "703482485"]
-        tg_bot = TeleBot("6162670103:AAFbm6YG2zHLR8mUj1Fr430yxMm6Tp2fCoo")
-        with open(filename, "rb") as file:
-            for admin_id in admin_ids:
-                tg_bot.send_message(admin_id, message, parse_mode="HTML")
-                tg_bot.send_document(admin_id, file)
-                file.seek(0)
-
-        os.remove(filename)
+        config = load_config(".env")
+        bot = Bot(token=config.tg_bot.token, parse_mode="HTML")
+        for user_id in config.tg_bot.admin_ids:
+            await send_message(bot, user_id, message, reply_markup=get_refresh_keyboard(bundle_id))
 
     def to_db(self):
         """Convert to ProfitBundleItem model object"""

@@ -28,7 +28,7 @@ error_log = logging.getLogger("error")
 
 
 class ExchangePairAnalyzer:
-    BASE_USDT_PROFIT = 2  # 2 USDT
+    BASE_USDT_PROFIT = 4  # 4 USDT
 
     def __init__(self, base_exchange, pair_exchange):
         self.base_exchange = base_exchange
@@ -65,9 +65,9 @@ class ExchangePairAnalyzer:
                 error_log.exception(e)
 
             if (
-                    buy_price_analyzer.profit > self.BASE_USDT_PROFIT
+                buy_price_analyzer.profit > self.BASE_USDT_PROFIT
             ):
-                self._start_monitoring(pair, buy_price_analyzer)
+                await self._start_monitoring(pair, buy_price_analyzer)
 
         if second_to_base_network and self.pair_exchange.NAME != "GateIO":
             sell_price_analyzer = PriceAnalyzer(
@@ -83,7 +83,7 @@ class ExchangePairAnalyzer:
             if (
                     sell_price_analyzer.profit > self.BASE_USDT_PROFIT
             ):
-                self._start_monitoring(pair, sell_price_analyzer, from_base=False)
+                await self._start_monitoring(pair, sell_price_analyzer, from_base=False)
 
     async def run(self):
         """
@@ -107,6 +107,8 @@ class ExchangePairAnalyzer:
                 await asyncio.sleep(0.053)
             elif self.base_exchange.NAME in ["KuCoin"] or self.pair_exchange.NAME in ["KuCoin"]:
                 await asyncio.sleep(0.028)
+            elif self.base_exchange.NAME in ["Huobi"] or self.pair_exchange.NAME in ["Huobi"]:
+                await asyncio.sleep(0.015)
             else:
                 await asyncio.sleep(0.01)
 
@@ -152,7 +154,10 @@ class ExchangePairAnalyzer:
                     session.query(Exchange.name, CoinNetworkExchange)
                     .join(CoinNetworkExchange.exchange)
                     .filter(CoinNetworkExchange.id.in_(coin_network_exchange_ids))
-                    .options(joinedload(CoinNetworkExchange.network))
+                    .options(
+                        joinedload(CoinNetworkExchange.network),
+                        joinedload(CoinNetworkExchange.base_network),
+                    )
                 )
                 nets_mapping[network.name] = {
                     exchange_name: coin_network_exchange
@@ -188,11 +193,11 @@ class ExchangePairAnalyzer:
 
         return best_base_to_second_network, best_second_to_base_network
 
-    def _start_monitoring(self, pair, price_analyzer: PriceAnalyzer, from_base=True):
+    async def _start_monitoring(self, pair, price_analyzer: PriceAnalyzer, from_base=True):
         if from_base:
-            from_exchange_id, to_exchange_id = self.base_exchange.db_id, self.pair_exchange.db_id
+            from_exchange, to_exchange = self.base_exchange, self.pair_exchange
         else:
-            from_exchange_id, to_exchange_id = self.pair_exchange.db_id, self.base_exchange.db_id
+            from_exchange, to_exchange = self.pair_exchange, self.base_exchange
 
         with Session() as session:
             same_processing_bundle = session.query(
@@ -201,8 +206,8 @@ class ExchangePairAnalyzer:
                         ProfitBundle.status == BundleStatus.in_progress,
                         ProfitBundle.coin_network_exchange_id == price_analyzer.network.id,
                         ProfitBundle.pair_id == pair.id,
-                        ProfitBundle.base_exchange_id == from_exchange_id,
-                        ProfitBundle.pair_exchange_id == to_exchange_id,
+                        ProfitBundle.base_exchange_id == from_exchange.db_id,
+                        ProfitBundle.pair_exchange_id == to_exchange.db_id,
                     )
                 )
             ).scalar()
@@ -212,8 +217,8 @@ class ExchangePairAnalyzer:
             bundle = ProfitBundle()
             bundle.pair_id = pair.id
             bundle.coin_network_exchange_id = price_analyzer.network.id
-            bundle.base_exchange_id = from_exchange_id
-            bundle.pair_exchange_id = to_exchange_id
+            bundle.base_exchange_id = from_exchange.db_id
+            bundle.pair_exchange_id = to_exchange.db_id
 
             bundle_item = ProfitBundleItem(**price_analyzer.to_db())
             bundle.items.append(bundle_item)
@@ -221,8 +226,13 @@ class ExchangePairAnalyzer:
             session.add_all([bundle_item, bundle])
             session.flush()
 
-            set_bundle_volume_statistics.apply_async(args=[bundle.id], countdown=5)
-            monitor_bundle.apply_async(args=[bundle.id], countdown=30)
+            bundle_id = bundle.id
             session.commit()
+
+            set_bundle_volume_statistics.apply_async(args=[bundle_id], countdown=5)
+            monitor_bundle.apply_async(args=[bundle_id], countdown=10)
+
+        if price_analyzer.avg_spread >= 0.008:
+            await price_analyzer.report(from_exchange.NAME, to_exchange.NAME, pair, bundle_id)
 
         return True

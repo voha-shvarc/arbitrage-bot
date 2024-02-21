@@ -68,7 +68,7 @@ class OkxAPI(AbstractExchange):
         response = await self.connection.get(url, params=body, headers=header)
         data = response.json()
 
-        if data.get("code") == "50011":  # too many requests
+        if data.get("code") in ["50011", "51001"]:  # too many requests or wrong instID
             raise NoPriceFound()
 
         buy = data['data'][0]['asks']

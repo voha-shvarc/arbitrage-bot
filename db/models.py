@@ -160,3 +160,17 @@ class ProfitBundleItem(Base):
     updated_at = db_updated()
 
     profit_bundle = relationship("ProfitBundle", backref=backref("items"), uselist=False)
+
+    @property
+    def percent_of_base_trading_vol(self):
+        if self.profit_bundle.base_exchange_trading_volume:
+            return self.to_use_base_ccy / self.profit_bundle.base_exchange_trading_volume
+        else:
+            return 0
+
+    @property
+    def percent_of_pair_trading_vol(self):
+        if self.profit_bundle.pair_exchange_trading_volume:
+            return self.to_use_base_ccy / self.profit_bundle.pair_exchange_trading_volume
+        else:
+            return 0

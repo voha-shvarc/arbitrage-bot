@@ -8,4 +8,8 @@ done
 
 alembic upgrade head
 
-python main.py
+if [[ "${1}" == "tgbot" ]]; then
+  python bot.py
+else
+  python main.py
+fi

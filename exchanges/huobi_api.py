@@ -56,7 +56,7 @@ class HuobiAPI(AbstractExchange):
         response = await self.connection.get(url, params=body)
         data = response.json()
 
-        if data.get("err-msg") == "invalid symbol":
+        if data.get("err-msg") in ["invalid symbol", "request limit"]:
             raise NoPriceFound()
 
         buy = data["tick"]["asks"]

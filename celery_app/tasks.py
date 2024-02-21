@@ -28,7 +28,7 @@ BASE_USDT_PROFIT = 2  # 2 USDT
 error_log = logging.getLogger("error")
 
 
-@app.task(bind=True, max_retries=60)
+@app.task(bind=True, max_retries=180)
 def monitor_bundle(self, bundle_id):
     with Session() as session:
         bundle = (
@@ -59,7 +59,7 @@ def monitor_bundle(self, bundle_id):
         error_log.exception(e)
         return
 
-    if price_analyzer.profit > BASE_USDT_PROFIT:
+    if price_analyzer.profit > BASE_USDT_PROFIT and price_analyzer.avg_spread >= 0.003:
         with Session() as session:
             bundle_item = ProfitBundleItem(**price_analyzer.to_db())
             bundle_item.profit_bundle_id = bundle.id
@@ -67,7 +67,7 @@ def monitor_bundle(self, bundle_id):
             session.commit()
 
         try:
-            raise self.retry(countdown=30)
+            raise self.retry(countdown=10)
         except MaxRetriesExceededError:
             pass
 

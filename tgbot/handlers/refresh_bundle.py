@@ -1,0 +1,87 @@
+import logging
+from datetime import datetime
+
+from aiogram import Router
+from aiogram.exceptions import TelegramBadRequest
+from aiogram.types import CallbackQuery
+from dotenv import dotenv_values
+from sqlalchemy.orm import joinedload
+
+from db.base import Session
+from db.models import ProfitBundle, ProfitBundleItem, CoinNetworkExchange, Pair, BundleStatus
+from exchanges import BinanceAPI, BybitAPI, OkxAPI, GateIOAPI, HuobiAPI, KuCoinAPI, BitgetAPI
+from ..keyboards.bundle import get_refresh_keyboard, RefreshBundleCallbackData
+
+
+logger = logging.getLogger(__name__)
+config = dotenv_values(".env")
+
+refresh_bundle_router = Router()
+
+exchange_mapping = {
+    BinanceAPI.NAME: BinanceAPI,
+    BybitAPI.NAME: BybitAPI,
+    HuobiAPI.NAME: HuobiAPI,
+    GateIOAPI.NAME: GateIOAPI,
+    OkxAPI.NAME: OkxAPI,
+    KuCoinAPI.NAME: KuCoinAPI,
+    BitgetAPI.NAME: BitgetAPI,
+}
+
+
+BASE_USDT_PROFIT = 4  # 4 USDT
+
+
+@refresh_bundle_router.callback_query(RefreshBundleCallbackData.filter())
+async def recalculate_callback_query(query: CallbackQuery, callback_data: RefreshBundleCallbackData):
+    await query.answer()
+    logger.info(f"Test callback with bundle_id = {callback_data.profit_bundle_id}")
+    with Session() as session:
+        bundle = joinedload(ProfitBundleItem.profit_bundle)
+        bundle_item: ProfitBundleItem = session.query(ProfitBundleItem) \
+            .filter(ProfitBundleItem.profit_bundle_id == callback_data.profit_bundle_id) \
+            .options(bundle,
+                     bundle.joinedload(ProfitBundle.base_exchange),
+                     bundle.joinedload(ProfitBundle.pair_exchange),
+                     bundle.joinedload(ProfitBundle.pair),
+                     bundle.joinedload(ProfitBundle.pair).joinedload(Pair.base_coin),
+                     bundle.joinedload(ProfitBundle.pair).joinedload(Pair.quote_coin),
+                     bundle.joinedload(ProfitBundle.coin_network_exchange),
+                     bundle.joinedload(ProfitBundle.coin_network_exchange).joinedload(CoinNetworkExchange.network),
+                     bundle.joinedload(ProfitBundle.coin_network_exchange).joinedload(CoinNetworkExchange.base_network)) \
+            .order_by(ProfitBundleItem.created_at.desc()) \
+            .first()
+
+    bundle = bundle_item.profit_bundle
+    try:
+        message = _get_message(bundle, bundle_item)
+        await query.message.edit_text(message, reply_markup=get_refresh_keyboard(bundle.id))
+    except TelegramBadRequest:
+        logger.warning(f"Bundle (id={bundle.id}) haven't changed...")
+
+    session.commit()
+
+
+def _get_message(bundle, bundle_item: ProfitBundleItem):
+    if bundle.status == BundleStatus.in_progress:
+        time_live = datetime.utcnow() - bundle.created_at
+    else:
+        time_live = bundle.updated_at - bundle.created_at
+
+    status = f"🟢 Status: {bundle.status}" if bundle.status == BundleStatus.in_progress else f"🔴 Status: {bundle.status}"
+    message = (
+        f"<b>{bundle.base_exchange.name} -> {bundle.pair_exchange.name} | {bundle_item.to_use_usdt:.2f}$ "
+        f"+{bundle_item.profit:.2f}$ ({bundle_item.avg_spread * 100:.2f}%)</b>\n\n"
+        f"<b>{bundle.pair.dashed_name}</b> | <b>{bundle.coin_network_exchange.base_network.name}</b>\n\n"
+        f"📕 {bundle.base_exchange.name} | spot | deposit\n"
+        f"📈 [ {round(bundle_item.base_exchange_min_price, 12)}-{round(bundle_item.base_exchange_min_price, 12)} ] "
+        f"| {bundle_item.used_buy_orders} orders | {(bundle_item.percent_of_base_trading_vol * 100):.2f}%\n\n"
+        f"📗 {bundle.pair_exchange.name} | spot | deposit\n"
+        f"📈 [ {round(bundle_item.pair_exchange_min_price, 12)}-{round(bundle_item.pair_exchange_max_price, 12)} ] "
+        f"| {bundle_item.used_sell_orders} orders | {(bundle_item.percent_of_pair_trading_vol * 100):.2f}%\n\n"
+        f"‼️️ Spot Fee: <b>{bundle_item.spot_fee:.2f}$</b> | Network Fee: <b>{bundle_item.network_fee:.2f}$</b>\n\n"
+        f"{status}\n"
+        f"⏳ Alive: {time_live.total_seconds() / 60:.1f} minutes"
+    )
+
+    return message

@@ -4,9 +4,6 @@ services:
   bot:
     build: .
     image: ${APP_IMAGE_NAME}
-    restart: on-failure
-    deploy:
-      replicas: 2
     command: ["/app/docker/bot.sh"]
     volumes:
       - .env:/app/.env
@@ -16,12 +13,22 @@ services:
       - db
       - redis
 
+  tgbot:
+    build: .
+    image: ${APP_IMAGE_NAME}
+    command: ["/app/docker/bot.sh", "tgbot"]
+    volumes:
+      - .env:/app/.env
+    networks:
+      - main
+    depends_on:
+      - db
+
   db:
     build: ./docker/postgres/.
     image: ${DB_IMAGE_NAME}
     environment:
       - POSTGRES_PASSWORD=${DB_PASSWORD}
-    restart: on-failure
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
@@ -31,7 +38,6 @@ services:
 
   redis:
     image: redis:7
-    restart: on-failure
     volumes:
       - redis_data:/data
     ports:
@@ -42,7 +48,6 @@ services:
   celery:
     build: .
     image: ${APP_IMAGE_NAME}
-    restart: on-failure
     command: ["/app/docker/celery.sh", "celery"]
     volumes:
       - ./.env:/app/.env:ro
@@ -55,7 +60,6 @@ services:
   celery-beat:
     build: .
     image: ${APP_IMAGE_NAME}
-    restart: on-failure
     command: ["/app/docker/celery.sh", "beat"]
     volumes:
       - .env:/app/.env
@@ -70,7 +74,6 @@ services:
     image: ${APP_IMAGE_NAME}
     environment:
       - FLOWER_UNAUTHENTICATED_API=True
-    restart: on-failure
     command: ["/app/docker/celery.sh", "flower"]
     volumes:
       - .env:/app/.env

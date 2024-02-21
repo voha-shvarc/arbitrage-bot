@@ -52,11 +52,12 @@ def sync_coin_exchange_networks():
                 or_(
                     and_(Exchange.name == "GateIO", Coin.name == "GTC"),
                     and_(Exchange.name == "ByBit", Coin.name == "VPAD"),
-                    and_(Network.name == "BSC", Coin.name == "BABYDOGE"),
-                    Coin.name == "LSD",
-                    Coin.name == "PEPE2",
-                    Coin.name == "BIFI",
-                    Coin.name == "RED",
+                    and_(Network.name == "BSC", Coin.name == "BABYDOGE"),  # a lot of additional commission
+                    Coin.name == "LSD",  # different coins
+                    Coin.name == "PEPE2",  # kucoin asks not to deposit it, has different contract addresses
+                    Coin.name == "BIFI",  # different coins
+                    Coin.name == "RED",  # different coins
+                    Coin.name == "LUNC",  # takes additional 0.5% for smart c and 0.5% as exchange fee
                 )
             )
         )

@@ -23,3 +23,8 @@ google-auth-oauthlib
 
 httpx[http2]
 aiodns
+
+aiogram~=3.0
+environs~=9.0
+redis
+betterlogging
