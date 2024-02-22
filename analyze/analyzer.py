@@ -232,7 +232,11 @@ class ExchangePairAnalyzer:
             set_bundle_volume_statistics.apply_async(args=[bundle_id], countdown=5)
             monitor_bundle.apply_async(args=[bundle_id], countdown=10)
 
-        if price_analyzer.avg_spread >= 0.008:
+        if (
+            price_analyzer.user_based_avg_spread >= 0.008
+            and price_analyzer.user_based_profit >= self.BASE_USDT_PROFIT
+            and from_exchange.NAME == "ByBit"
+        ):
             await price_analyzer.report(from_exchange.NAME, to_exchange.NAME, pair, bundle_id)
 
         return True

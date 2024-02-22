@@ -54,7 +54,7 @@ async def recalculate_callback_query(query: CallbackQuery, callback_data: Refres
 
     bundle = bundle_item.profit_bundle
     try:
-        message = _get_message(bundle, bundle_item)
+        message = _get_message(bundle, bundle_item, callback_data.show_more)
         await query.message.edit_text(message, reply_markup=get_refresh_keyboard(bundle.id))
     except TelegramBadRequest:
         logger.warning(f"Bundle (id={bundle.id}) haven't changed...")
@@ -62,24 +62,42 @@ async def recalculate_callback_query(query: CallbackQuery, callback_data: Refres
     session.commit()
 
 
-def _get_message(bundle, bundle_item: ProfitBundleItem):
+def _get_message(bundle, bundle_item: ProfitBundleItem, show_more: bool = False) -> str:
     if bundle.status == BundleStatus.in_progress:
         time_live = datetime.utcnow() - bundle.created_at
     else:
         time_live = bundle.updated_at - bundle.created_at
 
+    base_exchange_price_section = (
+        f"📕 {bundle.base_exchange.name} | spot | withdraw\n"
+        f"📈 [ {round(bundle_item.user_based_base_exchange_min_price, 12)}-{round(bundle_item.user_based_base_exchange_min_price, 12)} ]"
+        f" | {bundle_item.user_based_used_buy_orders} orders | {(bundle_item.user_based_percent_of_base_trading_vol * 100):.3f}%"
+    )
+    if show_more:
+        base_exchange_price_section += (
+            f"\n🛒 {bundle_item.used_buy_orders} orders | {bundle_item.to_use_usdt:.2f}$ | {(bundle_item.percent_of_base_trading_vol * 100):.3f}%"
+        )
+
+    pair_exchange_price_section = (
+        f"📗 {bundle.pair_exchange.name} | spot | deposit\n"
+        f"📈 [ {round(bundle_item.user_based_pair_exchange_min_price, 12)}-{round(bundle_item.user_based_pair_exchange_max_price, 12)} ]"
+        f" | {bundle_item.user_based_used_sell_orders} orders | {(bundle_item.user_based_percent_of_pair_trading_vol * 100):.3f}%"
+    )
+    if show_more:
+        pair_exchange_price_section += (
+            f"\n🛒 {bundle_item.used_sell_orders} orders | {bundle_item.to_use_usdt:.2f}$ | {(bundle_item.percent_of_pair_trading_vol * 100):.3f}%"
+        )
+
+    fees_section = f"‼️️ Spot Fee: <b>{bundle_item.user_based_spot_fee:.2f}$</b> | Network Fee: <b>{bundle_item.user_based_network_fee:.2f}$</b>"
+
     status = f"🟢 Status: {bundle.status}" if bundle.status == BundleStatus.in_progress else f"🔴 Status: {bundle.status}"
     message = (
-        f"<b>{bundle.base_exchange.name} -> {bundle.pair_exchange.name} | {bundle_item.to_use_usdt:.2f}$ "
-        f"+{bundle_item.profit:.2f}$ ({bundle_item.avg_spread * 100:.2f}%)</b>\n\n"
+        f"<b>{bundle.base_exchange.name} -> {bundle.pair_exchange.name} | {bundle_item.user_based_to_use_usdt:.2f}$ "
+        f"+{bundle_item.user_based_profit:.2f}$ ({bundle_item.user_based_avg_spread * 100:.2f}%)</b>\n\n"
         f"<b>{bundle.pair.dashed_name}</b> | <b>{bundle.coin_network_exchange.base_network.name}</b>\n\n"
-        f"📕 {bundle.base_exchange.name} | spot | deposit\n"
-        f"📈 [ {round(bundle_item.base_exchange_min_price, 12)}-{round(bundle_item.base_exchange_min_price, 12)} ] "
-        f"| {bundle_item.used_buy_orders} orders | {(bundle_item.percent_of_base_trading_vol * 100):.2f}%\n\n"
-        f"📗 {bundle.pair_exchange.name} | spot | deposit\n"
-        f"📈 [ {round(bundle_item.pair_exchange_min_price, 12)}-{round(bundle_item.pair_exchange_max_price, 12)} ] "
-        f"| {bundle_item.used_sell_orders} orders | {(bundle_item.percent_of_pair_trading_vol * 100):.2f}%\n\n"
-        f"‼️️ Spot Fee: <b>{bundle_item.spot_fee:.2f}$</b> | Network Fee: <b>{bundle_item.network_fee:.2f}$</b>\n\n"
+        f"{base_exchange_price_section}\n\n"
+        f"{pair_exchange_price_section}\n\n"
+        f"{fees_section}\n\n"
         f"{status}\n"
         f"⏳ Alive: {time_live.total_seconds() / 60:.1f} minutes"
     )

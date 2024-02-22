@@ -138,6 +138,9 @@ class ProfitBundleItem(Base):
     id = Column(Integer, primary_key=True)
     profit_bundle_id = Column(ForeignKey("profit_bundles.id"))
 
+    is_exhausted = Column(Boolean, default=False, server_default="false")
+
+    # general info
     to_use_usdt = Column(Float)
     to_use_base_ccy = Column(Float)
     avg_spread = Column(Float)
@@ -146,7 +149,6 @@ class ProfitBundleItem(Base):
     spot_fee = Column(Float, server_default="0")
     network_fee = Column(Float, server_default="0")
     profit = Column(Float)
-    is_exhausted = Column(Boolean, default=False, server_default="false")
 
     base_exchange_max_price = Column(Float, server_default="0")
     base_exchange_min_price = Column(Float, server_default="0")
@@ -155,6 +157,24 @@ class ProfitBundleItem(Base):
 
     used_buy_orders = Column(Integer, server_default="0")
     used_sell_orders = Column(Integer, server_default="0")
+
+    # user based info
+    user_based_to_use_usdt = Column(Float, server_default="0")
+    user_based_to_use_base_ccy = Column(Float, server_default="0")
+    user_based_avg_spread = Column(Float, server_default="0")
+    user_based_base_profit = Column(Float, server_default="0")
+    user_based_total_fee = Column(Float, server_default="0")
+    user_based_spot_fee = Column(Float, server_default="0")
+    user_based_network_fee = Column(Float, server_default="0")
+    user_based_profit = Column(Float, server_default="0")
+
+    user_based_base_exchange_max_price = Column(Float, server_default="0")
+    user_based_base_exchange_min_price = Column(Float, server_default="0")
+    user_based_pair_exchange_max_price = Column(Float, server_default="0")
+    user_based_pair_exchange_min_price = Column(Float, server_default="0")
+
+    user_based_used_buy_orders = Column(Integer, server_default="0")
+    user_based_used_sell_orders = Column(Integer, server_default="0")
 
     created_at = db_created()
     updated_at = db_updated()
@@ -172,5 +192,19 @@ class ProfitBundleItem(Base):
     def percent_of_pair_trading_vol(self):
         if self.profit_bundle.pair_exchange_trading_volume:
             return self.to_use_base_ccy / self.profit_bundle.pair_exchange_trading_volume
+        else:
+            return 0
+
+    @property
+    def user_based_percent_of_base_trading_vol(self):
+        if self.profit_bundle.base_exchange_trading_volume:
+            return self.user_based_to_use_base_ccy / self.profit_bundle.base_exchange_trading_volume
+        else:
+            return 0
+
+    @property
+    def user_based_percent_of_pair_trading_vol(self):
+        if self.profit_bundle.pair_exchange_trading_volume:
+            return self.user_based_to_use_base_ccy / self.profit_bundle.pair_exchange_trading_volume
         else:
             return 0
