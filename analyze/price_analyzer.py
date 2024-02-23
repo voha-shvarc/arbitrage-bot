@@ -90,7 +90,7 @@ class PriceAnalyzer:
             return sum(self.user_based_spreads) / len(self.user_based_spreads)
         return 0
 
-    def set_user_based_data(self):
+    def set_user_based_data(self, buy_price: Price, sell_price: Price):
         self.user_based_coin_available_amount = self.coin_available_amount
         self.user_based_to_use_usdt = self.to_use_usdt
         self.user_based_base_profit = self.base_profit
@@ -104,6 +104,11 @@ class PriceAnalyzer:
 
         self.user_based_used_buy_orders = self.used_buy_orders
         self.user_based_used_sell_orders = self.used_sell_orders
+
+        if buy_price.partial_exhausted:
+            self.user_based_used_buy_orders += 1
+        if sell_price.partial_exhausted:
+            self.user_based_used_sell_orders += 1
 
     def run(self):
         # TODO: sell amount will be less than buy because of exchange commissions
@@ -148,7 +153,7 @@ class PriceAnalyzer:
                     sell_p.amount_available -= coin_available_amount
                     buy_p.partial_exhausted = sell_p.partial_exhausted = True
                     double_minus = False
-                    self.set_user_based_data()
+                    self.set_user_based_data(buy_p, sell_p)
                     self.is_user_based = False
 
                 elif buy_p.amount_available > sell_p.amount_available:
@@ -200,7 +205,6 @@ class PriceAnalyzer:
             f"📗 {pair_exchange_name} | spot | deposit\n"
             f"📈 [ {round(self.user_based_min_sell_price, 12)}-{round(self.user_based_max_sell_price, 12)} ] | {self.user_based_used_sell_orders} orders\n\n"
             f"‼️️ Spot Fee: <b>{self.user_based_spot_fee:.2f}$</b> | Network Fee: <b>{self.user_based_network_fee:.2f}$</b>"
-            f"Local"
         )
 
         config = load_config(".env")
