@@ -18,7 +18,7 @@ class AbstractExchange(ABC):
         pass
 
     @abstractmethod
-    async def get_price(self, pair, limit=10):
+    async def get_price(self, pair, limit=10) -> tuple[list[list[str]], list[list[str]]]:
         pass
 
     @abstractmethod

@@ -6,6 +6,7 @@ from huobi.constant import InstrumentStatus, DepthStep
 
 from abstract import AbstractExchange, NoPriceFound
 from db.structs import CoinNetworkExchangeDC, TradingPair
+from db.models import Pair
 
 
 class HuobiAPI(AbstractExchange):
@@ -34,14 +35,14 @@ class HuobiAPI(AbstractExchange):
             if coin_data.instStatus == InstrumentStatus.NORMAL:
                 yield CoinNetworkExchangeDC.from_huobi(coin_data)
 
-    def get_price(self, pair, limit=30):
+    def get_price(self, pair: Pair, limit=30) -> tuple[list[list[str]], list[list[str]]]:
         try:
             depth = self.price_client.get_pricedepth(pair.huobi_name, DepthStep.STEP0, limit)
         except Exception:
             raise NoPriceFound()
 
-        buy = [(ask.price, ask.amount) for ask in depth.asks]
-        sell = [(bid.price, bid.amount) for bid in depth.bids]
+        buy = [[str(ask.price), str(ask.amount)] for ask in depth.asks]
+        sell = [[str(bid.price), str(bid.amount)] for bid in depth.bids]
         if not buy or not sell:
             raise NoPriceFound()
         return buy, sell

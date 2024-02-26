@@ -4,6 +4,7 @@ from pybit.unified_trading import HTTP
 
 from abstract import AbstractExchange, NoPriceFound
 from db.structs import CoinNetworkExchangeDC, TradingPair
+from db.models import Pair
 
 
 class BybitAPI(AbstractExchange):
@@ -34,7 +35,7 @@ class BybitAPI(AbstractExchange):
             except IndexError:
                 continue
 
-    def get_price(self, pair, limit=30):
+    def get_price(self, pair: Pair, limit=30) -> tuple[list[list[str]], list[list[str]]]:
         res = self.session.get_orderbook(symbol=pair.default_name, limit=limit, category="spot")
         buy = res["result"]["a"]
         sell = res["result"]["b"]

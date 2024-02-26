@@ -4,6 +4,7 @@ from binance.spot import Spot
 
 from abstract import AbstractExchange, NoPriceFound
 from db.structs import CoinNetworkExchangeDC, TradingPair
+from db.models import Pair
 
 
 class BinanceAPI(AbstractExchange):
@@ -40,7 +41,7 @@ class BinanceAPI(AbstractExchange):
         for coin_data in self.client.coin_info():
             yield CoinNetworkExchangeDC.from_binance(coin_data)
 
-    def get_price(self, pair, limit=30):
+    def get_price(self, pair: Pair, limit=30) -> tuple[list[list[str]], list[list[str]]]:
         order_book = self.client.depth(symbol=pair.default_name, limit=limit)
         buy = order_book["asks"]
         sell = order_book["bids"]

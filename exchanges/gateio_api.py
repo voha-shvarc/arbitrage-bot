@@ -4,6 +4,7 @@ from gate_api import Configuration, ApiClient, SpotApi
 
 from abstract import AbstractExchange, NoPriceFound
 from db.structs import CoinNetworkExchangeDC, TradingPair
+from db.models import Pair
 
 
 class GateIOAPI(AbstractExchange):
@@ -30,7 +31,7 @@ class GateIOAPI(AbstractExchange):
             if not coin_data.delisted:
                 yield CoinNetworkExchangeDC.from_gateio(coin_data)
 
-    def get_price(self, pair, limit=30):
+    def get_price(self, pair: Pair, limit=30) -> tuple[list[list[str]], list[list[str]]]:
         res = self.spot_client.list_order_book(pair.gateio_name)
         buy = res.asks
         sell = res.bids

@@ -8,6 +8,7 @@ from kucoin.client import MarketData
 
 from abstract import AbstractExchange, NoPriceFound
 from db.structs import CoinNetworkExchangeDC, TradingPair
+from db.models import Pair
 
 
 class KuCoinAPI(AbstractExchange):
@@ -35,7 +36,7 @@ class KuCoinAPI(AbstractExchange):
     def _is_valid_pair(coin_data):
         return coin_data["enableTrading"] and coin_data["quoteCurrency"] == "USDT"
 
-    def get_price(self, pair, limit=20):
+    def get_price(self, pair: Pair, limit=20) -> tuple[list[list[str]], list[list[str]]]:
         # the sdk depth is 100. but need only 20
         order_book = self.client._request(
             "GET", "/api/v3/market/orderbook/level2_20", params={"symbol": pair.dashed_name}

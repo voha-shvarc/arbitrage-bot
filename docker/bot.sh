@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # wait for postgres
-while ! pg_isready -h 10.10.49.3; do
+while ! pg_isready -h db; do
   echo 'Retry in 5 seconds...'
   sleep 5
 done

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, Float, Boolean
+from sqlalchemy import Column, Integer, String, ForeignKey, Float, Boolean, ARRAY
 from sqlalchemy.orm import relationship, backref
 
 from .base import Base
@@ -123,6 +123,9 @@ class ProfitBundle(Base):
         server_default=BundleStatus.in_progress,
         index=True,
     )
+
+    buy_price_snapshot = Column(ARRAY(String(50)))
+
     created_at = db_created()
     updated_at = db_updated()
 

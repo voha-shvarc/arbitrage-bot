@@ -9,6 +9,7 @@ from retry import retry
 
 from abstract import AbstractExchange, NoPriceFound
 from db.structs import CoinNetworkExchangeDC, TradingPair
+from db.models import Pair
 
 
 class OkxAPI(AbstractExchange):
@@ -45,12 +46,12 @@ class OkxAPI(AbstractExchange):
             yield CoinNetworkExchangeDC.from_okx(coin_data)
 
     @retry(delay=1, tries=2)
-    def get_price(self, pair, limit=30):
+    def get_price(self, pair: Pair, limit=30) -> tuple[list[list[str, str]], list[list[str, str]]]:
         order_book = self.market_client.get_orderbook(instId=pair.dashed_name, sz=limit)
         if not order_book["data"]:
             raise NoPriceFound()
-        buy = order_book["data"][0]["asks"]
-        sell = order_book["data"][0]["bids"]
+        buy = [ask[:2] for ask in order_book["data"][0]["asks"]]
+        sell = [bid[:2] for bid in order_book["data"][0]["bids"]]
         if not buy or not sell:
             raise NoPriceFound()
         return buy, sell

@@ -1,5 +1,6 @@
 import logging
 
+from celery import Task
 from celery.exceptions import MaxRetriesExceededError
 from dotenv import dotenv_values
 from sqlalchemy.orm import joinedload
@@ -28,8 +29,8 @@ BASE_USDT_PROFIT = 2  # 2 USDT
 error_log = logging.getLogger("error")
 
 
-@app.task(bind=True, max_retries=180)
-def monitor_bundle(self, bundle_id):
+@app.task(bind=True, max_retries=100)  # if all retires are used, it takes 40 minutes to go off
+def monitor_bundle(self: Task, bundle_id):
     with Session() as session:
         bundle = (
             session.query(ProfitBundle)
@@ -47,7 +48,11 @@ def monitor_bundle(self, bundle_id):
 
     base_exchange = exchange_mapping[bundle.base_exchange.name](config, {})
     pair_exchange = exchange_mapping[bundle.pair_exchange.name](config, {})
-    base_exchange_price = base_exchange.get_price(bundle.pair)
+
+    if bundle.buy_price_snapshot:
+        base_exchange_price = bundle.buy_price_snapshot, []
+    else:
+        base_exchange_price = base_exchange.get_price(bundle.pair)
     pair_exchange_price = pair_exchange.get_price(bundle.pair)
 
     price_analyzer = PriceAnalyzer(
@@ -63,11 +68,20 @@ def monitor_bundle(self, bundle_id):
         with Session() as session:
             bundle_item = ProfitBundleItem(**price_analyzer.to_db())
             bundle_item.profit_bundle_id = bundle.id
+            if self.request.retries == 9:
+                session.query(ProfitBundle).filter(ProfitBundle.id == bundle_id).update(
+                    {"buy_price_snapshot": base_exchange_price[0]}, synchronize_session=False
+                )
             session.add(bundle_item)
             session.commit()
 
         try:
-            raise self.retry(countdown=10)
+            if self.request.retries < 60:  # for first 10 minutes
+                raise self.retry(countdown=10)
+            elif self.request.retries < 80:  # for next 10 minutes
+                raise self.retry(countdown=30)
+            else:
+                raise self.retry(countdown=60)
         except MaxRetriesExceededError:
             pass
 

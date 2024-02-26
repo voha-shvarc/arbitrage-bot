@@ -181,7 +181,8 @@ class PriceAnalyzer:
         if not b_prices or not s_prices:
             self.is_exhausted = True
 
-        self.set_user_based_data(buy_p, sell_p)
+        if self.is_user_based:
+            self.set_user_based_data(buy_p, sell_p)
 
         if buy_p.partial_exhausted:
             self.used_buy_orders += 1

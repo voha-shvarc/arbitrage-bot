@@ -6,6 +6,7 @@ from typing import List
 
 from abstract import AbstractExchange, NoPriceFound
 from db.structs import CoinNetworkExchangeDC, TradingPair
+from db.models import Pair
 from exchanges.bitget.v1.spot.market_api import MarketApi
 
 
@@ -38,7 +39,7 @@ class BitgetAPI(AbstractExchange):
         for coin_data in self.client.currencies(params={})["data"]:
             yield CoinNetworkExchangeDC.from_bitget(coin_data)
 
-    def get_price(self, pair, limit=30):
+    def get_price(self, pair: Pair, limit=30) -> tuple[list[list[str]], list[list[str]]]:
         data = {
             "symbol": pair.bitget_name,
             "limit": limit,
