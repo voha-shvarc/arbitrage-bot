@@ -48,6 +48,7 @@ async def recalculate_callback_query(query: CallbackQuery, callback_data: Refres
                      bundle.joinedload(ProfitBundle.pair).joinedload(Pair.quote_coin),
                      bundle.joinedload(ProfitBundle.coin_network_exchange),
                      bundle.joinedload(ProfitBundle.coin_network_exchange).joinedload(CoinNetworkExchange.network),
+                     bundle.joinedload(ProfitBundle.coin_network_exchange).joinedload(CoinNetworkExchange.coin),
                      bundle.joinedload(ProfitBundle.coin_network_exchange).joinedload(CoinNetworkExchange.base_network)) \
             .order_by(ProfitBundleItem.created_at.desc()) \
             .first()
@@ -55,7 +56,11 @@ async def recalculate_callback_query(query: CallbackQuery, callback_data: Refres
     bundle = bundle_item.profit_bundle
     try:
         message = _get_message(bundle, bundle_item, callback_data.show_more)
-        await query.message.edit_text(message, reply_markup=get_refresh_keyboard(bundle.id))
+        await query.message.edit_text(
+            message,
+            reply_markup=get_refresh_keyboard(bundle.id),
+            disable_web_page_preview=True,
+        )
     except TelegramBadRequest:
         logger.warning(f"Bundle (id={bundle.id}) haven't changed...")
 
@@ -68,8 +73,16 @@ def _get_message(bundle, bundle_item: ProfitBundleItem, show_more: bool = False)
     else:
         time_live = bundle.updated_at - bundle.created_at
 
+    base_exchange = exchange_mapping[bundle.base_exchange.name]
+    pair_exchange = exchange_mapping[bundle.pair_exchange.name]
+
+    base_ex_spot_link = base_exchange.spot_link(bundle.pair)
+    base_ex_withdraw_link = base_exchange.withdraw_link(bundle.coin_network_exchange)
+    pair_ex_spot_link = pair_exchange.spot_link(bundle.pair)
+    pair_ex_deposit_link = pair_exchange.deposit_link(bundle.coin_network_exchange)
+
     base_exchange_price_section = (
-        f"📕 {bundle.base_exchange.name} | spot | withdraw\n"
+        f"📕 {bundle.base_exchange.name} | <a href='{base_ex_spot_link}'>spot</a> | <a href='{base_ex_withdraw_link}'>withdraw</a>\n"
         f"📈 [ {round(bundle_item.user_based_base_exchange_min_price, 12)}-{round(bundle_item.user_based_base_exchange_min_price, 12)} ]"
         f" | {bundle_item.user_based_used_buy_orders} orders | {(bundle_item.user_based_percent_of_base_trading_vol * 100):.3f}%"
     )
@@ -79,7 +92,7 @@ def _get_message(bundle, bundle_item: ProfitBundleItem, show_more: bool = False)
         )
 
     pair_exchange_price_section = (
-        f"📗 {bundle.pair_exchange.name} | spot | deposit\n"
+        f"📗 {bundle.pair_exchange.name} | <a href='{pair_ex_spot_link}'>spot</a> | <a href='{pair_ex_deposit_link}'>deposit</a>\n"
         f"📈 [ {round(bundle_item.user_based_pair_exchange_min_price, 12)}-{round(bundle_item.user_based_pair_exchange_max_price, 12)} ]"
         f" | {bundle_item.user_based_used_sell_orders} orders | {(bundle_item.user_based_percent_of_pair_trading_vol * 100):.3f}%"
     )

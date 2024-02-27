@@ -31,6 +31,18 @@ class AbstractExchange(ABC):
             exchange_id = session.query(Exchange.id).filter(Exchange.name == self.NAME).scalar()
         return exchange_id
 
+    @classmethod
+    def spot_link(cls, pair) -> str:
+        raise NotImplementedError()
+
+    @classmethod
+    def deposit_link(cls, coin) -> str:
+        raise NotImplementedError()
+
+    @classmethod
+    def withdraw_link(cls, coin) -> str:
+        raise NotImplementedError
+
 
 class NoPriceFound(Exception):
     pass

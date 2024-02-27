@@ -6,7 +6,7 @@ from typing import List
 
 from abstract import AbstractExchange, NoPriceFound
 from db.structs import CoinNetworkExchangeDC, TradingPair
-from db.models import Pair
+from db.models import Pair, CoinNetworkExchange
 from exchanges.bitget.v1.spot.market_api import MarketApi
 
 
@@ -105,3 +105,24 @@ class BitgetAPI(AbstractExchange):
     def get_pair_trading_volume(self, pair) -> float:
         data = self.client.ticker({"symbol": pair.bitget_name})
         return float(data["data"]["baseVol"])
+
+    @classmethod
+    def spot_link(cls, pair: Pair) -> str:
+        link = f"https://www.bitget.com/spot/{pair.default_name}"
+        return link
+
+    @classmethod
+    def deposit_link(cls, cne: CoinNetworkExchange) -> str:
+        coin_id = cne.extra_info.get("coin_id")
+        if not coin_id:
+            link = "https://www.bitget.com/asset/recharge?coinId=2"
+        else:
+            link = f"https://www.bitget.com/asset/recharge?coinId={coin_id}"
+
+        return link
+
+    @classmethod
+    def withdraw_link(cls, cne: CoinNetworkExchange) -> str:
+        """Has static link"""
+        link = "https://www.bitget.com/asset/withdraw"
+        return link

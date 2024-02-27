@@ -4,7 +4,7 @@ from gate_api import Configuration, ApiClient, SpotApi
 
 from abstract import AbstractExchange, NoPriceFound
 from db.structs import CoinNetworkExchangeDC, TradingPair
-from db.models import Pair
+from db.models import Pair, CoinNetworkExchange
 
 
 class GateIOAPI(AbstractExchange):
@@ -32,17 +32,17 @@ class GateIOAPI(AbstractExchange):
                 yield CoinNetworkExchangeDC.from_gateio(coin_data)
 
     def get_price(self, pair: Pair, limit=30) -> tuple[list[list[str]], list[list[str]]]:
-        res = self.spot_client.list_order_book(pair.gateio_name)
+        res = self.spot_client.list_order_book(pair.underscored_name)
         buy = res.asks
         sell = res.bids
         if not buy or not sell:
             raise NoPriceFound()
         return buy, sell
 
-    async def async_get_price(self, symbol, limit=30):
+    async def async_get_price(self, pair: Pair, limit=30):
         url = self.base_url + "/api/v4/spot/order_book"
         body = {
-            "currency_pair": symbol.gateio_name,
+            "currency_pair": pair.underscored_name,
             "limit": limit,
         }
         headers = {
@@ -59,6 +59,21 @@ class GateIOAPI(AbstractExchange):
 
         return data['asks'], data['bids']
 
-    def get_pair_trading_volume(self, pair) -> float:
-        data = self.spot_client.list_tickers(currency_pair=pair.gateio_name)
+    def get_pair_trading_volume(self, pair: Pair) -> float:
+        data = self.spot_client.list_tickers(currency_pair=pair.underscored_name)
         return float(data[0].base_volume)
+
+    @classmethod
+    def spot_link(cls, pair: Pair) -> str:
+        link = f"https://www.gate.io/trade/{pair.underscored_name}"
+        return link
+
+    @classmethod
+    def deposit_link(cls, cne: CoinNetworkExchange) -> str:
+        link = f"https://www.gate.io/ru/myaccount/deposit/{cne.coin.name}"
+        return link
+
+    @classmethod
+    def withdraw_link(cls, cne: CoinNetworkExchange) -> str:
+        link = f"https://www.gate.io/ru/myaccount/withdraw/{cne.coin.name}"
+        return link

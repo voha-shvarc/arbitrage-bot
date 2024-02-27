@@ -157,6 +157,7 @@ class ExchangePairAnalyzer:
                     .options(
                         joinedload(CoinNetworkExchange.network),
                         joinedload(CoinNetworkExchange.base_network),
+                        joinedload(CoinNetworkExchange.coin),
                     )
                 )
                 nets_mapping[network.name] = {
@@ -237,6 +238,6 @@ class ExchangePairAnalyzer:
             and price_analyzer.user_based_profit >= self.BASE_USDT_PROFIT
             # and from_exchange.NAME == "ByBit"
         ):
-            await price_analyzer.report(from_exchange.NAME, to_exchange.NAME, pair, bundle_id)
+            await price_analyzer.report(from_exchange, to_exchange, pair, bundle_id)
 
         return True

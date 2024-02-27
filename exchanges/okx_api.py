@@ -9,7 +9,7 @@ from retry import retry
 
 from abstract import AbstractExchange, NoPriceFound
 from db.structs import CoinNetworkExchangeDC, TradingPair
-from db.models import Pair
+from db.models import Pair, CoinNetworkExchange
 
 
 class OkxAPI(AbstractExchange):
@@ -107,3 +107,19 @@ class OkxAPI(AbstractExchange):
     def get_pair_trading_volume(self, pair) -> float:
         data = self.market_client.get_ticker(instId=pair.dashed_name)
         return float(data["data"][0]["vol24h"])
+
+    @classmethod
+    def spot_link(cls, pair: Pair) -> str:
+        link = f"https://www.okx.com/ua/trade-spot/{pair.dashed_name.lower()}"
+        return link
+
+    @classmethod
+    def deposit_link(cls, cne: CoinNetworkExchange) -> str:
+        """Potentially can use network id or something (sub) to go directly to that one"""
+        link = f"https://www.okx.com/ua/balance/recharge/{cne.coin.name.lower()}"
+        return link
+
+    @classmethod
+    def withdraw_link(cls, cne: CoinNetworkExchange) -> str:
+        link = f"https://www.okx.com/ua/balance/withdrawal/{cne.coin.name.lower()}"
+        return link

@@ -4,7 +4,7 @@ from binance.spot import Spot
 
 from abstract import AbstractExchange, NoPriceFound
 from db.structs import CoinNetworkExchangeDC, TradingPair
-from db.models import Pair
+from db.models import Pair, CoinNetworkExchange
 
 
 class BinanceAPI(AbstractExchange):
@@ -73,3 +73,18 @@ class BinanceAPI(AbstractExchange):
     def get_pair_trading_volume(self, pair) -> float:
         data = self.client.ticker_24hr(symbol=pair.default_name)
         return float(data["volume"])
+
+    @classmethod
+    def spot_link(cls, pair: Pair) -> str:
+        link = f"https://www.binance.com/en/trade/{pair.underscored_name}?type=spot"
+        return link
+
+    @classmethod
+    def deposit_link(cls, cne: CoinNetworkExchange) -> str:
+        link = f"https://www.binance.com/en/my/wallet/account/main/deposit/crypto/{cne.coin.name}"
+        return link
+
+    @classmethod
+    def withdraw_link(cls, cne: CoinNetworkExchange) -> str:
+        link = f"https://www.binance.com/en/my/wallet/account/main/withdrawal/crypto/{cne.coin.name}"
+        return link

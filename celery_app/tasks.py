@@ -29,7 +29,7 @@ BASE_USDT_PROFIT = 2  # 2 USDT
 error_log = logging.getLogger("error")
 
 
-@app.task(bind=True, max_retries=100)  # if all retires are used, it takes 40 minutes to go off
+@app.task(bind=True, max_retries=100)  # it takes 40 minutes to use all the retires
 def monitor_bundle(self: Task, bundle_id):
     with Session() as session:
         bundle = (

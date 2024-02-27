@@ -1,5 +1,6 @@
 from sqlalchemy import Column, Integer, String, ForeignKey, Float, Boolean, ARRAY
 from sqlalchemy.orm import relationship, backref
+from sqlalchemy.dialects.postgresql import JSONB
 
 from .base import Base
 from .utils import db_created, db_updated
@@ -50,6 +51,8 @@ class CoinNetworkExchange(Base):
     withdraw_fee = Column(Float, default=0, server_default="0")
     can_withdraw = Column(Boolean, default=False, server_default="false", index=True, nullable=False)
     can_deposit = Column(Boolean, default=False, server_default="false", index=True, nullable=False)
+    extra_info = Column(JSONB, server_default="{}", nullable=False)
+
     created_at = db_created()
     updated_at = db_updated()
 
@@ -80,8 +83,12 @@ class Pair(Base):
         return f"{self.base_coin.name}-{self.quote_coin.name}"
 
     @property
-    def gateio_name(self):
+    def underscored_name(self):
         return f"{self.base_coin.name}_{self.quote_coin.name}"
+
+    @property
+    def slashed_name(self):
+        return f"{self.base_coin.name}/{self.quote_coin.name}"
 
     @property
     def huobi_name(self):

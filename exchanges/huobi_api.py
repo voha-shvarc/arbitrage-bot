@@ -6,7 +6,7 @@ from huobi.constant import InstrumentStatus, DepthStep
 
 from abstract import AbstractExchange, NoPriceFound
 from db.structs import CoinNetworkExchangeDC, TradingPair
-from db.models import Pair
+from db.models import Pair, CoinNetworkExchange
 
 
 class HuobiAPI(AbstractExchange):
@@ -70,3 +70,18 @@ class HuobiAPI(AbstractExchange):
     def get_pair_trading_volume(self, pair) -> float:
         data = self.price_client.get_market_detail_merged(symbol=pair.huobi_name)
         return data.amount
+
+    @classmethod
+    def spot_link(cls, pair: Pair) -> str:
+        link = f"https://www.htx.com/en-us/trade/{pair.underscored_name.lower()}?type=spot"
+        return link
+
+    @classmethod
+    def deposit_link(cls, cne: CoinNetworkExchange) -> str:
+        link = f"https://www.htx.com/en-us/finance/deposit/{cne.coin.name.lower()}"
+        return link
+
+    @classmethod
+    def withdraw_link(cls, cne: CoinNetworkExchange) -> str:
+        link = f"https://www.htx.com/en-us/finance/withdraw/{cne.coin.name.lower()}"
+        return link

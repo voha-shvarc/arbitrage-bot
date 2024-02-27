@@ -13,6 +13,7 @@ async def send_message(
     text: str,
     disable_notification: bool = False,
     reply_markup: InlineKeyboardMarkup = None,
+    **kwargs,
 ) -> bool:
     """
     Safe messages sender
@@ -30,6 +31,7 @@ async def send_message(
             text,
             disable_notification=disable_notification,
             reply_markup=reply_markup,
+            **kwargs,
         )
     except exceptions.TelegramBadRequest as e:
         logging.error("Telegram server says - Bad Request: chat not found")
@@ -41,7 +43,7 @@ async def send_message(
         )
         await asyncio.sleep(e.retry_after)
         return await send_message(
-            bot, user_id, text, disable_notification, reply_markup
+            bot, user_id, text, disable_notification, reply_markup, **kwargs,
         )  # Recursive call
     except exceptions.TelegramAPIError:
         logging.exception(f"Target [ID:{user_id}]: failed")

@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import List
+from typing import List, Any
 
 from gate_api.models.currency import Currency
 from huobi.constant import ChainDepositStatus, ChainWithdrawStatus
@@ -90,6 +90,7 @@ class CoinNetworkExchangeDC:
     coin_name: str
     exchange_name: str
     networks: List[NetworkExchange]
+    extra_info: dict[str: Any]
 
     def to_db(self, exchange, coin, network, network_id):
         net = self.networks[network_id]
@@ -102,6 +103,7 @@ class CoinNetworkExchangeDC:
             "can_withdraw": net.can_withdraw,
             "withdraw_fee": net.withdraw_fee,
             "arrival_time": net.arrival_time,
+            "extra_info": self.extra_info,
         }
         return data
 
@@ -110,21 +112,21 @@ class CoinNetworkExchangeDC:
         coin_name = data["coin"]
         networks = [NetworkExchange.from_binance(network) for network in data["networkList"]]
 
-        return cls(coin_name, "Binance", networks)
+        return cls(coin_name, "Binance", networks, {})
 
     @classmethod
     def from_bybit(cls, data):
         coin_name = data["coin"]
         networks = [NetworkExchange.from_bybit(network) for network in data["chains"]]
 
-        return cls(coin_name, "ByBit", networks)
+        return cls(coin_name, "ByBit", networks, {})
 
     @classmethod
     def from_okx(cls, data):
         coin_name = data["ccy"]
         networks = [NetworkExchange.from_okx(data)]
 
-        return cls(coin_name, "OKX", networks)
+        return cls(coin_name, "OKX", networks, {})
 
     @classmethod
     def from_gateio(cls, data: Currency):
@@ -133,7 +135,7 @@ class CoinNetworkExchangeDC:
         if data.chain:
             networks.append(NetworkExchange.from_gateio(data))
 
-        return cls(coin_name, "GateIO", networks)
+        return cls(coin_name, "GateIO", networks, {})
 
     @classmethod
     def from_huobi(cls, data: ReferenceCurrency):
@@ -142,7 +144,7 @@ class CoinNetworkExchangeDC:
             NetworkExchange.from_huobi(network) for network in data.chains if network.withdrawFeeType == "fixed"
         ]
 
-        return cls(coin_name.upper(), "Huobi", networks)
+        return cls(coin_name.upper(), "Huobi", networks, {})
 
     @classmethod
     def from_kucoin(cls, data):
@@ -152,14 +154,15 @@ class CoinNetworkExchangeDC:
         else:
             networks = []
 
-        return cls(coin_name, "KuCoin", networks)
+        return cls(coin_name, "KuCoin", networks, {})
 
     @classmethod
     def from_bitget(cls, data):
         coin_name = data["coinName"]
+        extra_info = {"coin_id": data["coinId"]}
         networks = [NetworkExchange.from_bitget(chain_data) for chain_data in data["chains"]]
 
-        return cls(coin_name, "Bitget", networks)
+        return cls(coin_name, "Bitget", networks, extra_info)
 
 
 @dataclass

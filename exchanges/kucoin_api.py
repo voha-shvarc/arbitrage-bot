@@ -8,7 +8,7 @@ from kucoin.client import MarketData
 
 from abstract import AbstractExchange, NoPriceFound
 from db.structs import CoinNetworkExchangeDC, TradingPair
-from db.models import Pair
+from db.models import Pair, CoinNetworkExchange
 
 
 class KuCoinAPI(AbstractExchange):
@@ -104,3 +104,18 @@ class KuCoinAPI(AbstractExchange):
     def get_pair_trading_volume(self, pair) -> float:
         data = self.client.get_24h_stats(symbol=pair.dashed_name)
         return float(data["vol"])
+
+    @classmethod
+    def spot_link(cls, pair: Pair) -> str:
+        link = f"https://www.kucoin.com/trade/{pair.dashed_name}"
+        return link
+
+    @classmethod
+    def deposit_link(cls, cne: CoinNetworkExchange) -> str:
+        link = f"https://www.kucoin.com/assets/coin/{cne.coin.name}"
+        return link
+
+    @classmethod
+    def withdraw_link(cls, cne: CoinNetworkExchange) -> str:
+        link = f"https://www.kucoin.com/assets/withdraw/{cne.coin.name}"
+        return link

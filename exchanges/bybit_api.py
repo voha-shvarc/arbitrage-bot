@@ -4,7 +4,7 @@ from pybit.unified_trading import HTTP
 
 from abstract import AbstractExchange, NoPriceFound
 from db.structs import CoinNetworkExchangeDC, TradingPair
-from db.models import Pair
+from db.models import Pair, CoinNetworkExchange
 
 
 class BybitAPI(AbstractExchange):
@@ -67,3 +67,20 @@ class BybitAPI(AbstractExchange):
     def get_pair_trading_volume(self, pair) -> float:
         data = self.session.get_tickers(symbol=pair.default_name, category="spot")
         return float(data["result"]["list"][0]["volume24h"])
+
+    @classmethod
+    def spot_link(cls, pair: Pair) -> str:
+        link = f"https://www.bybit.com/en/trade/spot/{pair.slashed_name}"
+        return link
+
+    @classmethod
+    def deposit_link(cls, cne: CoinNetworkExchange) -> str:
+        """ByBit has only static address without specific token"""
+        link = "https://www.bybit.com/user/assets/deposit"
+        return link
+
+    @classmethod
+    def withdraw_link(cls, cne: CoinNetworkExchange) -> str:
+        """ByBit has only static address without specific token"""
+        link = "https://www.bybit.com/user/assets/withdraw"
+        return link
