@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import List, Any
+from typing import List, Any, Union
 
 from gate_api.models.currency import Currency
 from huobi.constant import ChainDepositStatus, ChainWithdrawStatus
@@ -11,10 +11,8 @@ class NetworkExchange:
     name: str
     can_deposit: bool
     can_withdraw: bool
-    withdraw_fee: [float, None]
-    arrival_time: int
-    # withdraw_min: float
-    # withdraw_all_enable = True|False
+    withdraw_fee: Union[float, None]
+    confirmations_needed: Union[int, float] = None
 
     @classmethod
     def from_binance(cls, data):
@@ -22,9 +20,9 @@ class NetworkExchange:
         can_deposit = data["depositEnable"]
         can_withdraw = data["withdrawEnable"]
         withdraw_fee = data["withdrawFee"]
-        arrival_time = data["estimatedArrivalTime"]
+        confirmations_needed = data["minConfirm"]
 
-        return cls(name, can_deposit, can_withdraw, withdraw_fee, arrival_time)
+        return cls(name, can_deposit, can_withdraw, withdraw_fee, confirmations_needed)
 
     @classmethod
     def from_bybit(cls, data):
@@ -34,10 +32,14 @@ class NetworkExchange:
         try:
             withdraw_fee = float(data["withdrawFee"])
         except ValueError:
-            withdraw_fee = 0
+            withdraw_fee = None
 
-        return cls(name, can_deposit, can_withdraw, withdraw_fee, 1)
-        # arrival_time = data['estimatedArrivalTime']
+        try:
+            confirmations_needed = int(data["confirmation"])
+        except ValueError:
+            confirmations_needed = None
+
+        return cls(name, can_deposit, can_withdraw, withdraw_fee, confirmations_needed)
 
     @classmethod
     def from_okx(cls, data):
@@ -45,8 +47,9 @@ class NetworkExchange:
         can_deposit = data["canDep"]
         can_withdraw = data["canWd"]
         withdraw_fee = float(data["minFee"])
+        confirmations_needed = int(data["minDepArrivalConfirm"])
 
-        return cls(name, can_deposit, can_withdraw, withdraw_fee, 1)
+        return cls(name, can_deposit, can_withdraw, withdraw_fee, confirmations_needed)
 
     @classmethod
     def from_gateio(cls, data: Currency):
@@ -55,7 +58,7 @@ class NetworkExchange:
         can_withdraw = not data.withdraw_disabled
         withdraw_fee = None
 
-        return cls(name, can_deposit, can_withdraw, withdraw_fee, 1)
+        return cls(name, can_deposit, can_withdraw, withdraw_fee)
 
     @classmethod
     def from_huobi(cls, network: Chain):
@@ -63,8 +66,9 @@ class NetworkExchange:
         can_deposit = network.depositStatus == ChainDepositStatus.ALLOWED
         can_withdraw = network.withdrawStatus == ChainWithdrawStatus.ALLOWED
         withdraw_fee = network.transactFeeWithdraw
+        confirmations_needed = network.numOfFastConfirmations
 
-        return cls(name.upper(), can_deposit, can_withdraw, withdraw_fee, 1)
+        return cls(name.upper(), can_deposit, can_withdraw, withdraw_fee, confirmations_needed)
 
     @classmethod
     def from_kucoin(cls, data):
@@ -72,8 +76,9 @@ class NetworkExchange:
         can_deposit = data["isDepositEnabled"]
         can_withdraw = data["isWithdrawEnabled"]
         withdraw_fee = data["withdrawalMinFee"]
+        confirmations_needed = data["preConfirms"]
 
-        return cls(net_name, can_deposit, can_withdraw, withdraw_fee, 1)
+        return cls(net_name, can_deposit, can_withdraw, withdraw_fee, confirmations_needed)
 
     @classmethod
     def from_bitget(cls, data):
@@ -81,8 +86,9 @@ class NetworkExchange:
         can_deposit = True if data["rechargeable"] == "true" else False
         can_withdraw = True if data["withdrawable"] == "true" else False
         withdraw_fee = float(data["withdrawFee"])
+        confirmations_needed = int(data["depositConfirm"])
 
-        return cls(net_name, can_deposit, can_withdraw, withdraw_fee, 1)
+        return cls(net_name, can_deposit, can_withdraw, withdraw_fee, confirmations_needed)
 
 
 @dataclass
@@ -102,8 +108,8 @@ class CoinNetworkExchangeDC:
             "can_deposit": net.can_deposit,
             "can_withdraw": net.can_withdraw,
             "withdraw_fee": net.withdraw_fee,
-            "arrival_time": net.arrival_time,
             "extra_info": self.extra_info,
+            "confirmations_needed": net.confirmations_needed,
         }
         return data
 

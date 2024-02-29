@@ -102,6 +102,8 @@ def _get_message(bundle, bundle_item: ProfitBundleItem, show_more: bool = False)
         )
 
     fees_section = f"‼️️ Spot Fee: <b>{bundle_item.user_based_spot_fee:.2f}$</b> | Network Fee: <b>{bundle_item.user_based_network_fee:.2f}$</b>"
+    if bundle.network_speed:
+        fees_section += f"\n🚀 Network Speed: {bundle.network_speed:.1f} - {bundle.network_speed + 2:.1f} minutes"
 
     status = f"🟢 Status: {bundle.status}" if bundle.status == BundleStatus.in_progress else f"🔴 Status: {bundle.status}"
     message = (

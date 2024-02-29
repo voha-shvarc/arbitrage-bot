@@ -25,6 +25,7 @@ class Network(Base):
 
     id = Column(Integer, primary_key=True)
     name = Column(String(50), index=True, nullable=False)
+    block_creation_time = Column(Float)
     created_at = db_created()
     updated_at = db_updated()
 
@@ -47,11 +48,11 @@ class CoinNetworkExchange(Base):
     network_id = Column(ForeignKey("networks.id"), index=True)
     base_network_id = Column(ForeignKey("networks.id"), index=True)
 
-    arrival_time = Column(Integer)
     withdraw_fee = Column(Float, default=0, server_default="0")
     can_withdraw = Column(Boolean, default=False, server_default="false", index=True, nullable=False)
     can_deposit = Column(Boolean, default=False, server_default="false", index=True, nullable=False)
     extra_info = Column(JSONB, server_default="{}", nullable=False)
+    confirmations_needed = Column(Integer)
 
     created_at = db_created()
     updated_at = db_updated()
@@ -130,8 +131,8 @@ class ProfitBundle(Base):
         server_default=BundleStatus.in_progress,
         index=True,
     )
-
     buy_price_snapshot = Column(ARRAY(String(50)))
+    network_speed = Column(Float)
 
     created_at = db_created()
     updated_at = db_updated()

@@ -101,8 +101,8 @@ def sync_pairs():
 def _run_networks_mapping(session: Session):
     data = {
         "Avalanche": ["AVAX", "XAVAX"],
-        "AVAXC": ["AVAXC", "AVAX_C", "Avalanche C", "CCHAINAVAX", "CAVAX", "AVAXCCHAIN"],
-        "Bitcoin": ["BTC", "Bitcoin"],
+        "AVAXC": ["AVAXC", "AVAX_C", "Avalanche C", "CCHAINAVAX", "CAVAX", "AVAXCCHAIN", "C-Chain", "AVAX C-Chain"],
+        "Bitcoin": ["BTC", "Bitcoin", "BRC20"],
         "Bitcoin Cash": ["BCH", "BitcoinCash"],
         "Bitcoin SV": ["BSV", "Bitcoin SV"],
         "Cardano": ["ADA", "Cardano"],
@@ -207,7 +207,7 @@ def _run_networks_mapping(session: Session):
         "polyx": ["POLY1", "POLYX"],
         "seele": ["SEELE", "SEELE2"],
         "smt": ["SMT", "SMT2"],
-        "BSC": ["BSC", "BNB1"],
+        "BSC": ["BSC", "BNB1", "BEP20"],
     }
 
     for base_network, networks in data.items():

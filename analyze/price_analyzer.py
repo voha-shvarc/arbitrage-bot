@@ -20,7 +20,7 @@ class PriceAnalyzer:
         self.exchange_commission = self.EXCHANGE_BUY_COMMISSION + self.EXCHANGE_SELL_COMMISSION
         self.buy_prices = buy_price
         self.sell_prices = sell_price
-        self.network = network
+        self.coin_network_exchange = network
         self.coin_available_amount = 0
         self.to_use_usdt = 0
         self.base_profit = 0
@@ -192,7 +192,7 @@ class PriceAnalyzer:
 
         if self.coin_available_amount:
             self.spot_fee = self.exchange_commission * self.coin_available_amount * self.avg_sell_price
-            self.network_fee = self.network.withdraw_fee * self.avg_sell_price
+            self.network_fee = self.coin_network_exchange.withdraw_fee * self.avg_sell_price
             self.profit = self.base_profit - self.total_fees
 
             self.user_based_spot_fee = self.exchange_commission * self.user_based_coin_available_amount * self.user_based_avg_sell_price
@@ -200,21 +200,23 @@ class PriceAnalyzer:
             self.user_based_profit = self.user_based_base_profit - self.user_based_total_fees
 
     @retry(tries=3, delay=1)
-    async def report(self, base_exchange: AbstractExchange, pair_exchange: AbstractExchange, pair: Pair, bundle_id):
+    async def report(self, base_exchange: AbstractExchange, pair_exchange: AbstractExchange, pair: Pair, bundle_id, network_speed):
         base_ex_spot_link = base_exchange.spot_link(pair)
-        base_ex_withdraw_link = base_exchange.withdraw_link(self.network)
+        base_ex_withdraw_link = base_exchange.withdraw_link(self.coin_network_exchange)
         pair_ex_spot_link = pair_exchange.spot_link(pair)
-        pair_ex_deposit_link = pair_exchange.deposit_link(self.network)
+        pair_ex_deposit_link = pair_exchange.deposit_link(self.coin_network_exchange)
 
         message = (
             f"<b>{base_exchange.NAME} -> {pair_exchange.NAME} | {self.user_based_to_use_usdt:.2f}$ +{self.user_based_profit:.2f}$ ({self.user_based_avg_spread * 100:.2f}%)</b>\n\n"
-            f"{pair.dashed_name} | <b>{self.network.base_network.name}</b>\n\n"
+            f"{pair.dashed_name} | <b>{self.coin_network_exchange.base_network.name}</b>\n\n"
             f"📕 {base_exchange.NAME} | <a href='{base_ex_spot_link}'>spot</a> | <a href='{base_ex_withdraw_link}'>withdraw</a>\n"
             f"📈 [ {round(self.user_based_min_buy_price, 12)}-{round(self.user_based_max_buy_price, 12)} ] | {self.user_based_used_buy_orders} orders\n\n"
             f"📗 {pair_exchange.NAME} | <a href='{pair_ex_spot_link}'>spot</a> | <a href='{pair_ex_deposit_link}'>deposit</a>\n"
             f"📈 [ {round(self.user_based_min_sell_price, 12)}-{round(self.user_based_max_sell_price, 12)} ] | {self.user_based_used_sell_orders} orders\n\n"
             f"‼️️ Spot Fee: <b>{self.user_based_spot_fee:.2f}$</b> | Network Fee: <b>{self.user_based_network_fee:.2f}$</b>"
         )
+        if network_speed:
+            message += f"\n🚀 Network Speed: {network_speed:.1f} - {network_speed + 2:.1f} minutes"
 
         config = load_config(".env")
         bot = Bot(token=config.tg_bot.token, parse_mode="HTML")
