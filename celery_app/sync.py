@@ -53,7 +53,8 @@ def sync_coin_exchange_networks():
                     and_(Exchange.name == "GateIO", Coin.name == "GTC"),
                     and_(Exchange.name == "ByBit", Coin.name == "VPAD"),
                     and_(Exchange.name == "ByBit", Coin.name == "GPT"),  # differs from okx and gateio
-                    and_(Network.name == "BSC", Coin.name == "BABYDOGE"),  # a lot of additional commission
+                    and_(Exchange.name == "Bitget", Coin.name == "ALT"),  # differs from binance and gateio
+                    Coin.name == "BABYDOGE",  # a lot of additional commission
                     Coin.name == "LSD",  # different coins
                     Coin.name == "PEPE2",  # kucoin asks not to deposit it, has different contract addresses
                     Coin.name == "BIFI",  # different coins
