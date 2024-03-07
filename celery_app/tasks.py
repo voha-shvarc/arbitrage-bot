@@ -158,8 +158,8 @@ def send_tg_message(bundle_id):
         ]
         if (
             bundle_item.user_based_network_fee < bundle_item.user_based_profit
-            and bundle_item.user_based_percent_of_pair_trading_vol >= 0.005
-            and bundle_item.user_based_used_sell_orders >= 1
+            and bundle_item.user_based_percent_of_pair_trading_vol >= 0.01
+            and bundle_item.user_based_used_sell_orders >= 3
         ):
             bot_filtered = Bot(token=config_tg.tg_bot_filtered.token, parse_mode="HTML")
             send_message_tasks.extend(
