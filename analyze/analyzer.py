@@ -4,24 +4,27 @@ import time
 from typing import Tuple
 
 from httpx import PoolTimeout
-from sqlalchemy import func, exists, and_
+from sqlalchemy import and_
+from sqlalchemy import exists
+from sqlalchemy import func
 from sqlalchemy.orm import joinedload
 
 from abstract import NoPriceFound
-from celery_app.tasks import monitor_bundle, set_bundle_volume_statistics
+from celery_app.tasks import monitor_bundle
+from celery_app.tasks import set_bundle_volume_statistics
 from db.base import Session
-from db.models import (
-    Pair,
-    Exchange,
-    CoinNetworkExchange,
-    Coin,
-    Network,
-    PairExchange,
-    ProfitBundle,
-    ProfitBundleItem,
-    BundleStatus,
-)
+from db.models import BundleStatus
+from db.models import Coin
+from db.models import CoinNetworkExchange
+from db.models import Exchange
+from db.models import Network
+from db.models import Pair
+from db.models import PairExchange
+from db.models import ProfitBundle
+from db.models import ProfitBundleItem
+
 from .price_analyzer import PriceAnalyzer
+
 
 log = logging.getLogger("output")
 error_log = logging.getLogger("error")
@@ -64,9 +67,7 @@ class ExchangePairAnalyzer:
             except Exception as e:
                 error_log.exception(e)
 
-            if (
-                buy_price_analyzer.profit > self.BASE_USDT_PROFIT
-            ):
+            if buy_price_analyzer.profit > self.BASE_USDT_PROFIT:
                 await self._start_monitoring(pair, buy_price_analyzer)
 
         if second_to_base_network and self.pair_exchange.NAME != "GateIO":
@@ -80,9 +81,7 @@ class ExchangePairAnalyzer:
             except Exception as e:
                 error_log.exception(e)
 
-            if (
-                    sell_price_analyzer.profit > self.BASE_USDT_PROFIT
-            ):
+            if sell_price_analyzer.profit > self.BASE_USDT_PROFIT:
                 await self._start_monitoring(pair, sell_price_analyzer, from_base=False)
 
     async def run(self):
@@ -209,8 +208,8 @@ class ExchangePairAnalyzer:
                         ProfitBundle.pair_id == pair.id,
                         ProfitBundle.base_exchange_id == from_exchange.db_id,
                         ProfitBundle.pair_exchange_id == to_exchange.db_id,
-                    )
-                )
+                    ),
+                ),
             ).scalar()
             if same_processing_bundle:
                 return False
@@ -228,8 +227,15 @@ class ExchangePairAnalyzer:
                 error_log.error("Error in setting up deposit cne")
                 return False
 
-            if deposit_coin_network_exchange.confirmations_needed and deposit_coin_network_exchange.base_network.block_creation_time:
-                network_speed = deposit_coin_network_exchange.confirmations_needed * deposit_coin_network_exchange.base_network.block_creation_time / 60
+            if (
+                deposit_coin_network_exchange.confirmations_needed
+                and deposit_coin_network_exchange.base_network.block_creation_time
+            ):
+                network_speed = (
+                    deposit_coin_network_exchange.confirmations_needed
+                    * deposit_coin_network_exchange.base_network.block_creation_time
+                    / 60
+                )
             else:
                 network_speed = None
 
@@ -251,12 +257,5 @@ class ExchangePairAnalyzer:
 
             set_bundle_volume_statistics.apply_async(args=[bundle_id], countdown=5)
             monitor_bundle.apply_async(args=[bundle_id], countdown=10)
-
-        if (
-            price_analyzer.user_based_avg_spread >= 0.008
-            and price_analyzer.user_based_profit >= self.BASE_USDT_PROFIT
-            # and from_exchange.NAME == "ByBit"
-        ):
-            await price_analyzer.report(from_exchange, to_exchange, pair, bundle_id, network_speed)
 
         return True

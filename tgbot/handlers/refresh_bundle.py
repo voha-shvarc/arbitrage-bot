@@ -29,9 +29,6 @@ exchange_mapping = {
 }
 
 
-BASE_USDT_PROFIT = 4  # 4 USDT
-
-
 @refresh_bundle_router.callback_query(RefreshBundleCallbackData.filter())
 async def recalculate_callback_query(query: CallbackQuery, callback_data: RefreshBundleCallbackData):
     await query.answer()
@@ -63,8 +60,6 @@ async def recalculate_callback_query(query: CallbackQuery, callback_data: Refres
         )
     except TelegramBadRequest:
         logger.warning(f"Bundle (id={bundle.id}) haven't changed...")
-
-    session.commit()
 
 
 def _get_message(bundle, bundle_item: ProfitBundleItem, show_more: bool = False) -> str:

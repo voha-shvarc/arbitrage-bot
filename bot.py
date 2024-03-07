@@ -2,11 +2,14 @@ import asyncio
 import logging
 
 import betterlogging as bl
-from aiogram import Bot, Dispatcher
+from aiogram import Bot
+from aiogram import Dispatcher
 from aiogram.fsm.storage.memory import MemoryStorage
-from aiogram.fsm.storage.redis import RedisStorage, DefaultKeyBuilder
+from aiogram.fsm.storage.redis import DefaultKeyBuilder
+from aiogram.fsm.storage.redis import RedisStorage
 
-from tgbot.config import load_config, Config
+from tgbot.config import Config
+from tgbot.config import load_config
 from tgbot.handlers import routers_list
 from tgbot.middlewares.config import ConfigMiddleware
 from tgbot.services import broadcaster
@@ -84,12 +87,22 @@ def get_storage(config):
 
 
 async def main():
+    import argparse
+    from sys import argv
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-f", "--filtered", action="store_true")
+    args = parser.parse_args(argv[1:])
     setup_logging()
 
     config = load_config(".env")
     storage = get_storage(config)
+    if args.filtered:
+        token = config.tg_bot_filtered.token
+    else:
+        token = config.tg_bot.token
 
-    bot = Bot(token=config.tg_bot.token, parse_mode="HTML")
+    bot = Bot(token=token, parse_mode="HTML")
     dp = Dispatcher(storage=storage)
 
     dp.include_routers(*routers_list)

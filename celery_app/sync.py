@@ -1,13 +1,24 @@
 from dotenv import dotenv_values
-from sqlalchemy import or_, and_
+from sqlalchemy import and_
+from sqlalchemy import or_
 
 from celery_app.conf import app
 from db.base import Session
-from db.models import Exchange, PairExchange, Coin
+from db.models import Coin
+from db.models import CoinNetworkExchange
+from db.models import Exchange
 from db.models import Network
-from db.models import Pair, CoinNetworkExchange
+from db.models import Pair
+from db.models import PairExchange
 from db.utils import get_or_create
-from exchanges import BinanceAPI, BybitAPI, OkxAPI, GateIOAPI, HuobiAPI, KuCoinAPI, BitgetAPI
+from exchanges import BinanceAPI
+from exchanges import BitgetAPI
+from exchanges import BybitAPI
+from exchanges import GateIOAPI
+from exchanges import HuobiAPI
+from exchanges import KuCoinAPI
+from exchanges import OkxAPI
+
 
 config = dotenv_values(".env")
 
@@ -47,11 +58,14 @@ def sync_coin_exchange_networks():
             session.query(CoinNetworkExchange.id)
             .join(CoinNetworkExchange.coin)
             .join(CoinNetworkExchange.exchange)
-            .join(CoinNetworkExchange.network)
+            .join(CoinNetworkExchange.base_network)
             .filter(
                 or_(
                     and_(Exchange.name == "GateIO", Coin.name == "GTC"),
                     and_(Exchange.name == "ByBit", Coin.name == "VPAD"),
+                    and_(
+                        Exchange.name.in_(["ByBit", "Binance", "OKX"]), Network.name == "Chiliz"
+                    ),  # different contract addresses for this chain
                     and_(Exchange.name == "ByBit", Coin.name == "GPT"),  # differs from okx and gateio
                     and_(Exchange.name == "Bitget", Coin.name == "ALT"),  # differs from binance and gateio
                     Coin.name == "BABYDOGE",  # a lot of additional commission
@@ -60,11 +74,12 @@ def sync_coin_exchange_networks():
                     Coin.name == "BIFI",  # different coins
                     Coin.name == "RED",  # different coins
                     Coin.name == "LUNC",  # takes additional 0.5% for smart c and 0.5% as exchange fee
-                )
+                ),
             )
         )
         session.query(CoinNetworkExchange).filter(CoinNetworkExchange.id.in_(subq)).update(
-            {"can_withdraw": False}, synchronize_session=False
+            {"can_withdraw": False, "can_deposit": False},
+            synchronize_session=False,
         )
 
         session.commit()
@@ -217,5 +232,6 @@ def _run_networks_mapping(session: Session):
         network_ids = session.query(Network.id).filter(Network.name.in_(networks))
 
         session.query(CoinNetworkExchange).filter(CoinNetworkExchange.network_id.in_(network_ids)).update(
-            {"base_network_id": base_net.id}, synchronize_session=False
+            {"base_network_id": base_net.id},
+            synchronize_session=False,
         )

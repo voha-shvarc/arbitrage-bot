@@ -1,0 +1,18 @@
+[tool.ruff]
+line-length = 120
+target-version = "py39"
+
+[tool.ruff.lint]
+# pyflakes, pycodestyle, flake8-bugbear, isort, complexity, trailing comma
+select = ["F", "E", "W", "B", "I001", "C901", "COM812"]
+
+[tool.ruff.format]
+line-ending = "lf"
+
+[tool.ruff.lint.isort]
+case-sensitive = false
+combine-as-imports = false
+force-single-line = true
+known-first-party = ["pimlib", "cs_platformnews", "pma", "pma_celery", "pma_coord"]
+lines-after-imports = 2
+order-by-type = false
