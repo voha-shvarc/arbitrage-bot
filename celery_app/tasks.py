@@ -138,7 +138,7 @@ def send_tg_message(bundle_id):
             .order_by(ProfitBundleItem.created_at.desc())
             .first()
         )
-        if not bundle_item.user_based_avg_spread >= 0.006 or not bundle_item.user_based_profit >= BASE_USDT_PROFIT:
+        if not bundle_item.user_based_profit >= BASE_USDT_PROFIT:
             return
 
         bundle = bundle_item.profit_bundle

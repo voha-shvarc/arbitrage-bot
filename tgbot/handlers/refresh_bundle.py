@@ -94,33 +94,35 @@ def _get_message(bundle, bundle_item: ProfitBundleItem, show_more: bool = False)
 
     base_exchange_price_section = (
         f"📕 {bundle.base_exchange.name} | <a href='{base_ex_spot_link}'>spot</a> | <a href='{base_ex_withdraw_link}'>withdraw</a>\n"
-        f"📈 [ {round(bundle_item.user_based_base_exchange_min_price, 12)}-{round(bundle_item.user_based_base_exchange_min_price, 12)} ]"
-        f" | {bundle_item.user_based_used_buy_orders} orders | {(bundle_item.user_based_percent_of_base_trading_vol * 100):.3f}%"
+        f"📈 [ <code>{bundle_item.user_based_base_exchange_min_price}</code> - "
+        f"<code>{bundle_item.user_based_base_exchange_max_price}</code> ] "
+        f"| {bundle_item.user_based_used_buy_orders} orders | {(bundle_item.user_based_percent_of_base_trading_vol * 100):.3f}%"
     )
-    if bundle.base_exchange_chart_change:
+    if bundle.base_exchange_chart_change is not None:
         base_exchange_price_section += f" | {bundle.base_exchange_chart_change:+.1f}%"
     if show_more:
         base_exchange_price_section += f"\n🛒 {bundle_item.used_buy_orders} orders | {bundle_item.to_use_usdt:.2f}$ | {(bundle_item.percent_of_base_trading_vol * 100):.3f}%"
 
     pair_exchange_price_section = (
         f"📗 {bundle.pair_exchange.name} | <a href='{pair_ex_spot_link}'>spot</a> | <a href='{pair_ex_deposit_link}'>deposit</a>\n"
-        f"📈 [ {round(bundle_item.user_based_pair_exchange_min_price, 12)}-{round(bundle_item.user_based_pair_exchange_max_price, 12)} ]"
-        f" | {bundle_item.user_based_used_sell_orders} orders | {(bundle_item.user_based_percent_of_pair_trading_vol * 100):.3f}%"
+        f"📈 [ <code>{bundle_item.user_based_pair_exchange_min_price}</code> - "
+        f"<code>{bundle_item.user_based_pair_exchange_max_price}</code> ] "
+        f"| {bundle_item.user_based_used_sell_orders} orders | {(bundle_item.user_based_percent_of_pair_trading_vol * 100):.3f}%"
     )
-    if bundle.pair_exchange_chart_change:
+    if bundle.pair_exchange_chart_change is not None:
         pair_exchange_price_section += f" | {bundle.pair_exchange_chart_change:+.1f}%"
     if show_more:
         pair_exchange_price_section += f"\n🛒 {bundle_item.used_sell_orders} orders | {bundle_item.to_use_usdt:.2f}$ | {(bundle_item.percent_of_pair_trading_vol * 100):.3f}%"
 
     fees_section = f"‼️️ Spot Fee: <b>{bundle_item.user_based_spot_fee:.2f}$</b> | Network Fee: <b>{bundle_item.user_based_network_fee:.2f}$</b>"
-    if bundle.network_speed:
+    if bundle.network_speed is not None:
         fees_section += f"\n🚀 Network Speed: {bundle.network_speed:.1f} - {bundle.network_speed + 2:.1f} minutes"
 
     status = (
         f"🟢 Status: {bundle.status}" if bundle.status == BundleStatus.in_progress else f"🔴 Status: {bundle.status}"
     )
     message = (
-        f"<b>{bundle.base_exchange.name} -> {bundle.pair_exchange.name} | {bundle_item.user_based_to_use_usdt:.2f}$ "
+        f"<b>{bundle.base_exchange.name} -> {bundle.pair_exchange.name} | <code>{bundle_item.user_based_to_use_usdt:.2f}</code>$ "
         f"{bundle_item.user_based_profit:+.2f}$ ({bundle_item.user_based_avg_spread * 100:.2f}%)</b>\n\n"
         f"<b>{bundle.pair.dashed_name}</b> | <b>{bundle.coin_network_exchange.base_network.name}</b>\n\n"
         f"{base_exchange_price_section}\n\n"
