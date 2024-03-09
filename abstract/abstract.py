@@ -1,4 +1,5 @@
-from abc import ABC, abstractmethod
+from abc import ABC
+from abc import abstractmethod
 from typing import List
 
 from db.base import Session
@@ -41,7 +42,11 @@ class AbstractExchange(ABC):
 
     @classmethod
     def withdraw_link(cls, coin) -> str:
-        raise NotImplementedError
+        raise NotImplementedError()
+
+    def get_pair_chart_change(self, pair) -> float:
+        """Returns pair chart change for the last 15 minutes in percents"""
+        raise NotImplementedError()
 
 
 class NoPriceFound(Exception):

@@ -7,9 +7,12 @@ from okx.MarketData import MarketAPI
 from okx.PublicData import PublicAPI
 from retry import retry
 
-from abstract import AbstractExchange, NoPriceFound
-from db.structs import CoinNetworkExchangeDC, TradingPair
-from db.models import Pair, CoinNetworkExchange
+from abstract import AbstractExchange
+from abstract import NoPriceFound
+from db.models import CoinNetworkExchange
+from db.models import Pair
+from db.structs import CoinNetworkExchangeDC
+from db.structs import TradingPair
 
 
 class OkxAPI(AbstractExchange):
@@ -72,8 +75,8 @@ class OkxAPI(AbstractExchange):
         if data.get("code") in ["50011", "51001"]:  # too many requests or wrong instID
             raise NoPriceFound()
 
-        buy = data['data'][0]['asks']
-        sell = data['data'][0]['bids']
+        buy = data["data"][0]["asks"]
+        sell = data["data"][0]["bids"]
         if not buy or not sell:
             raise NoPriceFound()
 
@@ -86,7 +89,7 @@ class OkxAPI(AbstractExchange):
         return t + "Z"
 
     def sign(self, message):
-        mac = hmac.new(bytes(self.api_secret, encoding='utf8'), bytes(message, encoding='utf-8'), digestmod='sha256')
+        mac = hmac.new(bytes(self.api_secret, encoding="utf8"), bytes(message, encoding="utf-8"), digestmod="sha256")
         d = mac.digest()
         return base64.b64encode(d)
 
@@ -96,12 +99,12 @@ class OkxAPI(AbstractExchange):
 
     def get_header(self, sign, timestamp):
         header = dict()
-        header['Content-Type'] = "application/json"
-        header['OK-ACCESS-KEY'] = self.api_key
-        header['OK-ACCESS-SIGN'] = sign
-        header['OK-ACCESS-TIMESTAMP'] = str(timestamp)
-        header['OK-ACCESS-PASSPHRASE'] = self.passphrase
-        header['x-simulated-trading'] = self.flag
+        header["Content-Type"] = "application/json"
+        header["OK-ACCESS-KEY"] = self.api_key
+        header["OK-ACCESS-SIGN"] = sign
+        header["OK-ACCESS-TIMESTAMP"] = str(timestamp)
+        header["OK-ACCESS-PASSPHRASE"] = self.passphrase
+        header["x-simulated-trading"] = self.flag
         return header
 
     def get_pair_trading_volume(self, pair) -> float:
@@ -123,3 +126,10 @@ class OkxAPI(AbstractExchange):
     def withdraw_link(cls, cne: CoinNetworkExchange) -> str:
         link = f"https://www.okx.com/ua/balance/withdrawal/{cne.coin.name.lower()}"
         return link
+
+    def get_pair_chart_change(self, pair: Pair) -> float:
+        response = self.market_client.get_candlesticks(pair.dashed_name, bar="1m", limit=15)
+        opened = float(response["data"][-1][1])
+        closed = float(response["data"][0][4])
+        change = (closed - opened) / opened * 100
+        return change

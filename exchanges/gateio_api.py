@@ -1,10 +1,15 @@
 from typing import List
 
-from gate_api import Configuration, ApiClient, SpotApi
+from gate_api import ApiClient
+from gate_api import Configuration
+from gate_api import SpotApi
 
-from abstract import AbstractExchange, NoPriceFound
-from db.structs import CoinNetworkExchangeDC, TradingPair
-from db.models import Pair, CoinNetworkExchange
+from abstract import AbstractExchange
+from abstract import NoPriceFound
+from db.models import CoinNetworkExchange
+from db.models import Pair
+from db.structs import CoinNetworkExchangeDC
+from db.structs import TradingPair
 
 
 class GateIOAPI(AbstractExchange):
@@ -57,7 +62,7 @@ class GateIOAPI(AbstractExchange):
         if not buy or not sell:
             raise NoPriceFound()
 
-        return data['asks'], data['bids']
+        return data["asks"], data["bids"]
 
     def get_pair_trading_volume(self, pair: Pair) -> float:
         data = self.spot_client.list_tickers(currency_pair=pair.underscored_name)
@@ -77,3 +82,14 @@ class GateIOAPI(AbstractExchange):
     def withdraw_link(cls, cne: CoinNetworkExchange) -> str:
         link = f"https://www.gate.io/ru/myaccount/withdraw/{cne.coin.name}"
         return link
+
+    def get_pair_chart_change(self, pair: Pair) -> float:
+        response = self.spot_client.list_candlesticks(
+            currency_pair=pair.underscored_name,
+            interval="1m",
+            limit=3,
+        )
+        opened = float(response[0][5])
+        closed = float(response[0][2])
+        change = (closed - opened) / opened * 100
+        return change

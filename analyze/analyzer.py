@@ -10,8 +10,8 @@ from sqlalchemy import func
 from sqlalchemy.orm import joinedload
 
 from abstract import NoPriceFound
+from celery_app.tasks import fill_up_bundle
 from celery_app.tasks import monitor_bundle
-from celery_app.tasks import set_bundle_volume_statistics
 from db.base import Session
 from db.models import BundleStatus
 from db.models import Coin
@@ -255,7 +255,7 @@ class ExchangePairAnalyzer:
             bundle_id = bundle.id
             session.commit()
 
-            set_bundle_volume_statistics.apply_async(args=[bundle_id], countdown=5)
+            fill_up_bundle.apply_async(args=[bundle_id], countdown=5)
             monitor_bundle.apply_async(args=[bundle_id], countdown=10)
 
         return True

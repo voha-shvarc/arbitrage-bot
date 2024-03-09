@@ -1,9 +1,17 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, Float, Boolean, ARRAY
-from sqlalchemy.orm import relationship, backref
+from sqlalchemy import ARRAY
+from sqlalchemy import Boolean
+from sqlalchemy import Column
+from sqlalchemy import Float
+from sqlalchemy import ForeignKey
+from sqlalchemy import Integer
+from sqlalchemy import String
 from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.orm import backref
+from sqlalchemy.orm import relationship
 
 from .base import Base
-from .utils import db_created, db_updated
+from .utils import db_created
+from .utils import db_updated
 
 
 class BundleStatus:
@@ -133,6 +141,8 @@ class ProfitBundle(Base):
     )
     buy_price_snapshot = Column(ARRAY(String(50)))
     network_speed = Column(Float)
+    base_exchange_chart_change = Column(Float)
+    pair_exchange_chart_change = Column(Float)
 
     created_at = db_created()
     updated_at = db_updated()

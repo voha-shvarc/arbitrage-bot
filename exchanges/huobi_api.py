@@ -2,11 +2,15 @@ from typing import List
 
 from huobi.client.generic import GenericClient
 from huobi.client.market import MarketClient
-from huobi.constant import InstrumentStatus, DepthStep
+from huobi.constant import DepthStep
+from huobi.constant import InstrumentStatus
 
-from abstract import AbstractExchange, NoPriceFound
-from db.structs import CoinNetworkExchangeDC, TradingPair
-from db.models import Pair, CoinNetworkExchange
+from abstract import AbstractExchange
+from abstract import NoPriceFound
+from db.models import CoinNetworkExchange
+from db.models import Pair
+from db.structs import CoinNetworkExchangeDC
+from db.structs import TradingPair
 
 
 class HuobiAPI(AbstractExchange):
@@ -23,7 +27,9 @@ class HuobiAPI(AbstractExchange):
         pairs_info = self.client.get_exchange_symbols()
         trading_pairs = [
             TradingPair(
-                base_coin=pair.base_currency.upper(), quote_coin=pair.quote_currency.upper(), exchange=self.NAME
+                base_coin=pair.base_currency.upper(),
+                quote_coin=pair.quote_currency.upper(),
+                exchange=self.NAME,
             )
             for pair in pairs_info
             if pair.state == "online"
@@ -85,3 +91,10 @@ class HuobiAPI(AbstractExchange):
     def withdraw_link(cls, cne: CoinNetworkExchange) -> str:
         link = f"https://www.htx.com/en-us/finance/withdraw/{cne.coin.name.lower()}"
         return link
+
+    def get_pair_chart_change(self, pair: Pair) -> float:
+        response = self.price_client.get_candlestick(symbol=pair.huobi_name, period="1min", size=15)
+        opened = response[-1].open
+        closed = response[0].close
+        change = (closed - opened) / opened * 100
+        return change

@@ -2,9 +2,12 @@ from typing import List
 
 from pybit.unified_trading import HTTP
 
-from abstract import AbstractExchange, NoPriceFound
-from db.structs import CoinNetworkExchangeDC, TradingPair
-from db.models import Pair, CoinNetworkExchange
+from abstract import AbstractExchange
+from abstract import NoPriceFound
+from db.models import CoinNetworkExchange
+from db.models import Pair
+from db.structs import CoinNetworkExchangeDC
+from db.structs import TradingPair
 
 
 class BybitAPI(AbstractExchange):
@@ -57,8 +60,8 @@ class BybitAPI(AbstractExchange):
         response = await self.connection.get(url, params=body, headers=headers)
         data = response.json()
 
-        buy = data['result']['a']
-        sell = data['result']['b']
+        buy = data["result"]["a"]
+        sell = data["result"]["b"]
         if not buy or not sell:
             raise NoPriceFound()
 
@@ -84,3 +87,10 @@ class BybitAPI(AbstractExchange):
         """ByBit has only static address without specific token"""
         link = "https://www.bybit.com/user/assets/withdraw"
         return link
+
+    def get_pair_chart_change(self, pair: Pair) -> float:
+        response = self.session.get_kline(category="spot", symbol=pair.default_name, interval=1, limit=15)
+        opened = float(response["result"]["list"][-1][1])
+        closed = float(response["result"]["list"][0][2])
+        change = (closed - opened) / opened * 100
+        return change

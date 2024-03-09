@@ -4,9 +4,12 @@ import time
 from json.decoder import JSONDecodeError
 from typing import List
 
-from abstract import AbstractExchange, NoPriceFound
-from db.structs import CoinNetworkExchangeDC, TradingPair
-from db.models import Pair, CoinNetworkExchange
+from abstract import AbstractExchange
+from abstract import NoPriceFound
+from db.models import CoinNetworkExchange
+from db.models import Pair
+from db.structs import CoinNetworkExchangeDC
+from db.structs import TradingPair
 from exchanges.bitget.v1.spot.market_api import MarketApi
 
 
@@ -66,6 +69,7 @@ class BitgetAPI(AbstractExchange):
             data = response.json()
         except JSONDecodeError:
             import logging
+
             log = logging.getLogger("error")
             log.error(f"[bitget] - {response.text}")
             raise NoPriceFound()
@@ -73,15 +77,15 @@ class BitgetAPI(AbstractExchange):
         if not data.get("data"):
             raise NoPriceFound()
 
-        buy = data['data']['asks']
-        sell = data['data']['bids']
+        buy = data["data"]["asks"]
+        sell = data["data"]["bids"]
         if not buy or not sell:
             raise NoPriceFound()
 
         return buy, sell
 
     def sign(self, message):
-        mac = hmac.new(bytes(self.api_secret, encoding='utf8'), bytes(message, encoding='utf-8'), digestmod='sha256')
+        mac = hmac.new(bytes(self.api_secret, encoding="utf8"), bytes(message, encoding="utf-8"), digestmod="sha256")
         d = mac.digest()
         return str(base64.b64encode(d), "utf8")
 
@@ -95,11 +99,11 @@ class BitgetAPI(AbstractExchange):
 
     def get_header(self, sign, timestamp):
         header = dict()
-        header['Content-Type'] = "application/json"
-        header['ACCESS-KEY'] = self.api_key
-        header['ACCESS-SIGN'] = sign
-        header['ACCESS-TIMESTAMP'] = str(timestamp)
-        header['ACCESS-PASSPHRASE'] = self.api_passphrase
+        header["Content-Type"] = "application/json"
+        header["ACCESS-KEY"] = self.api_key
+        header["ACCESS-SIGN"] = sign
+        header["ACCESS-TIMESTAMP"] = str(timestamp)
+        header["ACCESS-PASSPHRASE"] = self.api_passphrase
         return header
 
     def get_pair_trading_volume(self, pair) -> float:
@@ -126,3 +130,15 @@ class BitgetAPI(AbstractExchange):
         """Has static link"""
         link = "https://www.bitget.com/asset/withdraw"
         return link
+
+    def get_pair_chart_change(self, pair: Pair) -> float:
+        params = {
+            "symbol": pair.bitget_name,
+            "period": "1min",
+            "limit": "15",
+        }
+        response = self.client.candles(params=params)
+        opened = float(response["data"][0]["open"])
+        closed = float(response["data"][-1]["close"])
+        change = (closed - opened) / opened * 100
+        return change

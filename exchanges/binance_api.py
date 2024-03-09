@@ -2,9 +2,12 @@ from typing import List
 
 from binance.spot import Spot
 
-from abstract import AbstractExchange, NoPriceFound
-from db.structs import CoinNetworkExchangeDC, TradingPair
-from db.models import Pair, CoinNetworkExchange
+from abstract import AbstractExchange
+from abstract import NoPriceFound
+from db.models import CoinNetworkExchange
+from db.models import Pair
+from db.structs import CoinNetworkExchangeDC
+from db.structs import TradingPair
 
 
 class BinanceAPI(AbstractExchange):
@@ -88,3 +91,7 @@ class BinanceAPI(AbstractExchange):
     def withdraw_link(cls, cne: CoinNetworkExchange) -> str:
         link = f"https://www.binance.com/en/my/wallet/account/main/withdrawal/crypto/{cne.coin.name}"
         return link
+
+    def get_pair_chart_change(self, pair: Pair) -> float:
+        response = self.client.rolling_window_ticker(symbol=pair.default_name, windowSize="15m")
+        return float(response["priceChangePercent"])

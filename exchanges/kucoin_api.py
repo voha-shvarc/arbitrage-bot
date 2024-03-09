@@ -6,9 +6,12 @@ from typing import List
 
 from kucoin.client import MarketData
 
-from abstract import AbstractExchange, NoPriceFound
-from db.structs import CoinNetworkExchangeDC, TradingPair
-from db.models import Pair, CoinNetworkExchange
+from abstract import AbstractExchange
+from abstract import NoPriceFound
+from db.models import CoinNetworkExchange
+from db.models import Pair
+from db.structs import CoinNetworkExchangeDC
+from db.structs import TradingPair
 
 
 class KuCoinAPI(AbstractExchange):
@@ -39,7 +42,9 @@ class KuCoinAPI(AbstractExchange):
     def get_price(self, pair: Pair, limit=20) -> tuple[list[list[str]], list[list[str]]]:
         # the sdk depth is 100. but need only 20
         order_book = self.client._request(
-            "GET", "/api/v3/market/orderbook/level2_20", params={"symbol": pair.dashed_name}
+            "GET",
+            "/api/v3/market/orderbook/level2_20",
+            params={"symbol": pair.dashed_name},
         )
         buy = order_book["asks"]
         sell = order_book["bids"]
@@ -57,7 +62,7 @@ class KuCoinAPI(AbstractExchange):
         sign = self.sign(self.pre_hash(now_time, "GET", uri_path))
 
         passphrase = base64.b64encode(
-            hmac.new(self.api_secret.encode('utf-8'), self.api_passphrase.encode("utf-8"), hashlib.sha256).digest()
+            hmac.new(self.api_secret.encode("utf-8"), self.api_passphrase.encode("utf-8"), hashlib.sha256).digest(),
         )
         headers = self.get_header(sign, now_time, passphrase)
 
@@ -67,14 +72,14 @@ class KuCoinAPI(AbstractExchange):
         if data.get("code") == "400002":  # invalid timestamp error
             raise NoPriceFound()
 
-        buy = data['data']['asks']
-        sell = data['data']['bids']
+        buy = data["data"]["asks"]
+        sell = data["data"]["bids"]
         if not buy or not sell:
             raise NoPriceFound()
         return buy, sell
 
     def sign(self, message):
-        mac = hmac.new(self.api_secret.encode("utf-8"), message.encode('utf-8'), digestmod='sha256')
+        mac = hmac.new(self.api_secret.encode("utf-8"), message.encode("utf-8"), digestmod="sha256")
         d = mac.digest()
         return base64.b64encode(d)
 
@@ -88,13 +93,13 @@ class KuCoinAPI(AbstractExchange):
 
     def get_header(self, sign, timestamp, passphrase):
         header = dict()
-        header['Content-Type'] = "application/json"
-        header['KC-API-KEY'] = self.api_key
-        header['KC-API-SIGN'] = sign
-        header['KC-API-TIMESTAMP'] = str(timestamp)
-        header['KC-API-PASSPHRASE'] = passphrase
-        header['KC-API-KEY-VERSION'] = "2"
-        header['User-Agent'] = "kucoin-python-sdk/1.0.0"
+        header["Content-Type"] = "application/json"
+        header["KC-API-KEY"] = self.api_key
+        header["KC-API-SIGN"] = sign
+        header["KC-API-TIMESTAMP"] = str(timestamp)
+        header["KC-API-PASSPHRASE"] = passphrase
+        header["KC-API-KEY-VERSION"] = "2"
+        header["User-Agent"] = "kucoin-python-sdk/1.0.0"
         return header
 
     def get_coin_exchange_networks(self):
@@ -119,3 +124,10 @@ class KuCoinAPI(AbstractExchange):
     def withdraw_link(cls, cne: CoinNetworkExchange) -> str:
         link = f"https://www.kucoin.com/assets/withdraw/{cne.coin.name}"
         return link
+
+    def get_pair_chart_change(self, pair: Pair) -> float:
+        response = self.client.get_kline(symbol=pair.dashed_name, kline_type="1min")
+        opened = float(response[14][1])
+        closed = float(response[0][2])
+        change = (closed - opened) / opened * 100
+        return change

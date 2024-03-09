@@ -182,9 +182,9 @@ def send_tg_message(bundle_id):
 
 
 @app.task
-def set_bundle_volume_statistics(bundle_id):
+def fill_up_bundle(bundle_id):
     with Session() as session:
-        bundle = (
+        bundle: ProfitBundle = (
             session.query(ProfitBundle)
             .options(
                 joinedload(ProfitBundle.pair),
@@ -199,11 +199,12 @@ def set_bundle_volume_statistics(bundle_id):
         base_exchange = exchange_mapping[bundle.base_exchange.name](config, {})
         pair_exchange = exchange_mapping[bundle.pair_exchange.name](config, {})
 
-        base_exchange_trading_volume = base_exchange.get_pair_trading_volume(bundle.pair)
-        pair_exchange_trading_volume = pair_exchange.get_pair_trading_volume(bundle.pair)
+        bundle.base_exchange_trading_volume = base_exchange.get_pair_trading_volume(bundle.pair)
+        bundle.pair_exchange_trading_volume = pair_exchange.get_pair_trading_volume(bundle.pair)
 
-        bundle.base_exchange_trading_volume = base_exchange_trading_volume
-        bundle.pair_exchange_trading_volume = pair_exchange_trading_volume
+        bundle.base_exchange_chart_change = base_exchange.get_pair_chart_change(bundle.pair)
+        bundle.pair_exchange_chart_change = pair_exchange.get_pair_chart_change(bundle.pair)
+
         session.commit()
 
     send_tg_message.apply_async(args=[bundle_id], countdown=1)
