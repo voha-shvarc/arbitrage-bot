@@ -120,13 +120,13 @@ class ExchangePairAnalyzer:
     def _get_common_pairs(self):
         with Session() as session:
             subquery = (
-                session.query(PairExchange.pair_id).join(Exchange).filter(Exchange.id == self.base_exchange.db_id)
+                session.query(PairExchange.pair_id).join(Exchange).filter(Exchange.id == self.base_exchange.get_db_id())
             )
             pairs = (
                 session.query(Pair)
                 .join(PairExchange)
                 .join(Exchange)
-                .filter(Exchange.id == self.pair_exchange.db_id, Pair.id.in_(subquery))
+                .filter(Exchange.id == self.pair_exchange.get_db_id(), Pair.id.in_(subquery))
                 .options(joinedload(Pair.base_coin), joinedload(Pair.quote_coin))
                 .all()
             )
@@ -139,7 +139,7 @@ class ExchangePairAnalyzer:
                 .join(Exchange)
                 .join(Coin)
                 .filter(
-                    Exchange.id.in_([self.pair_exchange.db_id, self.base_exchange.db_id]),
+                    Exchange.id.in_([self.pair_exchange.get_db_id(), self.base_exchange.get_db_id()]),
                     Coin.name == coin.name,
                 )
                 .group_by(CoinNetworkExchange.base_network_id)
@@ -206,8 +206,8 @@ class ExchangePairAnalyzer:
                         ProfitBundle.status == BundleStatus.in_progress,
                         ProfitBundle.coin_network_exchange_id == price_analyzer.coin_network_exchange.id,
                         ProfitBundle.pair_id == pair.id,
-                        ProfitBundle.base_exchange_id == from_exchange.db_id,
-                        ProfitBundle.pair_exchange_id == to_exchange.db_id,
+                        ProfitBundle.base_exchange_id == from_exchange.get_db_id(),
+                        ProfitBundle.pair_exchange_id == to_exchange.get_db_id(),
                     ),
                 ),
             ).scalar()
@@ -217,7 +217,7 @@ class ExchangePairAnalyzer:
             deposit_coin_network_exchange = (
                 session.query(CoinNetworkExchange)
                 .filter(
-                    CoinNetworkExchange.exchange_id == to_exchange.db_id,
+                    CoinNetworkExchange.exchange_id == to_exchange.get_db_id(),
                     CoinNetworkExchange.coin_id == price_analyzer.coin_network_exchange.coin_id,
                     CoinNetworkExchange.base_network_id == price_analyzer.coin_network_exchange.base_network_id,
                 )
@@ -242,8 +242,8 @@ class ExchangePairAnalyzer:
             bundle = ProfitBundle()
             bundle.pair_id = pair.id
             bundle.coin_network_exchange_id = price_analyzer.coin_network_exchange.id
-            bundle.base_exchange_id = from_exchange.db_id
-            bundle.pair_exchange_id = to_exchange.db_id
+            bundle.base_exchange_id = from_exchange.get_db_id()
+            bundle.pair_exchange_id = to_exchange.get_db_id()
             bundle.network_speed = network_speed
 
             bundle_item = ProfitBundleItem(**price_analyzer.to_db())

@@ -43,6 +43,8 @@ class Exchange(Base):
 
     id = Column(Integer, primary_key=True)
     name = Column(String(50), nullable=False)
+    active_buy = Column(Boolean, server_default="true")
+    active_sell = Column(Boolean, server_default="true")
     created_at = db_created()
     updated_at = db_updated()
 

@@ -1,8 +1,11 @@
 from aiogram import F
 from aiogram import Router
+from aiogram.types import CallbackQuery
 from aiogram.types import Message
 from dotenv import dotenv_values
 
+from db.base import Session
+from db.models import Exchange
 from exchanges import BinanceAPI
 from exchanges import BitgetAPI
 from exchanges import BybitAPI
@@ -10,6 +13,9 @@ from exchanges import GateIOAPI
 from exchanges import HuobiAPI
 from exchanges import KuCoinAPI
 from exchanges import OkxAPI
+
+from ..keyboards.menu import ConfigExchangeCallbackData
+from ..keyboards.menu import get_config_exchanges_keyboard
 
 
 exchange_mapping = {
@@ -25,7 +31,7 @@ exchange_mapping = {
 menu_router = Router()
 
 
-@menu_router.message(F.text == "Total Balance")
+@menu_router.message(F.text == "Total Balance💰")
 async def get_total_balance(message: Message):
     config = dotenv_values(".env")
     info = ""
@@ -37,3 +43,31 @@ async def get_total_balance(message: Message):
         total_balance += balance
 
     await message.reply(f"💰Balance: <b>{total_balance:.2f}$</b>\n\n{info}")
+
+
+@menu_router.message(F.text == "Exchanges 🛒")
+async def configure_exchanges(message: Message):
+    with Session() as session:
+        reply_markup = get_config_exchanges_keyboard(session)
+
+    await message.answer("Configure your exchanges...", reply_markup=reply_markup)
+
+
+@menu_router.callback_query(ConfigExchangeCallbackData.filter())
+async def configure_exchange_callback_query(query: CallbackQuery, callback_data: ConfigExchangeCallbackData):
+    await query.answer()
+    with Session() as session:
+        (
+            session.query(Exchange)
+            .filter(Exchange.id == callback_data.exchange_id)
+            .update({callback_data.type_name: callback_data.set_active})
+        )
+        reply_markup = get_config_exchanges_keyboard(session)
+        session.commit()
+
+    await query.message.edit_text("Configure your exchanges...", reply_markup=reply_markup)
+
+
+@menu_router.callback_query(F.data.in_({"sell", "buy"}))
+async def configure_exchange_header_buttons(query: CallbackQuery):
+    await query.answer()

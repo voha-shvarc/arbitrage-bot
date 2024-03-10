@@ -44,7 +44,6 @@ exchange_mapping = {
 @refresh_bundle_router.callback_query(RefreshBundleCallbackData.filter())
 async def recalculate_callback_query(query: CallbackQuery, callback_data: RefreshBundleCallbackData):
     await query.answer()
-    logger.info(f"Test callback with bundle_id = {callback_data.profit_bundle_id}")
     with Session() as session:
         bundle = joinedload(ProfitBundleItem.profit_bundle)
         bundle_item: ProfitBundleItem = (

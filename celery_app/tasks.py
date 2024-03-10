@@ -142,7 +142,7 @@ def send_tg_message(bundle_id):
         if not bundle_item.user_based_profit >= BASE_USDT_PROFIT:
             return
 
-        bundle = bundle_item.profit_bundle
+        bundle: ProfitBundle = bundle_item.profit_bundle
 
         message = _get_message(bundle, bundle_item)
         config_tg = load_config(".env")
@@ -161,6 +161,8 @@ def send_tg_message(bundle_id):
             bundle_item.user_based_network_fee < bundle_item.user_based_profit
             and bundle_item.user_based_percent_of_pair_trading_vol >= 0.007
             and bundle_item.user_based_used_sell_orders >= 2
+            and bundle.base_exchange.active_buy
+            and bundle.pair_exchange.active_sell
         ):
             bot_filtered = Bot(token=config_tg.tg_bot_filtered.token, parse_mode="HTML")
             send_message_tasks.extend(

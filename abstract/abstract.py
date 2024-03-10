@@ -26,10 +26,10 @@ class AbstractExchange(ABC):
     def get_pair_trading_volume(self, pair) -> float:
         pass
 
-    @property
-    def db_id(self):
+    @classmethod
+    def get_db_id(cls) -> int:
         with Session() as session:
-            exchange_id = session.query(Exchange.id).filter(Exchange.name == self.NAME).scalar()
+            exchange_id = session.query(Exchange.id).filter(Exchange.name == cls.NAME).scalar()
         return exchange_id
 
     @classmethod
