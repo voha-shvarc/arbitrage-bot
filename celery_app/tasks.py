@@ -41,7 +41,8 @@ exchange_mapping = {
     BitgetAPI.NAME: BitgetAPI,
 }
 
-BASE_USDT_PROFIT = 2  # 2 USDT
+BASE_USDT_PROFIT = 4  # 4 USDT
+REFRESH_BASE_USDT_PROFIT = 2  # 2 USDT
 
 error_log = logging.getLogger("error")
 
@@ -83,7 +84,7 @@ def monitor_bundle(self: Task, bundle_id):
         error_log.exception(e)
         return
 
-    if price_analyzer.profit > BASE_USDT_PROFIT and price_analyzer.avg_spread >= 0.006:
+    if price_analyzer.profit > REFRESH_BASE_USDT_PROFIT and price_analyzer.avg_spread >= 0.005:
         with Session() as session:
             bundle_item = ProfitBundleItem(**price_analyzer.to_db())
             bundle_item.profit_bundle_id = bundle.id
@@ -158,8 +159,8 @@ def send_tg_message(bundle_id):
         ]
         if (
             bundle_item.user_based_network_fee < bundle_item.user_based_profit
-            and bundle_item.user_based_percent_of_pair_trading_vol >= 0.01
-            and bundle_item.user_based_used_sell_orders >= 3
+            and bundle_item.user_based_percent_of_pair_trading_vol >= 0.007
+            and bundle_item.user_based_used_sell_orders >= 2
         ):
             bot_filtered = Bot(token=config_tg.tg_bot_filtered.token, parse_mode="HTML")
             send_message_tasks.extend(
