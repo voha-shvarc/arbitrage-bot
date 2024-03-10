@@ -95,3 +95,12 @@ class BinanceAPI(AbstractExchange):
     def get_pair_chart_change(self, pair: Pair) -> float:
         response = self.client.rolling_window_ticker(symbol=pair.default_name, windowSize="15m")
         return float(response["priceChangePercent"])
+
+    def get_balance(self) -> float:
+        response = self.client.user_asset(asset="USDT")
+        try:
+            balance = float(response[0]["free"])
+        except (KeyError, IndexError):
+            balance = 0
+
+        return balance

@@ -1,5 +1,6 @@
 from typing import List
 
+from huobi.client.account import AccountClient
 from huobi.client.generic import GenericClient
 from huobi.client.market import MarketClient
 from huobi.constant import DepthStep
@@ -20,8 +21,12 @@ class HuobiAPI(AbstractExchange):
     def __init__(self, config, connection):
         self.connection = connection
 
-        self.client = GenericClient()
-        self.price_client = MarketClient(init_log=True)
+        api_key = config["HUOBI_API_KEY"]
+        api_secret = config["HUOBI_API_SECRET"]
+
+        self.client = GenericClient(api_key=api_key, secret_key=api_secret)
+        self.price_client = MarketClient(api_key=api_key, secret_key=api_secret)
+        self.account_client = AccountClient(api_key=api_key, secret_key=api_secret)
 
     def get_trading_pairs(self) -> List[TradingPair]:
         pairs_info = self.client.get_exchange_symbols()
@@ -98,3 +103,7 @@ class HuobiAPI(AbstractExchange):
         closed = response[0].close
         change = (closed - opened) / opened * 100
         return change
+
+    def get_balance(self) -> float:
+        response = self.account_client.get_account_asset_valuation("spot", "USD")
+        return float(response.balance)

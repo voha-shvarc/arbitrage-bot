@@ -48,6 +48,9 @@ class AbstractExchange(ABC):
         """Returns pair chart change for the last 15 minutes in percents"""
         raise NotImplementedError()
 
+    def get_balance(self) -> float:
+        raise NotImplementedError()
+
 
 class NoPriceFound(Exception):
     pass

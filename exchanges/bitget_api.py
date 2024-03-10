@@ -10,6 +10,7 @@ from db.models import CoinNetworkExchange
 from db.models import Pair
 from db.structs import CoinNetworkExchangeDC
 from db.structs import TradingPair
+from exchanges.bitget.v1.spot.account_api import AccountApi
 from exchanges.bitget.v1.spot.market_api import MarketApi
 
 
@@ -25,6 +26,11 @@ class BitgetAPI(AbstractExchange):
         self.api_secret = config["BITGET_API_SECRET"]
         self.api_passphrase = config["BITGET_API_PASSPHRASE"]
         self.client = MarketApi(api_key=self.api_key, api_secret_key=self.api_secret, passphrase=self.api_passphrase)
+        self.account_client = AccountApi(
+            api_key=self.api_key,
+            api_secret_key=self.api_secret,
+            passphrase=self.api_passphrase,
+        )
 
     def get_trading_pairs(self) -> List[TradingPair]:
         pairs_info = self.client.products(params={})
@@ -142,3 +148,15 @@ class BitgetAPI(AbstractExchange):
         closed = float(response["data"][-1]["close"])
         change = (closed - opened) / opened * 100
         return change
+
+    def get_balance(self) -> float:
+        params = {
+            "coin": "USDT",
+        }
+        response = self.account_client.assetsLite(params=params)
+        try:
+            balance = float(response["data"][0]["available"])
+        except (KeyError, IndexError):
+            balance = 0
+
+        return balance

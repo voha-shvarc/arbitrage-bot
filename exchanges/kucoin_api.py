@@ -5,6 +5,7 @@ import time
 from typing import List
 
 from kucoin.client import MarketData
+from kucoin.client import UserData
 
 from abstract import AbstractExchange
 from abstract import NoPriceFound
@@ -25,6 +26,7 @@ class KuCoinAPI(AbstractExchange):
         self.api_secret = config["KUCOIN_API_SECRET"]
         self.api_passphrase = config["KUCOIN_API_PASSPHRASE"]
         self.client = MarketData(self.api_key, self.api_secret, self.api_passphrase)
+        self.account_client = UserData(self.api_key, self.api_secret, self.api_passphrase)
 
     def get_trading_pairs(self) -> List[TradingPair]:
         pairs_info = self.client.get_symbol_list_v2()
@@ -131,3 +133,12 @@ class KuCoinAPI(AbstractExchange):
         closed = float(response[0][2])
         change = (closed - opened) / opened * 100
         return change
+
+    def get_balance(self) -> float:
+        response = self.account_client.get_account_list(currency="USDT", account_type="main")
+        try:
+            balance = float(response[0]["balance"])
+        except (KeyError, IndexError):
+            balance = 0
+
+        return balance

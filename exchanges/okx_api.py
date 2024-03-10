@@ -133,3 +133,12 @@ class OkxAPI(AbstractExchange):
         closed = float(response["data"][0][4])
         change = (closed - opened) / opened * 100
         return change
+
+    def get_balance(self) -> float:
+        response = self.funding_client.get_balances(ccy="USDT")
+        try:
+            balance = float(response["data"][0]["bal"])
+        except (KeyError, IndexError):
+            balance = 0
+
+        return balance

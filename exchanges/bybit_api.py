@@ -94,3 +94,12 @@ class BybitAPI(AbstractExchange):
         closed = float(response["result"]["list"][0][2])
         change = (closed - opened) / opened * 100
         return change
+
+    def get_balance(self) -> float:
+        response = self.session.get_coin_balance(coin="USDT", account_type="SPOT")
+        try:
+            balance = float(response["result"]["balance"]["walletBalance"])
+        except KeyError:
+            balance = 0
+
+        return balance

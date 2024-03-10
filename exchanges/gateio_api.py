@@ -3,6 +3,7 @@ from typing import List
 from gate_api import ApiClient
 from gate_api import Configuration
 from gate_api import SpotApi
+from gate_api import WalletApi
 
 from abstract import AbstractExchange
 from abstract import NoPriceFound
@@ -19,8 +20,11 @@ class GateIOAPI(AbstractExchange):
     def __init__(self, config, connection):
         self.connection = connection
 
-        api_config = ApiClient(Configuration())
+        api_key = config["GATEIO_API_KEY"]
+        secret_key = config["GATEIO_API_SECRET"]
+        api_config = ApiClient(Configuration(key=api_key, secret=secret_key))
         self.spot_client = SpotApi(api_config)
+        self.account_client = WalletApi(api_config)
 
     def get_trading_pairs(self) -> List[TradingPair]:
         pairs_info = self.spot_client.list_currency_pairs()
@@ -93,3 +97,7 @@ class GateIOAPI(AbstractExchange):
         closed = float(response[0][2])
         change = (closed - opened) / opened * 100
         return change
+
+    def get_balance(self) -> float:
+        balance = self.account_client.get_total_balance()
+        return float(balance.total.amount)
