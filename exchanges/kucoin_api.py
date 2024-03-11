@@ -135,7 +135,7 @@ class KuCoinAPI(AbstractExchange):
         return change
 
     def get_balance(self) -> float:
-        response = self.account_client.get_account_list(currency="USDT", account_type="main")
+        response = self.account_client.get_account_list(currency="USDT", account_type="trade")
         try:
             balance = float(response[0]["balance"])
         except (KeyError, IndexError):
