@@ -29,8 +29,8 @@ def get_config_exchanges_keyboard(session):
     keyboard = InlineKeyboardBuilder()
 
     keyboard.row(
-        InlineKeyboardButton(text="📗", callback_data="buy"),
-        InlineKeyboardButton(text="📕", callback_data="sell"),
+        InlineKeyboardButton(text="📕", callback_data="buy"),
+        InlineKeyboardButton(text="📗", callback_data="sell"),
     )
     for exchange in session.query(Exchange).order_by(Exchange.id):
         keyboard.button(

@@ -2,6 +2,7 @@ import base64
 import datetime
 import hmac
 
+from okx.Account import AccountAPI
 from okx.Funding import FundingAPI
 from okx.MarketData import MarketAPI
 from okx.PublicData import PublicAPI
@@ -30,6 +31,7 @@ class OkxAPI(AbstractExchange):
         self.public_data_client = PublicAPI(self.api_key, self.api_secret, self.passphrase, flag=self.flag, debug=False)
         self.market_client = MarketAPI(self.api_key, self.api_secret, self.passphrase, flag=self.flag, debug=False)
         self.funding_client = FundingAPI(self.api_key, self.api_secret, self.passphrase, flag=self.flag, debug=False)
+        self.account_client = AccountAPI(self.api_key, self.api_secret, self.passphrase, flag=self.flag, debug=False)
 
     @retry(delay=1, tries=2)
     def get_trading_pairs(self) -> list:
@@ -135,9 +137,9 @@ class OkxAPI(AbstractExchange):
         return change
 
     def get_balance(self) -> float:
-        response = self.funding_client.get_balances(ccy="USDT")
+        response = self.account_client.get_account_balance(ccy="USDT")
         try:
-            balance = float(response["data"][0]["bal"])
+            balance = float(response["data"][0]["details"][0]["availBal"])
         except (KeyError, IndexError):
             balance = 0
 
