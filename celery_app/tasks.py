@@ -109,11 +109,11 @@ def monitor_bundle(self: Task, bundle_id, force_refresh: bool = False):
 
         try:
             if self.request.retries < 60:  # for first 10 minutes
-                raise self.retry(countdown=10)
+                raise self.retry(countdown=10, args=[bundle_id])
             elif self.request.retries < 80:  # for next 10 minutes
-                raise self.retry(countdown=30)
+                raise self.retry(countdown=30, args=[bundle_id])
             else:
-                raise self.retry(countdown=60)
+                raise self.retry(countdown=60, args=[bundle_id])
         except MaxRetriesExceededError:
             pass
 
