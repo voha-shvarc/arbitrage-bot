@@ -45,6 +45,7 @@ class Exchange(Base):
     name = Column(String(50), nullable=False)
     active_buy = Column(Boolean, server_default="true")
     active_sell = Column(Boolean, server_default="true")
+    max_liquid_amount = Column(Integer, server_default="800")
     created_at = db_created()
     updated_at = db_updated()
 
