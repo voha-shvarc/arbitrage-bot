@@ -1,3 +1,5 @@
+from json import JSONDecodeError
+from logging import getLogger
 from typing import List
 
 from binance.spot import Spot
@@ -8,6 +10,9 @@ from db.models import CoinNetworkExchange
 from db.models import Pair
 from db.structs import CoinNetworkExchangeDC
 from db.structs import TradingPair
+
+
+error_log = getLogger("error")
 
 
 class BinanceAPI(AbstractExchange):
@@ -52,10 +57,10 @@ class BinanceAPI(AbstractExchange):
             raise NoPriceFound()
         return buy, sell
 
-    async def async_get_price(self, symbol, limit=30):
+    async def async_get_price(self, pair: Pair, limit=30):
         url = self.base_url + "/api/v3/depth"
         body = {
-            "symbol": symbol.default_name,
+            "symbol": pair.default_name,
             "limit": limit,
         }
         headers = {
@@ -64,10 +69,19 @@ class BinanceAPI(AbstractExchange):
             "X-MBX-APIKEY": self.api_key,
         }
         response = await self.connection.get(url, params=body, headers=headers)
-        data = response.json()
+        try:
+            data = response.json()
+        except JSONDecodeError:
+            error_log.error(f"[binance] {pair.default_name} - {response.text}")
+            raise NoPriceFound()
 
-        buy = data["asks"]
-        sell = data["bids"]
+        try:
+            buy = data["asks"]
+            sell = data["bids"]
+        except KeyError as e:
+            error_log.error(f"[binance] {pair.default_name} - error parsing data {data =}\n{e}")
+            raise NoPriceFound()
+
         if not buy or not sell:
             raise NoPriceFound()
 

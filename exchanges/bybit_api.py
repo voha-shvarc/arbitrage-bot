@@ -1,3 +1,5 @@
+from json import JSONDecodeError
+from logging import getLogger
 from typing import List
 
 from pybit.unified_trading import HTTP
@@ -8,6 +10,9 @@ from db.models import CoinNetworkExchange
 from db.models import Pair
 from db.structs import CoinNetworkExchangeDC
 from db.structs import TradingPair
+
+
+error_log = getLogger("error")
 
 
 class BybitAPI(AbstractExchange):
@@ -46,10 +51,10 @@ class BybitAPI(AbstractExchange):
             raise NoPriceFound()
         return buy, sell
 
-    async def async_get_price(self, symbol, limit=30):
+    async def async_get_price(self, pair: Pair, limit=30):
         url = self.base_url + "/v5/market/orderbook"
         body = {
-            "symbol": symbol.default_name,
+            "symbol": pair.default_name,
             "limit": limit,
             "category": "spot",
         }
@@ -58,10 +63,19 @@ class BybitAPI(AbstractExchange):
             "Accept": "application/json",
         }
         response = await self.connection.get(url, params=body, headers=headers)
-        data = response.json()
+        try:
+            data = response.json()
+        except JSONDecodeError:
+            error_log.error(f"[bybit] {pair.default_name} - {response.text}")
+            raise NoPriceFound()
 
-        buy = data["result"]["a"]
-        sell = data["result"]["b"]
+        try:
+            buy = data["result"]["a"]
+            sell = data["result"]["b"]
+        except KeyError as e:
+            error_log.error(f"[bybit] {pair.default_name} - error parsing data {data =}\n{e}")
+            raise NoPriceFound()
+
         if not buy or not sell:
             raise NoPriceFound()
 

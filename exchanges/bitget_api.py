@@ -1,7 +1,8 @@
 import base64
 import hmac
 import time
-from json.decoder import JSONDecodeError
+from json import JSONDecodeError
+from logging import getLogger
 from typing import List
 
 from abstract import AbstractExchange
@@ -12,6 +13,9 @@ from db.structs import CoinNetworkExchangeDC
 from db.structs import TradingPair
 from exchanges.bitget.v1.spot.account_api import AccountApi
 from exchanges.bitget.v1.spot.market_api import MarketApi
+
+
+error_log = getLogger("error")
 
 
 class BitgetAPI(AbstractExchange):
@@ -61,10 +65,10 @@ class BitgetAPI(AbstractExchange):
             raise NoPriceFound()
         return buy, sell
 
-    async def async_get_price(self, symbol, limit=30):
+    async def async_get_price(self, pair: Pair, limit=30):
         url = self.base_url + "/api/spot/v1/market/depth"
         body = {
-            "symbol": symbol.bitget_name,
+            "symbol": pair.bitget_name,
             "limit": limit,
         }
         timestamp = self.get_timestamp()
@@ -74,17 +78,16 @@ class BitgetAPI(AbstractExchange):
         try:
             data = response.json()
         except JSONDecodeError:
-            import logging
-
-            log = logging.getLogger("error")
-            log.error(f"[bitget] - {response.text}")
+            error_log.error(f"[bitget] {pair.default_name} - {response.text}")
             raise NoPriceFound()
 
-        if not data.get("data"):
+        try:
+            buy = data["data"]["asks"]
+            sell = data["data"]["bids"]
+        except KeyError as e:
+            error_log.error(f"[bitget] {pair.default_name} - error parsing data {data = }\n{e}")
             raise NoPriceFound()
 
-        buy = data["data"]["asks"]
-        sell = data["data"]["bids"]
         if not buy or not sell:
             raise NoPriceFound()
 

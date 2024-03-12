@@ -54,11 +54,11 @@ class KuCoinAPI(AbstractExchange):
             raise NoPriceFound()
         return buy, sell
 
-    async def async_get_price(self, symbol, limit=20):
+    async def async_get_price(self, pair, limit=20):
         url = self.base_url + "/api/v3/market/orderbook/level2_20"
-        uri_path = f"/api/v3/market/orderbook/level2_20?symbol={symbol.dashed_name}"
+        uri_path = f"/api/v3/market/orderbook/level2_20?symbol={pair.dashed_name}"
         body = {
-            "symbol": symbol.dashed_name,
+            "symbol": pair.dashed_name,
         }
         now_time = int(time.time()) * 1000
         sign = self.sign(self.pre_hash(now_time, "GET", uri_path))
@@ -67,17 +67,30 @@ class KuCoinAPI(AbstractExchange):
             hmac.new(self.api_secret.encode("utf-8"), self.api_passphrase.encode("utf-8"), hashlib.sha256).digest(),
         )
         headers = self.get_header(sign, now_time, passphrase)
+        from json import JSONDecodeError
+        from logging import getLogger
 
+        error_log = getLogger("error")
         response = await self.connection.get(url, params=body, headers=headers)
-        data = response.json()
+        try:
+            data = response.json()
+        except JSONDecodeError:
+            error_log.error(f"[kucoin] {pair.default_name} - {response.text}")
+            raise NoPriceFound()
 
         if data.get("code") == "400002":  # invalid timestamp error
             raise NoPriceFound()
 
-        buy = data["data"]["asks"]
-        sell = data["data"]["bids"]
+        try:
+            buy = data["data"]["asks"]
+            sell = data["data"]["bids"]
+        except KeyError as e:
+            error_log.error(f"[kucoin] {pair.default_name} - error parsing data {data =}\n{e}")
+            raise NoPriceFound()
+
         if not buy or not sell:
             raise NoPriceFound()
+
         return buy, sell
 
     def sign(self, message):

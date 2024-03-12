@@ -1,3 +1,5 @@
+from json import JSONDecodeError
+from logging import getLogger
 from typing import List
 
 from huobi.client.account import AccountClient
@@ -12,6 +14,9 @@ from db.models import CoinNetworkExchange
 from db.models import Pair
 from db.structs import CoinNetworkExchangeDC
 from db.structs import TradingPair
+
+
+error_log = getLogger("error")
 
 
 class HuobiAPI(AbstractExchange):
@@ -58,21 +63,31 @@ class HuobiAPI(AbstractExchange):
             raise NoPriceFound()
         return buy, sell
 
-    async def async_get_price(self, symbol, limit=20):
+    async def async_get_price(self, pair: Pair, limit=20):
         url = self.base_url + "/market/depth"
         body = {
-            "symbol": symbol.huobi_name,
+            "symbol": pair.huobi_name,
             "depth": limit,
             "type": DepthStep.STEP0,
         }
         response = await self.connection.get(url, params=body)
-        data = response.json()
-
-        if data.get("err-msg") in ["invalid symbol", "request limit"]:
+        try:
+            data = response.json()
+        except JSONDecodeError:
+            error_log.error(f"[huobi] {pair.default_name} - {response.text}")
             raise NoPriceFound()
 
-        buy = data["tick"]["asks"]
-        sell = data["tick"]["bids"]
+        if data.get("err-msg") in ["invalid symbol", "request limit"]:
+            error_log.error(f"[huobi] {pair.default_name} - {data['err-msg']}")
+            raise NoPriceFound()
+
+        try:
+            buy = data["tick"]["asks"]
+            sell = data["tick"]["bids"]
+        except KeyError as e:
+            error_log.error(f"[huobi] {pair.default_name} - error parsing data {data =}\n{e}")
+            raise NoPriceFound()
+
         if not sell or not buy:
             raise NoPriceFound()
 

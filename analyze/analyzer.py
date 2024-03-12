@@ -3,6 +3,7 @@ import logging
 import time
 from typing import Tuple
 
+from httpcore import ConnectError
 from httpx import PoolTimeout
 from sqlalchemy import and_
 from sqlalchemy import exists
@@ -49,11 +50,11 @@ class ExchangePairAnalyzer:
         except NoPriceFound:
             log.info(f"no price found - {pair.default_name}")
             return
-        except PoolTimeout:
-            log.info(f"pool timeout - {pair.default_name}")
+        except (PoolTimeout, ConnectError):
+            error_log.error(f"connection error - {pair.default_name}")
             return
         except Exception as e:
-            error_log.exception(f"unknown error getting price - {e} - {pair.default_name}")
+            error_log.error(f"unknown error getting price - {e} - {pair.default_name}")
             return
 
         if base_to_second_network and self.base_exchange.NAME != "GateIO":

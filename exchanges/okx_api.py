@@ -1,6 +1,8 @@
 import base64
 import datetime
 import hmac
+from json import JSONDecodeError
+from logging import getLogger
 
 from okx.Account import AccountAPI
 from okx.Funding import FundingAPI
@@ -14,6 +16,9 @@ from db.models import CoinNetworkExchange
 from db.models import Pair
 from db.structs import CoinNetworkExchangeDC
 from db.structs import TradingPair
+
+
+error_log = getLogger("error")
 
 
 class OkxAPI(AbstractExchange):
@@ -62,23 +67,33 @@ class OkxAPI(AbstractExchange):
         return buy, sell
 
     @retry(delay=1, tries=2)
-    async def async_get_price(self, symbol, limit=30):
+    async def async_get_price(self, pair: Pair, limit=30):
         url = self.base_url + "/api/v5/market/books"
         body = {
-            "instId": symbol.dashed_name,
+            "instId": pair.dashed_name,
             "sz": limit,
         }
         timestamp = self.get_timestamp()
         sign = self.sign(self.pre_hash(timestamp, "GET", url, ""))
         header = self.get_header(sign, timestamp)
         response = await self.connection.get(url, params=body, headers=header)
-        data = response.json()
-
-        if data.get("code") in ["50011", "51001"]:  # too many requests or wrong instID
+        try:
+            data = response.json()
+        except JSONDecodeError:
+            error_log.error(f"[okx] {pair.default_name} - {response.text}")
             raise NoPriceFound()
 
-        buy = data["data"][0]["asks"]
-        sell = data["data"][0]["bids"]
+        if data.get("code") in ["50011", "51001"]:  # too many requests or wrong instID
+            error_log.error(f"[okx] {pair.default_name} - {data['code']}")
+            raise NoPriceFound()
+
+        try:
+            buy = data["data"][0]["asks"]
+            sell = data["data"][0]["bids"]
+        except (KeyError, IndexError) as e:
+            error_log.error(f"[okx] {pair.default_name} - error parsing data {data =}\n{e}")
+            raise NoPriceFound()
+
         if not buy or not sell:
             raise NoPriceFound()
 
