@@ -104,7 +104,8 @@ def monitor_bundle(self: Task, bundle_id, force_refresh: bool = False):
             session.add(bundle_item)
             session.commit()
 
-        send_tg_message.apply_async(args=[bundle_id], countdown=0.5)
+        if force_refresh:
+            send_tg_message.apply_async(args=[bundle_id], countdown=0.5)
 
         try:
             if self.request.retries < 60:  # for first 10 minutes
