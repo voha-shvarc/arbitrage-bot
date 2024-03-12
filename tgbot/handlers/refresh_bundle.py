@@ -1,5 +1,4 @@
 import logging
-from datetime import datetime
 
 from aiogram import Router
 from aiogram.exceptions import TelegramBadRequest
@@ -7,8 +6,8 @@ from aiogram.types import CallbackQuery
 from dotenv import dotenv_values
 from sqlalchemy.orm import joinedload
 
+from celery_app.tasks import monitor_bundle
 from db.base import Session
-from db.models import BundleStatus
 from db.models import CoinNetworkExchange
 from db.models import Pair
 from db.models import ProfitBundle
@@ -21,8 +20,10 @@ from exchanges import HuobiAPI
 from exchanges import KuCoinAPI
 from exchanges import OkxAPI
 
+from ..keyboards.bundle import ForceRefreshBundleCallbackData
 from ..keyboards.bundle import get_refresh_keyboard
 from ..keyboards.bundle import RefreshBundleCallbackData
+from ..services.messages import get_bundle_message
 
 
 logger = logging.getLogger(__name__)
@@ -42,7 +43,7 @@ exchange_mapping = {
 
 
 @refresh_bundle_router.callback_query(RefreshBundleCallbackData.filter())
-async def recalculate_callback_query(query: CallbackQuery, callback_data: RefreshBundleCallbackData):
+async def recalculate_bundle_callback_query(query: CallbackQuery, callback_data: RefreshBundleCallbackData):
     await query.answer()
     with Session() as session:
         bundle = joinedload(ProfitBundleItem.profit_bundle)
@@ -67,7 +68,7 @@ async def recalculate_callback_query(query: CallbackQuery, callback_data: Refres
 
     bundle = bundle_item.profit_bundle
     try:
-        message = _get_message(bundle, bundle_item, callback_data.show_more)
+        message = get_bundle_message(bundle, bundle_item, callback_data.show_more)
         await query.message.edit_text(
             message,
             reply_markup=get_refresh_keyboard(bundle.id),
@@ -77,58 +78,16 @@ async def recalculate_callback_query(query: CallbackQuery, callback_data: Refres
         logger.warning(f"Bundle (id={bundle.id}) haven't changed...")
 
 
-def _get_message(bundle, bundle_item: ProfitBundleItem, show_more: bool = False) -> str:
-    if bundle.status == BundleStatus.in_progress:
-        time_live = datetime.utcnow() - bundle.created_at
-    else:
-        time_live = bundle.updated_at - bundle.created_at
+@refresh_bundle_router.callback_query(ForceRefreshBundleCallbackData.filter())
+async def force_recalculate_bundle_callback_query(query: CallbackQuery, callback_data: ForceRefreshBundleCallbackData):
+    await query.answer()
+    bundle_id = callback_data.profit_bundle_id
 
-    base_exchange = exchange_mapping[bundle.base_exchange.name]
-    pair_exchange = exchange_mapping[bundle.pair_exchange.name]
-
-    base_ex_spot_link = base_exchange.spot_link(bundle.pair)
-    base_ex_withdraw_link = base_exchange.withdraw_link(bundle.coin_network_exchange)
-    pair_ex_spot_link = pair_exchange.spot_link(bundle.pair)
-    pair_ex_deposit_link = pair_exchange.deposit_link(bundle.coin_network_exchange)
-
-    base_exchange_price_section = (
-        f"📕 {bundle.base_exchange.name} | <a href='{base_ex_spot_link}'>spot</a> | <a href='{base_ex_withdraw_link}'>withdraw</a>\n"
-        f"📈 [ <code>{bundle_item.user_based_base_exchange_min_price}</code> - "
-        f"<code>{bundle_item.user_based_base_exchange_max_price}</code> ] "
-        f"| {bundle_item.user_based_used_buy_orders} orders | {(bundle_item.user_based_percent_of_base_trading_vol * 100):.3f}%"
-    )
-    if bundle.base_exchange_chart_change is not None:
-        base_exchange_price_section += f" | {bundle.base_exchange_chart_change:+.1f}%"
-    if show_more:
-        base_exchange_price_section += f"\n🛒 {bundle_item.used_buy_orders} orders | {bundle_item.to_use_usdt:.2f}$ | {(bundle_item.percent_of_base_trading_vol * 100):.3f}%"
-
-    pair_exchange_price_section = (
-        f"📗 {bundle.pair_exchange.name} | <a href='{pair_ex_spot_link}'>spot</a> | <a href='{pair_ex_deposit_link}'>deposit</a>\n"
-        f"📈 [ <code>{bundle_item.user_based_pair_exchange_min_price}</code> - "
-        f"<code>{bundle_item.user_based_pair_exchange_max_price}</code> ] "
-        f"| {bundle_item.user_based_used_sell_orders} orders | {(bundle_item.user_based_percent_of_pair_trading_vol * 100):.3f}%"
-    )
-    if bundle.pair_exchange_chart_change is not None:
-        pair_exchange_price_section += f" | {bundle.pair_exchange_chart_change:+.1f}%"
-    if show_more:
-        pair_exchange_price_section += f"\n🛒 {bundle_item.used_sell_orders} orders | {bundle_item.to_use_usdt:.2f}$ | {(bundle_item.percent_of_pair_trading_vol * 100):.3f}%"
-
-    fees_section = f"‼️️ Spot Fee: <b>{bundle_item.user_based_spot_fee:.2f}$</b> | Network Fee: <b>{bundle_item.user_based_network_fee:.2f}$</b>"
-    if bundle.network_speed is not None:
-        fees_section += f"\n🚀 Network Speed: {bundle.network_speed:.1f} - {bundle.network_speed + 2:.1f} minutes"
-
-    status = (
-        f"🟢 Status: {bundle.status}" if bundle.status == BundleStatus.in_progress else f"🔴 Status: {bundle.status}"
-    )
-    message = (
-        f"<b>{bundle.base_exchange.name} -> {bundle.pair_exchange.name} | <code>{bundle_item.user_based_to_use_usdt:.2f}</code>$ "
-        f"{bundle_item.user_based_profit:+.2f}$ ({bundle_item.user_based_avg_spread * 100:.2f}%)</b>\n\n"
-        f"<b>{bundle.pair.dashed_name}</b> | <b>{bundle.coin_network_exchange.base_network.name}</b>\n\n"
-        f"{base_exchange_price_section}\n\n"
-        f"{pair_exchange_price_section}\n\n"
-        f"{fees_section}\n\n"
-        f"{status}\n"
-        f"⏳ Alive: {time_live.total_seconds() / 60:.1f} minutes"
+    text = query.message.html_text
+    await query.message.edit_text(
+        f"{text}\n\nUpdating...",
+        reply_markup=get_refresh_keyboard(bundle_id),
+        disable_web_page_preview=True,
     )
 
-    return message
+    monitor_bundle.apply_async(args=[bundle_id, True])

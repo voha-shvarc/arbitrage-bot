@@ -24,9 +24,9 @@ from exchanges import KuCoinAPI
 from exchanges import OkxAPI
 from services.send_analytics_service import SendAnalyticsService
 from tgbot.config import load_config
-from tgbot.handlers.refresh_bundle import _get_message
 from tgbot.keyboards.bundle import get_refresh_keyboard
 from tgbot.services.broadcaster import send_message
+from tgbot.services.messages import get_bundle_message
 
 
 config = dotenv_values(".env")
@@ -48,7 +48,7 @@ error_log = logging.getLogger("error")
 
 
 @app.task(bind=True, max_retries=100)  # it takes 40 minutes to use all the retires
-def monitor_bundle(self: Task, bundle_id):
+def monitor_bundle(self: Task, bundle_id, force_refresh: bool = False):
     with Session() as session:
         bundle = (
             session.query(ProfitBundle)
@@ -67,7 +67,7 @@ def monitor_bundle(self: Task, bundle_id):
     base_exchange = exchange_mapping[bundle.base_exchange.name](config, {})
     pair_exchange = exchange_mapping[bundle.pair_exchange.name](config, {})
 
-    if bundle.buy_price_snapshot:
+    if bundle.buy_price_snapshot and not force_refresh:
         base_exchange_price = bundle.buy_price_snapshot, []
     else:
         base_exchange_price = base_exchange.get_price(bundle.pair)
@@ -88,13 +88,23 @@ def monitor_bundle(self: Task, bundle_id):
         with Session() as session:
             bundle_item = ProfitBundleItem(**price_analyzer.to_db())
             bundle_item.profit_bundle_id = bundle.id
-            if self.request.retries == 9:
+            if force_refresh:
+                session.query(ProfitBundle).filter(ProfitBundle.id == bundle_id).update(
+                    {
+                        "status": BundleStatus.in_progress,
+                        "buy_price_snapshot": None,
+                    },
+                    synchronize_session=False,
+                )
+            elif self.request.retries == 9:
                 session.query(ProfitBundle).filter(ProfitBundle.id == bundle_id).update(
                     {"buy_price_snapshot": base_exchange_price[0]},
                     synchronize_session=False,
                 )
             session.add(bundle_item)
             session.commit()
+
+        send_tg_message.apply_async(args=[bundle_id], countdown=0.5)
 
         try:
             if self.request.retries < 60:  # for first 10 minutes
@@ -144,7 +154,7 @@ def send_tg_message(bundle_id):
 
         bundle: ProfitBundle = bundle_item.profit_bundle
 
-        message = _get_message(bundle, bundle_item)
+        message = get_bundle_message(bundle, bundle_item)
         config_tg = load_config(".env")
         bot = Bot(token=config_tg.tg_bot.token, parse_mode="HTML")
         send_message_tasks = [

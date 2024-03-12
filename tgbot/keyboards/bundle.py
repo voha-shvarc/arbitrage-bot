@@ -1,10 +1,15 @@
-from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.filters.callback_data import CallbackData
+from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 
 class RefreshBundleCallbackData(CallbackData, prefix="refresh"):
     profit_bundle_id: int
     show_more: bool = False
+    force_update: bool = False
+
+
+class ForceRefreshBundleCallbackData(CallbackData, prefix="force_refresh"):
+    profit_bundle_id: int
 
 
 def get_refresh_keyboard(profit_bundle_id):
@@ -17,6 +22,10 @@ def get_refresh_keyboard(profit_bundle_id):
     keyboard.button(
         text="More",
         callback_data=RefreshBundleCallbackData(profit_bundle_id=profit_bundle_id, show_more=True),
+    )
+    keyboard.button(
+        text="Force Refresh",
+        callback_data=ForceRefreshBundleCallbackData(profit_bundle_id=profit_bundle_id),
     )
 
     return keyboard.as_markup()
