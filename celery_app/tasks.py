@@ -54,6 +54,7 @@ def monitor_bundle(self: Task, bundle_id, force_refresh: bool = False):
             session.query(ProfitBundle)
             .options(
                 joinedload(ProfitBundle.coin_network_exchange),
+                joinedload(ProfitBundle.coin_network_exchange).joinedload(CoinNetworkExchange.exchange),
                 joinedload(ProfitBundle.coin_network_exchange).joinedload(CoinNetworkExchange.network),
                 joinedload(ProfitBundle.pair),
                 joinedload(ProfitBundle.pair).joinedload(Pair.base_coin),
