@@ -159,36 +159,41 @@ def send_tg_message(bundle_id):
         message = get_bundle_message(bundle, bundle_item)
         config_tg = load_config(".env")
         bot = Bot(token=config_tg.tg_bot.token, parse_mode="HTML")
-        send_message_tasks = [
-            send_message(
-                bot,
-                user_id,
-                message,
-                reply_markup=get_refresh_keyboard(bundle_id),
-                disable_web_page_preview=True,
-            )
-            for user_id in config_tg.tg_bot.admin_ids
-        ]
         if (
-            bundle_item.user_based_network_fee < bundle_item.user_based_profit
-            and bundle_item.user_based_percent_of_pair_trading_vol >= 0.007
-            and bundle_item.user_based_used_sell_orders >= 2
-            and bundle.base_exchange.active_buy
+            bundle.base_exchange.active_buy
             and bundle.pair_exchange.active_sell
+            and (bundle.network_speed is None or bundle.network_speed < 10)
         ):
-            bot_filtered = Bot(token=config_tg.tg_bot_filtered.token, parse_mode="HTML")
-            send_message_tasks.extend(
-                [
-                    send_message(
-                        bot_filtered,
-                        user_id,
-                        message,
-                        reply_markup=get_refresh_keyboard(bundle_id),
-                        disable_web_page_preview=True,
-                    )
-                    for user_id in config_tg.tg_bot_filtered.admin_ids
-                ],
-            )
+            send_message_tasks = [
+                send_message(
+                    bot,
+                    user_id,
+                    message,
+                    reply_markup=get_refresh_keyboard(bundle_id),
+                    disable_web_page_preview=True,
+                )
+                for user_id in config_tg.tg_bot.admin_ids
+            ]
+            if (
+                bundle_item.user_based_network_fee < bundle_item.user_based_profit
+                and bundle_item.user_based_percent_of_pair_trading_vol >= 0.007
+                and bundle_item.user_based_used_sell_orders >= 2
+                and bundle.base_exchange.active_buy
+                and bundle.pair_exchange.active_sell
+            ):
+                bot_filtered = Bot(token=config_tg.tg_bot_filtered.token, parse_mode="HTML")
+                send_message_tasks.extend(
+                    [
+                        send_message(
+                            bot_filtered,
+                            user_id,
+                            message,
+                            reply_markup=get_refresh_keyboard(bundle_id),
+                            disable_web_page_preview=True,
+                        )
+                        for user_id in config_tg.tg_bot_filtered.admin_ids
+                    ],
+                )
 
         async def send_messages():
             await asyncio.gather(*send_message_tasks)
