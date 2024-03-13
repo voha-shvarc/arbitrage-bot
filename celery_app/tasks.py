@@ -178,8 +178,6 @@ def send_tg_message(bundle_id):
                 bundle_item.user_based_network_fee < bundle_item.user_based_profit
                 and bundle_item.user_based_percent_of_pair_trading_vol >= 0.007
                 and bundle_item.user_based_used_sell_orders >= 2
-                and bundle.base_exchange.active_buy
-                and bundle.pair_exchange.active_sell
             ):
                 bot_filtered = Bot(token=config_tg.tg_bot_filtered.token, parse_mode="HTML")
                 send_message_tasks.extend(
@@ -195,10 +193,10 @@ def send_tg_message(bundle_id):
                     ],
                 )
 
-        async def send_messages():
-            await asyncio.gather(*send_message_tasks)
+            async def send_messages():
+                await asyncio.gather(*send_message_tasks)
 
-        asyncio.run(send_messages())
+            asyncio.run(send_messages())
 
 
 @app.task
