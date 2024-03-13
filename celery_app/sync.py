@@ -18,11 +18,12 @@ from exchanges import GateIOAPI
 from exchanges import HuobiAPI
 from exchanges import KuCoinAPI
 from exchanges import OkxAPI
+from exchanges import WhitebitAPI
 
 
 config = dotenv_values(".env")
 
-EXCHANGES = {BinanceAPI, BybitAPI, OkxAPI, GateIOAPI, HuobiAPI, KuCoinAPI, BitgetAPI}
+EXCHANGES = {BinanceAPI, BybitAPI, OkxAPI, GateIOAPI, HuobiAPI, KuCoinAPI, BitgetAPI, WhitebitAPI}
 
 
 @app.task
@@ -63,8 +64,10 @@ def sync_coin_exchange_networks():
                 or_(
                     and_(Exchange.name == "GateIO", Coin.name == "GTC"),
                     and_(Exchange.name == "ByBit", Coin.name == "VPAD"),
+                    and_(Exchange.name == "ByBit", Coin.name == "NGL"),  # different from other exchanges
                     and_(
-                        Exchange.name.in_(["ByBit", "Binance", "OKX"]), Network.name == "Chiliz"
+                        Exchange.name.in_(["ByBit", "Binance", "OKX"]),
+                        Network.name == "Chiliz",
                     ),  # different contract addresses for this chain
                     and_(Exchange.name == "ByBit", Coin.name == "GPT"),  # differs from okx and gateio
                     and_(Exchange.name == "Bitget", Coin.name == "ALT"),  # differs from binance and gateio
@@ -117,8 +120,19 @@ def sync_pairs():
 
 def _run_networks_mapping(session: Session):
     data = {
-        "Avalanche": ["AVAX", "XAVAX"],
-        "AVAXC": ["AVAXC", "AVAX_C", "Avalanche C", "CCHAINAVAX", "CAVAX", "AVAXCCHAIN", "C-Chain", "AVAX C-Chain"],
+        "Avalanche": ["AVAX", "XAVAX", "Avalanche X", "X-Chain", "XCHAIN"],
+        "AVAXC": [
+            "AVAXC",
+            "AVAX_C",
+            "Avalanche C",
+            "CCHAINAVAX",
+            "CAVAX",
+            "AVAXCCHAIN",
+            "C-Chain",
+            "AVAX C-Chain",
+            "CCHAIN",
+        ],
+        "Manta": ["Manta", "MANTA"],
         "Bitcoin": ["BTC", "Bitcoin", "BRC20"],
         "Bitcoin Cash": ["BCH", "BitcoinCash"],
         "Bitcoin SV": ["BSV", "Bitcoin SV"],
@@ -128,7 +142,7 @@ def _run_networks_mapping(session: Session):
         "Ethereum": ["ETH", "ERC20", "Ethereum"],
         "Ethereum Classic": ["ETC", "Ethereum Classic"],
         "Litecoin": ["LTC", "Litecoin"],
-        "Polygon": ["MATIC", "Polygon", "MATIC1"],
+        "Polygon": ["MATIC", "Polygon", "MATIC1", "POLYGON"],
         "Ripple": ["XRP", "Ripple"],
         "Solana": ["SOL", "Solana", "SOLANA"],
         "Stellar": ["XLM", "Stellar Lumens"],
@@ -225,6 +239,7 @@ def _run_networks_mapping(session: Session):
         "seele": ["SEELE", "SEELE2"],
         "smt": ["SMT", "SMT2"],
         "BSC": ["BSC", "BNB1", "BEP20"],
+        "BNB": ["BNB", "BEP2"],
     }
 
     for base_network, networks in data.items():

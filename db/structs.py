@@ -1,9 +1,13 @@
 from dataclasses import dataclass
-from typing import List, Any, Union
+from typing import Any
+from typing import List
+from typing import Union
 
 from gate_api.models.currency import Currency
-from huobi.constant import ChainDepositStatus, ChainWithdrawStatus
-from huobi.model.generic import Chain, ReferenceCurrency
+from huobi.constant import ChainDepositStatus
+from huobi.constant import ChainWithdrawStatus
+from huobi.model.generic import Chain
+from huobi.model.generic import ReferenceCurrency
 
 
 @dataclass
@@ -11,8 +15,8 @@ class NetworkExchange:
     name: str
     can_deposit: bool
     can_withdraw: bool
-    withdraw_fee: Union[float, None]
-    confirmations_needed: Union[int, float] = None
+    withdraw_fee: float
+    confirmations_needed: Union[int, float, None] = None
 
     @classmethod
     def from_binance(cls, data):
@@ -32,12 +36,12 @@ class NetworkExchange:
         try:
             withdraw_fee = float(data["withdrawFee"])
         except ValueError:
-            withdraw_fee = None
+            withdraw_fee = 0
 
         try:
             confirmations_needed = int(data["confirmation"])
         except ValueError:
-            confirmations_needed = None
+            confirmations_needed = 0
 
         return cls(name, can_deposit, can_withdraw, withdraw_fee, confirmations_needed)
 
@@ -56,9 +60,8 @@ class NetworkExchange:
         name = data.chain
         can_deposit = not data.deposit_disabled
         can_withdraw = not data.withdraw_disabled
-        withdraw_fee = None
 
-        return cls(name, can_deposit, can_withdraw, withdraw_fee)
+        return cls(name, can_deposit, can_withdraw, 0)
 
     @classmethod
     def from_huobi(cls, network: Chain):
@@ -96,7 +99,7 @@ class CoinNetworkExchangeDC:
     coin_name: str
     exchange_name: str
     networks: List[NetworkExchange]
-    extra_info: dict[str: Any]
+    extra_info: dict[str:Any]
 
     def to_db(self, exchange, coin, network, network_id):
         net = self.networks[network_id]
@@ -169,6 +172,21 @@ class CoinNetworkExchangeDC:
         networks = [NetworkExchange.from_bitget(chain_data) for chain_data in data["chains"]]
 
         return cls(coin_name, "Bitget", networks, extra_info)
+
+    @classmethod
+    def from_whitebit(cls, coin_name: str, data: dict):
+        networks = [
+            NetworkExchange(
+                net_name,
+                can_deposit=net_name in data["networks"].get("deposits", []),
+                can_withdraw=net_name in data["networks"].get("withdraws", []),
+                withdraw_fee=0,
+                confirmations_needed=confirmations,
+            )
+            for net_name, confirmations in data["confirmations"].items()
+        ]
+
+        return cls(coin_name, "Whitebit", networks, {})
 
 
 @dataclass

@@ -57,7 +57,7 @@ class ExchangePairAnalyzer:
             error_log.error(f"unknown error getting price - {e} - {pair.default_name}")
             return
 
-        if base_to_second_network and self.base_exchange.NAME != "GateIO":
+        if base_to_second_network and base_to_second_network.withdraw_fee:
             buy_price_analyzer = PriceAnalyzer(
                 buy_price=base_exchange_price[0],
                 sell_price=pair_exchange_price[1],
@@ -71,7 +71,7 @@ class ExchangePairAnalyzer:
             if buy_price_analyzer.profit > self.BASE_USDT_PROFIT:
                 await self._start_monitoring(pair, buy_price_analyzer)
 
-        if second_to_base_network and self.pair_exchange.NAME != "GateIO":
+        if second_to_base_network and second_to_base_network.withdraw_fee:
             sell_price_analyzer = PriceAnalyzer(
                 buy_price=pair_exchange_price[0],
                 sell_price=base_exchange_price[1],
@@ -176,20 +176,24 @@ class ExchangePairAnalyzer:
             if cne_mapping[self.pair_exchange.NAME].can_withdraw and cne_mapping[self.base_exchange.NAME].can_deposit
         ]
 
-        try:
+        if available_nets_to_transfer_from_base_to_second:
             best_base_to_second_network = min(
-                available_nets_to_transfer_from_base_to_second or [None],
-                key=lambda net: net.withdraw_fee if net else None,
+                available_nets_to_transfer_from_base_to_second,
+                key=lambda cne: (cne.confirmations_needed * cne.network.block_creation_time)
+                if cne.confirmations_needed and cne.network.block_creation_time
+                else cne.withdraw_fee,
             )
-        except TypeError:
+        else:
             best_base_to_second_network = None
 
-        try:
+        if available_nets_to_transfer_from_second_to_base:
             best_second_to_base_network = min(
-                available_nets_to_transfer_from_second_to_base or [None],
-                key=lambda net: net.withdraw_fee if net else None,
+                available_nets_to_transfer_from_second_to_base,
+                key=lambda cne: (cne.confirmations_needed * cne.network.block_creation_time)
+                if cne.confirmations_needed and cne.network.block_creation_time
+                else cne.withdraw_fee,
             )
-        except TypeError:
+        else:
             best_second_to_base_network = None
 
         return best_base_to_second_network, best_second_to_base_network

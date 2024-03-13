@@ -1,13 +1,21 @@
+import asyncio
 import logging
 import time
 
-import asyncio
 import httpx
-from redis import Redis
 from dotenv import dotenv_values
+from redis import Redis
 
 from analyze.analyzer import ExchangePairAnalyzer
-from exchanges import OkxAPI, BybitAPI, BitgetAPI, HuobiAPI, BinanceAPI, KuCoinAPI, GateIOAPI
+from exchanges import BinanceAPI
+from exchanges import BitgetAPI
+from exchanges import BybitAPI
+from exchanges import GateIOAPI
+from exchanges import HuobiAPI
+from exchanges import KuCoinAPI
+from exchanges import OkxAPI
+from exchanges import WhitebitAPI
+
 
 log_file = "error.log"
 formatt = logging.Formatter("%(asctime)s - %(message)s")
@@ -33,6 +41,7 @@ EXCHANGES_MAPPING = {
     BitgetAPI.NAME: BitgetAPI,
     OkxAPI.NAME: OkxAPI,
     BybitAPI.NAME: BybitAPI,
+    WhitebitAPI.NAME: WhitebitAPI,
 }
 
 
@@ -41,6 +50,8 @@ def get_exchanges_combinations():
     circle_exchanges = list(EXCHANGES_MAPPING.keys())
     while len(circle_exchanges) > 1:
         base_exchange = circle_exchanges.pop(0)
+        if base_exchange in [WhitebitAPI.NAME, GateIOAPI.NAME]:
+            continue
 
         for pair_exchange in circle_exchanges:
             pairs.append(f"{base_exchange},{pair_exchange}")
