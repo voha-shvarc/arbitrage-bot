@@ -91,3 +91,6 @@ class WhitebitAPI(AbstractExchange):
         closed = float(response["result"][-1][2])
         change = (closed - opened) / opened * 100
         return change
+
+    def get_balance(self) -> float:
+        return 0
