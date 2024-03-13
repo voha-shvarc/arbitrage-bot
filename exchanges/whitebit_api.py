@@ -8,6 +8,7 @@ from whitebit.client import _create_uri
 
 from abstract import AbstractExchange
 from abstract import NoPriceFound
+from db.models import CoinNetworkExchange
 from db.models import Pair
 from db.structs import CoinNetworkExchangeDC
 from db.structs import TradingPair
@@ -91,6 +92,21 @@ class WhitebitAPI(AbstractExchange):
         closed = float(response["result"][-1][2])
         change = (closed - opened) / opened * 100
         return change
+
+    @classmethod
+    def spot_link(cls, pair: Pair) -> str:
+        link = f"https://whitebit.com/trade/{pair.dashed_name}?type=spot&tab=open-orders"
+        return link
+
+    @classmethod
+    def deposit_link(cls, cne: CoinNetworkExchange) -> str:
+        link = f"https://whitebit.com/deposit?ticker={cne.coin.name}&method=address&network={cne.network.name}"
+        return link
+
+    @classmethod
+    def withdraw_link(cls, cne: CoinNetworkExchange) -> str:
+        link = f"https://whitebit.com/withdraw?ticker={cne.coin.name}&network={cne.network.name}"
+        return link
 
     def get_balance(self) -> float:
         return 0
