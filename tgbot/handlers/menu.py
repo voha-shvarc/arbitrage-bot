@@ -13,6 +13,7 @@ from exchanges import GateIOAPI
 from exchanges import HuobiAPI
 from exchanges import KuCoinAPI
 from exchanges import OkxAPI
+from exchanges import WhitebitAPI
 
 from ..keyboards.menu import ConfigExchangeCallbackData
 from ..keyboards.menu import get_config_exchanges_keyboard
@@ -26,6 +27,7 @@ exchange_mapping = {
     KuCoinAPI.NAME: KuCoinAPI,
     BinanceAPI.NAME: BinanceAPI,
     GateIOAPI.NAME: GateIOAPI,
+    WhitebitAPI.NAME: WhitebitAPI,
 }
 
 menu_router = Router()

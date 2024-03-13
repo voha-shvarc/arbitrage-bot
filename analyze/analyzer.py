@@ -168,12 +168,16 @@ class ExchangePairAnalyzer:
         available_nets_to_transfer_from_base_to_second = [
             cne_mapping[self.base_exchange.NAME]
             for net_name, cne_mapping in nets_mapping.items()
-            if cne_mapping[self.base_exchange.NAME].can_withdraw and cne_mapping[self.pair_exchange.NAME].can_deposit
+            if len(cne_mapping) == 2
+            and cne_mapping[self.base_exchange.NAME].can_withdraw
+            and cne_mapping[self.pair_exchange.NAME].can_deposit
         ]
         available_nets_to_transfer_from_second_to_base = [
             cne_mapping[self.pair_exchange.NAME]
             for net_name, cne_mapping in nets_mapping.items()
-            if cne_mapping[self.pair_exchange.NAME].can_withdraw and cne_mapping[self.base_exchange.NAME].can_deposit
+            if len(cne_mapping) == 2
+            and cne_mapping[self.pair_exchange.NAME].can_withdraw
+            and cne_mapping[self.base_exchange.NAME].can_deposit
         ]
 
         if available_nets_to_transfer_from_base_to_second:

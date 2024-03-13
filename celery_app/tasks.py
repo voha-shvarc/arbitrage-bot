@@ -22,6 +22,7 @@ from exchanges import GateIOAPI
 from exchanges import HuobiAPI
 from exchanges import KuCoinAPI
 from exchanges import OkxAPI
+from exchanges import WhitebitAPI
 from services.send_analytics_service import SendAnalyticsService
 from tgbot.config import load_config
 from tgbot.keyboards.bundle import get_refresh_keyboard
@@ -39,6 +40,7 @@ exchange_mapping = {
     OkxAPI.NAME: OkxAPI,
     KuCoinAPI.NAME: KuCoinAPI,
     BitgetAPI.NAME: BitgetAPI,
+    WhitebitAPI.NAME: WhitebitAPI,
 }
 
 BASE_USDT_PROFIT = 4  # 4 USDT

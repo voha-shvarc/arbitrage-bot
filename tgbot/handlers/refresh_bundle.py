@@ -19,6 +19,7 @@ from exchanges import GateIOAPI
 from exchanges import HuobiAPI
 from exchanges import KuCoinAPI
 from exchanges import OkxAPI
+from exchanges import WhitebitAPI
 
 from ..keyboards.bundle import ForceRefreshBundleCallbackData
 from ..keyboards.bundle import get_refresh_keyboard
@@ -39,6 +40,7 @@ exchange_mapping = {
     OkxAPI.NAME: OkxAPI,
     KuCoinAPI.NAME: KuCoinAPI,
     BitgetAPI.NAME: BitgetAPI,
+    WhitebitAPI.NAME: WhitebitAPI,
 }
 
 
