@@ -7,6 +7,7 @@ from dotenv import dotenv_values
 from db.base import Session
 from db.models import Exchange
 from exchanges import BinanceAPI
+from exchanges import BingxAPI
 from exchanges import BitgetAPI
 from exchanges import BybitAPI
 from exchanges import GateIOAPI
@@ -28,6 +29,7 @@ exchange_mapping = {
     BinanceAPI.NAME: BinanceAPI,
     GateIOAPI.NAME: GateIOAPI,
     WhitebitAPI.NAME: WhitebitAPI,
+    BingxAPI.NAME: BinanceAPI,
 }
 
 menu_router = Router()

@@ -12,6 +12,7 @@ from db.models import Pair
 from db.models import PairExchange
 from db.utils import get_or_create
 from exchanges import BinanceAPI
+from exchanges import BingxAPI
 from exchanges import BitgetAPI
 from exchanges import BybitAPI
 from exchanges import GateIOAPI
@@ -23,7 +24,7 @@ from exchanges import WhitebitAPI
 
 config = dotenv_values(".env")
 
-EXCHANGES = {BinanceAPI, BybitAPI, OkxAPI, GateIOAPI, HuobiAPI, KuCoinAPI, BitgetAPI, WhitebitAPI}
+EXCHANGES = {BinanceAPI, BybitAPI, OkxAPI, GateIOAPI, HuobiAPI, KuCoinAPI, BitgetAPI, WhitebitAPI, BingxAPI}
 
 
 @app.task
@@ -131,13 +132,15 @@ def _run_networks_mapping(session: Session):
             "C-Chain",
             "AVAX C-Chain",
             "CCHAIN",
+            "AVAX-C",
         ],
+        "DYM": ["DYM", "DYMEVM"],
         "Manta": ["Manta", "MANTA"],
         "Bitcoin": ["BTC", "Bitcoin", "BRC20"],
         "Bitcoin Cash": ["BCH", "BitcoinCash"],
         "Bitcoin SV": ["BSV", "Bitcoin SV"],
         "Cardano": ["ADA", "Cardano"],
-        "Cosmos": ["ATOM", "Cosmos", "ATOM1"],
+        "Cosmos": ["ATOM", "Cosmos", "ATOM1", "COSMOS"],
         "Dogecoin": ["DOGE", "Dogecoin"],
         "Ethereum": ["ETH", "ERC20", "Ethereum"],
         "Ethereum Classic": ["ETC", "Ethereum Classic"],
@@ -148,23 +151,23 @@ def _run_networks_mapping(session: Session):
         "Stellar": ["XLM", "Stellar Lumens"],
         "Tron": ["TRX", "TRX1", "TRC20"],
         "Zcash": ["ZEC", "Zcash"],
-        "Arbitrum": ["ARB", "ARBI", "Arbitrum One", "ARBEVM", "ARBIETH", "ARBITRUM"],
+        "Arbitrum": ["ARB", "ARBI", "Arbitrum One", "ARBEVM", "ARBIETH", "ARBITRUM", "ARC20"],
         "ARBINOVA": ["ARBINOVA", "ARBNOVA"],
         "Optimism": ["OP", "Optimism", "OPETH", "OPTETH", "OPTIMISM", "Optimism (V2)"],
-        "Fantom": ["FTM", "Fantom"],
+        "Fantom": ["FTM", "Fantom", "FANTOM"],
         "Algorand": ["ALGO", "Algorand", "ALGOUSDT"],
         "Aptos": ["APT", "Aptos"],
         "Arweave": ["AR", "Arweave"],
         "Chiliz": ["CHZ", "Chiliz Chain"],
         "Astar": ["ASTR", "Astar"],
-        "Klaytn": ["KLAY", "Klaytn"],
+        "Klaytn": ["KLAY", "Klaytn", "KLAYTN"],
         "CFX": ["CFX", "CFX_EVM"],
         "Casper": ["CSPR", "Casper"],
         "Cortex": ["CTXC", "CTXC1", "Cortex"],
         "Dash": ["DASH", "Digital Cash"],
         "Decred": ["DCR", "Decred"],
         "Digibyte": ["DGB", "Digibyte"],
-        "Polkadot": ["DOT", "Polkadot"],
+        "Polkadot": ["DOT", "Polkadot", "POLKADOT"],
         "Elrond": ["EGLD", "Elrond"],
         "Filecoin": ["FIL", "Filecoin"],
         "Flare": ["FLR", "Flare"],
@@ -178,7 +181,7 @@ def _run_networks_mapping(session: Session):
         "Kusama": ["KSM", "Kusama"],
         "Lisk": ["LSK", "Lisk", "LSK1"],
         "Terra": ["LUNA", "Terra", "LUNANEW", "TERRA"],
-        "Terra Classic": ["LUNC", "Terra Classic"],
+        "Terra Classic": ["LUNC", "Terra Classic", "TERRA_CLASSIC"],
         "Mina": ["MINA", "Mina"],
         "Moonriver": ["MOVR", "Moonriver"],
         "NEO": ["NEO", "NEO1"],

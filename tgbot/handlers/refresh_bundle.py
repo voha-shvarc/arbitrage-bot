@@ -13,6 +13,7 @@ from db.models import Pair
 from db.models import ProfitBundle
 from db.models import ProfitBundleItem
 from exchanges import BinanceAPI
+from exchanges import BingxAPI
 from exchanges import BitgetAPI
 from exchanges import BybitAPI
 from exchanges import GateIOAPI
@@ -41,6 +42,7 @@ exchange_mapping = {
     KuCoinAPI.NAME: KuCoinAPI,
     BitgetAPI.NAME: BitgetAPI,
     WhitebitAPI.NAME: WhitebitAPI,
+    BingxAPI.NAME: BingxAPI,
 }
 
 

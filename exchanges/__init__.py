@@ -6,3 +6,4 @@ from .huobi_api import HuobiAPI
 from .kucoin_api import KuCoinAPI
 from .bitget_api import BitgetAPI
 from .whitebit_api import WhitebitAPI
+from .bingx_api import BingxAPI

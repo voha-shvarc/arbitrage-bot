@@ -8,6 +8,7 @@ from redis import Redis
 
 from analyze.analyzer import ExchangePairAnalyzer
 from exchanges import BinanceAPI
+from exchanges import BingxAPI
 from exchanges import BitgetAPI
 from exchanges import BybitAPI
 from exchanges import GateIOAPI
@@ -35,13 +36,14 @@ log.addHandler(handler)
 
 EXCHANGES_MAPPING = {
     BinanceAPI.NAME: BinanceAPI,
+    BybitAPI.NAME: BybitAPI,
     HuobiAPI.NAME: HuobiAPI,
     KuCoinAPI.NAME: KuCoinAPI,
     GateIOAPI.NAME: GateIOAPI,
     BitgetAPI.NAME: BitgetAPI,
     OkxAPI.NAME: OkxAPI,
-    BybitAPI.NAME: BybitAPI,
     WhitebitAPI.NAME: WhitebitAPI,
+    BingxAPI.NAME: BingxAPI,
 }
 
 

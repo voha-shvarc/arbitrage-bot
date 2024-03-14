@@ -6,6 +6,7 @@ gate-api==4.60.2
 git+https://github.com/HuobiRDCenter/huobi_Python.git  # huobi
 kucoin-python==1.0.14
 python-whitebit-sdk
+bingx-connector
 
 retry
 SQLAlchemy==2.0
