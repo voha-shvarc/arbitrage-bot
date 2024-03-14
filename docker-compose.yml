@@ -24,16 +24,16 @@ services:
     depends_on:
       - db
 
-#  tgbot-filtered:
-#    build: .
-#    image: ${APP_IMAGE_NAME}
-#    command: ["/app/docker/bot.sh", "tgbot-filtered"]
-#    volumes:
-#      - .env:/app/.env
-#    networks:
-#      - main
-#    depends_on:
-#      - db
+  tgbot-filtered:
+    build: .
+    image: ${APP_IMAGE_NAME}
+    command: ["/app/docker/bot.sh", "tgbot-filtered"]
+    volumes:
+      - .env:/app/.env
+    networks:
+      - main
+    depends_on:
+      - db
 
   db:
     build: ./docker/postgres/.
