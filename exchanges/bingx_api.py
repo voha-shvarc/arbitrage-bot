@@ -107,5 +107,11 @@ class BingxAPI(AbstractExchange):
         return change
 
     def get_balance(self) -> float:
-        """data = client.assets()"""
-        return 0
+        data = self.client.assets()
+        balance = 0
+        for balance_data in data["balances"]:
+            if balance_data["asset"] == "USDT":
+                balance = float(balance_data["free"])
+                break
+
+        return balance

@@ -150,5 +150,6 @@ class MexcAPI(AbstractExchange):
         for balance_data in data["balances"]:
             if balance_data["asset"] == "USDT":
                 balance = float(balance_data["free"])
+                break
 
         return balance
