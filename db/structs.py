@@ -103,6 +103,20 @@ class NetworkExchange:
 
         return cls(net_name, can_deposit, can_withdraw, withdraw_fee, confirmations_needed)
 
+    @classmethod
+    def from_mexc(cls, data: dict):
+        net_name = data["network"]
+        short_name_index = net_name.find("(")
+        if short_name_index != -1:
+            net_name = net_name[short_name_index + 1 : -1]
+
+        can_deposit = data["depositEnable"]
+        can_withdraw = data["withdrawEnable"]
+        withdraw_fee = float(data["withdrawFee"])
+        confirmations_needed = data["minConfirm"]
+
+        return cls(net_name, can_deposit, can_withdraw, withdraw_fee, confirmations_needed)
+
 
 @dataclass
 class CoinNetworkExchangeDC:
@@ -204,6 +218,13 @@ class CoinNetworkExchangeDC:
         networks = [NetworkExchange.from_bingx(net_data) for net_data in data["networkList"]]
 
         return cls(coin_name, "Bingx", networks, {})
+
+    @classmethod
+    def from_mexc(cls, data: dict):
+        coin_name = data["coin"]
+        networks = [NetworkExchange.from_mexc(net_data) for net_data in data["networkList"]]
+
+        return cls(coin_name, "Mexc", networks, {})
 
 
 @dataclass

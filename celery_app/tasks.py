@@ -22,6 +22,7 @@ from exchanges import BybitAPI
 from exchanges import GateIOAPI
 from exchanges import HuobiAPI
 from exchanges import KuCoinAPI
+from exchanges import MexcAPI
 from exchanges import OkxAPI
 from exchanges import WhitebitAPI
 from services.send_analytics_service import SendAnalyticsService
@@ -43,6 +44,7 @@ exchange_mapping = {
     BitgetAPI.NAME: BitgetAPI,
     WhitebitAPI.NAME: WhitebitAPI,
     BingxAPI.NAME: BingxAPI,
+    MexcAPI.NAME: MexcAPI,
 }
 
 BASE_USDT_PROFIT = 4  # 4 USDT

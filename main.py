@@ -14,6 +14,7 @@ from exchanges import BybitAPI
 from exchanges import GateIOAPI
 from exchanges import HuobiAPI
 from exchanges import KuCoinAPI
+from exchanges import MexcAPI
 from exchanges import OkxAPI
 from exchanges import WhitebitAPI
 
@@ -38,6 +39,7 @@ EXCHANGES_MAPPING = {
     BinanceAPI.NAME: BinanceAPI,
     BybitAPI.NAME: BybitAPI,
     HuobiAPI.NAME: HuobiAPI,
+    MexcAPI.NAME: MexcAPI,
     KuCoinAPI.NAME: KuCoinAPI,
     GateIOAPI.NAME: GateIOAPI,
     BitgetAPI.NAME: BitgetAPI,

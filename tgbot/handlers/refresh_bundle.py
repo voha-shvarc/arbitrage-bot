@@ -19,6 +19,7 @@ from exchanges import BybitAPI
 from exchanges import GateIOAPI
 from exchanges import HuobiAPI
 from exchanges import KuCoinAPI
+from exchanges import MexcAPI
 from exchanges import OkxAPI
 from exchanges import WhitebitAPI
 
@@ -43,6 +44,7 @@ exchange_mapping = {
     BitgetAPI.NAME: BitgetAPI,
     WhitebitAPI.NAME: WhitebitAPI,
     BingxAPI.NAME: BingxAPI,
+    MexcAPI.NAME: MexcAPI,
 }
 
 

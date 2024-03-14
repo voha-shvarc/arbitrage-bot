@@ -18,13 +18,14 @@ from exchanges import BybitAPI
 from exchanges import GateIOAPI
 from exchanges import HuobiAPI
 from exchanges import KuCoinAPI
+from exchanges import MexcAPI
 from exchanges import OkxAPI
 from exchanges import WhitebitAPI
 
 
 config = dotenv_values(".env")
 
-EXCHANGES = {BinanceAPI, BybitAPI, OkxAPI, GateIOAPI, HuobiAPI, KuCoinAPI, BitgetAPI, WhitebitAPI, BingxAPI}
+EXCHANGES = {BinanceAPI, BybitAPI, OkxAPI, GateIOAPI, HuobiAPI, KuCoinAPI, BitgetAPI, WhitebitAPI, BingxAPI, MexcAPI}
 
 
 @app.task
@@ -78,6 +79,7 @@ def sync_coin_exchange_networks():
                     Coin.name == "BIFI",  # different coins
                     Coin.name == "RED",  # different coins
                     Coin.name == "LUNC",  # takes additional 0.5% for smart c and 0.5% as exchange fee
+                    Coin.name == "PLT",  # different coins
                 ),
             )
         )
@@ -121,7 +123,7 @@ def sync_pairs():
 
 def _run_networks_mapping(session: Session):
     data = {
-        "Avalanche": ["AVAX", "XAVAX", "Avalanche X", "X-Chain", "XCHAIN"],
+        "Avalanche": ["AVAX", "XAVAX", "Avalanche X", "X-Chain", "XCHAIN", "AVAX XCHAIN"],
         "AVAXC": [
             "AVAXC",
             "AVAX_C",
@@ -133,6 +135,8 @@ def _run_networks_mapping(session: Session):
             "AVAX C-Chain",
             "CCHAIN",
             "AVAX-C",
+            "AVAX CCHAIN",
+            "AVAX_CCHAIN",
         ],
         "DYM": ["DYM", "DYMEVM"],
         "Manta": ["Manta", "MANTA"],
@@ -197,7 +201,7 @@ def _run_networks_mapping(session: Session):
         "Chia": ["XCH", "Chia"],
         "New Economy Movement": ["XEM", "NEM"],
         "Nano": ["NANO", "Nano"],
-        "Starknet": ["STARKNET", "Starknet"],
+        "Starknet": ["STARKNET", "Starknet", "STARK"],
         "zkSyncEra": ["zkSync Era", "ZKSYNCERA"],
         "Base": ["BASE", "Base", "BASEEVM", "BASEETH"],
         "Linea": ["LINEA", "Linea", "LINEAETH"],
