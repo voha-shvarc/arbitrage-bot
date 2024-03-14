@@ -94,7 +94,7 @@ def sync_coin_exchange_networks():
                     and_(Exchange.name == "Mexc", Coin.name == "TIME"),
                     and_(Exchange.name == "Mexc", Coin.name == "FIS"),
                     and_(Exchange.name == "Mexc", Coin.name == "GMT"),
-                    and_(Exchange.name.in_("Mexc", "KuCoin"), Coin.name == "HERO"),
+                    and_(Exchange.name.in_(["Mexc", "KuCoin"]), Coin.name == "HERO"),
                 ),
             )
         )
