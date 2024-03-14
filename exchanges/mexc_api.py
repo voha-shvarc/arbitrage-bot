@@ -144,4 +144,11 @@ class MexcAPI(AbstractExchange):
         return change
 
     def get_balance(self) -> float:
-        return 0
+        response = self.sign_request("GET", "/api/v3/account")
+        data = response.json()
+        balance = 0
+        for balance_data in data["balances"]:
+            if balance_data["asset"] == "USDT":
+                balance = float(balance_data["free"])
+
+        return balance
