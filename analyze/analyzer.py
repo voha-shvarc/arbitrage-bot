@@ -103,9 +103,9 @@ class ExchangePairAnalyzer:
                 await asyncio.sleep(0.09)
             elif self.base_exchange.NAME in ["Bitget", "Bingx"] or self.pair_exchange.NAME in ["Bitget", "Bingx"]:
                 await asyncio.sleep(0.07)
-            elif self.base_exchange.NAME in ["GateIO"] or self.pair_exchange.NAME in ["GateIO"]:
+            elif self.base_exchange.NAME in ["GateIO", "Mexc"] or self.pair_exchange.NAME in ["GateIO", "Mexc"]:
                 await asyncio.sleep(0.053)
-            elif self.base_exchange.NAME in ["KuCoin", "Mexc"] or self.pair_exchange.NAME in ["KuCoin", "Mexc"]:
+            elif self.base_exchange.NAME in ["KuCoin"] or self.pair_exchange.NAME in ["KuCoin"]:
                 await asyncio.sleep(0.028)
             elif self.base_exchange.NAME in ["Huobi"] or self.pair_exchange.NAME in ["Huobi"]:
                 await asyncio.sleep(0.015)
