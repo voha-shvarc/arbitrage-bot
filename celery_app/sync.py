@@ -93,7 +93,7 @@ def sync_coin_exchange_networks():
                     and_(Exchange.name == "Mexc", Coin.name == "PAY"),
                     and_(Exchange.name == "MEXC", Coin.name == "TIME"),
                     and_(Exchange.name == "MEXC", Coin.name == "FIS"),
-                    and_(Exchange.name == "Bingx", Coin.name == "CHAPZ"),
+                    and_(Exchange.name == "MEXC", Coin.name == "GMT"),
                 ),
             )
         )
