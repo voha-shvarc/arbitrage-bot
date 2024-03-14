@@ -80,6 +80,20 @@ def sync_coin_exchange_networks():
                     Coin.name == "RED",  # different coins
                     Coin.name == "LUNC",  # takes additional 0.5% for smart c and 0.5% as exchange fee
                     Coin.name == "PLT",  # different coins
+                    # after mex and bingx integration
+                    and_(Exchange.name == "Mexc", Coin.name == "KT"),
+                    and_(Exchange.name == "Mexc", Coin.name == "STC"),
+                    and_(Exchange.name == "Mexc", Coin.name == "CO"),
+                    and_(Exchange.name == "Mexc", Coin.name == "SOLS"),
+                    and_(Exchange.name == "Mexc", Coin.name == "RAM"),
+                    and_(Exchange.name == "Mexc", Coin.name == "FROG"),
+                    and_(Exchange.name == "Mexc", Coin.name == "ARBI"),
+                    and_(Exchange.name == "Mexc", Coin.name == "WALLET"),
+                    and_(Exchange.name == "Mexc", Coin.name == "CAPS"),
+                    and_(Exchange.name == "Mexc", Coin.name == "PAY"),
+                    and_(Exchange.name == "MEXC", Coin.name == "TIME"),
+                    and_(Exchange.name == "MEXC", Coin.name == "FIS"),
+                    and_(Exchange.name == "Bingx", Coin.name == "CHAPZ"),
                 ),
             )
         )
