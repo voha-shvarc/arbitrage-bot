@@ -91,9 +91,10 @@ def sync_coin_exchange_networks():
                     and_(Exchange.name == "Mexc", Coin.name == "WALLET"),
                     and_(Exchange.name == "Mexc", Coin.name == "CAPS"),
                     and_(Exchange.name == "Mexc", Coin.name == "PAY"),
-                    and_(Exchange.name == "MEXC", Coin.name == "TIME"),
-                    and_(Exchange.name == "MEXC", Coin.name == "FIS"),
-                    and_(Exchange.name == "MEXC", Coin.name == "GMT"),
+                    and_(Exchange.name == "Mexc", Coin.name == "TIME"),
+                    and_(Exchange.name == "Mexc", Coin.name == "FIS"),
+                    and_(Exchange.name == "Mexc", Coin.name == "GMT"),
+                    and_(Exchange.name.in_("Mexc", "KuCoin"), Coin.name == "HERO"),
                 ),
             )
         )
