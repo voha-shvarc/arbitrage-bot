@@ -29,7 +29,7 @@ exchange_mapping = {
     BinanceAPI.NAME: BinanceAPI,
     GateIOAPI.NAME: GateIOAPI,
     WhitebitAPI.NAME: WhitebitAPI,
-    BingxAPI.NAME: BinanceAPI,
+    BingxAPI.NAME: BingxAPI,
 }
 
 menu_router = Router()
