@@ -44,8 +44,8 @@ class BingxAPI(AbstractExchange):
 
     def get_price(self, pair: Pair, limit=30) -> tuple[list[list[str]], list[list[str]]]:
         response = self.client.depth(symbol=pair.dashed_name, limit=limit)
-        buy = response["data"]["asks"]
-        sell = response["data"]["bids"]
+        buy = response["asks"]
+        sell = response["bids"]
         if not buy or not sell:
             raise NoPriceFound()
         return buy, sell
