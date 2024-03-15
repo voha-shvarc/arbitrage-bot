@@ -29,8 +29,6 @@ class MexcAPI(AbstractExchange):
 
         self.api_key = config["MEXC_API_KEY"]
         self.api_secret = config["MEXC_API_SECRET"]
-        # self.api_key = "mx0vgls9M5phIggQIb"
-        # self.api_secret = "325135ccfa0242308c20eb49773282a5"
 
     def _sign_v3(self, req_time, sign_params=None):
         if sign_params:

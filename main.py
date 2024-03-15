@@ -41,7 +41,7 @@ EXCHANGES_MAPPING = {
     HuobiAPI.NAME: HuobiAPI,
     MexcAPI.NAME: MexcAPI,
     KuCoinAPI.NAME: KuCoinAPI,
-    GateIOAPI.NAME: GateIOAPI,
+    # GateIOAPI.NAME: GateIOAPI,
     BitgetAPI.NAME: BitgetAPI,
     OkxAPI.NAME: OkxAPI,
     WhitebitAPI.NAME: WhitebitAPI,
