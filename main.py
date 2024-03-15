@@ -5,6 +5,7 @@ import time
 import httpx
 from dotenv import dotenv_values
 from redis import Redis
+from sqlalchemy import or_
 
 from analyze.analyzer import ExchangePairAnalyzer
 from db.base import Session
@@ -51,15 +52,17 @@ EXCHANGES_MAPPING = {
 
 def get_exchanges_combinations():
     with Session() as session:
-        circle_exchanges: list[Exchange] = list(session.query(Exchange).all())
+        circle_exchanges: list[Exchange] = list(
+            session.query(Exchange).filter(or_(Exchange.active_buy, Exchange.active_sell)).all(),
+        )
 
     while len(circle_exchanges) > 1:
         base_exchange = circle_exchanges.pop(0)
-        if not base_exchange.active_buy:
-            continue
 
         for pair_exchange in circle_exchanges:
-            if pair_exchange.active_sell:
+            if (base_exchange.active_buy and pair_exchange.active_sell) or (
+                base_exchange.active_sell and pair_exchange.active_buy
+            ):
                 yield f"{base_exchange.name},{pair_exchange.name}"
 
 
