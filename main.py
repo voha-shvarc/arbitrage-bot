@@ -7,11 +7,12 @@ from dotenv import dotenv_values
 from redis import Redis
 
 from analyze.analyzer import ExchangePairAnalyzer
+from db.base import Session
+from db.models import Exchange
 from exchanges import BinanceAPI
 from exchanges import BingxAPI
 from exchanges import BitgetAPI
 from exchanges import BybitAPI
-from exchanges import GateIOAPI
 from exchanges import HuobiAPI
 from exchanges import KuCoinAPI
 from exchanges import MexcAPI
@@ -49,17 +50,17 @@ EXCHANGES_MAPPING = {
 
 
 def get_exchanges_combinations():
-    pairs = list()
-    circle_exchanges = list(EXCHANGES_MAPPING.keys())
+    with Session() as session:
+        circle_exchanges: list[Exchange] = list(session.query(Exchange).all())
+
     while len(circle_exchanges) > 1:
         base_exchange = circle_exchanges.pop(0)
-        if base_exchange in [WhitebitAPI.NAME, GateIOAPI.NAME]:
+        if not base_exchange.active_buy:
             continue
 
         for pair_exchange in circle_exchanges:
-            pairs.append(f"{base_exchange},{pair_exchange}")
-
-    return pairs
+            if pair_exchange.active_sell:
+                yield f"{base_exchange.name},{pair_exchange.name}"
 
 
 def get_exchanges_api_from_redis(redis_client):
