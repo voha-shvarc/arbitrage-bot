@@ -165,11 +165,7 @@ def send_tg_message(bundle_id):
         message = get_bundle_message(bundle, bundle_item)
         config_tg = load_config(".env")
         bot = Bot(token=config_tg.tg_bot.token, parse_mode="HTML")
-        if (
-            bundle.base_exchange.active_buy
-            and bundle.pair_exchange.active_sell
-            and (bundle.network_speed is None or bundle.network_speed < 10)
-        ):
+        if bundle.base_exchange.active_buy and bundle.pair_exchange.active_sell:
             send_message_tasks = [
                 send_message(
                     bot,
