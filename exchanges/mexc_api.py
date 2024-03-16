@@ -170,6 +170,9 @@ class MexcAPI(AbstractExchange):
             )
             data = response.json()
             address = DepositAddress(data["address"], data.get("memo"))
+        except JSONDecodeError as e:
+            error_log.error(f"[mexc] deposit address error. couldn't parse response. {response.text}")
+            raise DepositAddressError() from e
         except Exception as e:
             error_log.error(f"[mexc] deposit address error - {e}")
             raise DepositAddressError() from e
