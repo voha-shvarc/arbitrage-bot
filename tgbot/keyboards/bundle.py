@@ -27,20 +27,21 @@ def get_refresh_keyboard(profit_bundle_id):
         callback_data=RefreshBundleCallbackData(profit_bundle_id=profit_bundle_id),
     )
     keyboard.button(
-        text="Buy",
-        callback_data=CreateOrderCallbackData(profit_bundle_id=profit_bundle_id),
-    )
-    keyboard.button(
-        text="Withdraw",
-        callback_data=WithdrawBundleCallbackData(profit_bundle_id=profit_bundle_id),
-    )
-    keyboard.button(
         text="Force Refresh",
         callback_data=ForceRefreshBundleCallbackData(profit_bundle_id=profit_bundle_id),
     )
     keyboard.button(
+        text="Buy",
+        callback_data=CreateOrderCallbackData(profit_bundle_id=profit_bundle_id),
+    )
+
+    keyboard.button(
         text="More",
         callback_data=RefreshBundleCallbackData(profit_bundle_id=profit_bundle_id, show_more=True),
+    )
+    keyboard.button(
+        text="Withdraw",
+        callback_data=WithdrawBundleCallbackData(profit_bundle_id=profit_bundle_id),
     )
 
     keyboard.adjust(3)
