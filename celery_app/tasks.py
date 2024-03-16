@@ -26,7 +26,7 @@ from exchanges import OkxAPI
 from exchanges import WhitebitAPI
 from services.send_analytics_service import SendAnalyticsService
 from tgbot.config import load_config
-from tgbot.keyboards.bundle import get_refresh_keyboard
+from tgbot.keyboards.bundle import get_bundle_keyboard
 from tgbot.services.broadcaster import send_message
 from tgbot.services.messages import get_bundle_message
 
@@ -172,7 +172,7 @@ def send_tg_message(bundle_id):
                     bot,
                     user_id,
                     message,
-                    reply_markup=get_refresh_keyboard(bundle_id),
+                    reply_markup=get_bundle_keyboard(bundle_id),
                     disable_web_page_preview=True,
                 )
                 for user_id in config_tg.tg_bot.admin_ids
@@ -189,7 +189,7 @@ def send_tg_message(bundle_id):
                             bot_filtered,
                             user_id,
                             message,
-                            reply_markup=get_refresh_keyboard(bundle_id),
+                            reply_markup=get_bundle_keyboard(bundle_id),
                             disable_web_page_preview=True,
                         )
                         for user_id in config_tg.tg_bot_filtered.admin_ids

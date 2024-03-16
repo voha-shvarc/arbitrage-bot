@@ -19,7 +19,7 @@ class CreateOrderCallbackData(CallbackData, prefix="create_order"):
     profit_bundle_id: int
 
 
-def get_refresh_keyboard(profit_bundle_id):
+def get_bundle_keyboard(profit_bundle_id, buy_label: str = "", withdraw_label: str = ""):
     keyboard = InlineKeyboardBuilder()
 
     keyboard.button(
@@ -31,7 +31,7 @@ def get_refresh_keyboard(profit_bundle_id):
         callback_data=ForceRefreshBundleCallbackData(profit_bundle_id=profit_bundle_id),
     )
     keyboard.button(
-        text="Buy",
+        text=f"Buy {buy_label}",
         callback_data=CreateOrderCallbackData(profit_bundle_id=profit_bundle_id),
     )
 
@@ -40,7 +40,7 @@ def get_refresh_keyboard(profit_bundle_id):
         callback_data=RefreshBundleCallbackData(profit_bundle_id=profit_bundle_id, show_more=True),
     )
     keyboard.button(
-        text="Withdraw",
+        text=f"Withdraw {withdraw_label}",
         callback_data=WithdrawBundleCallbackData(profit_bundle_id=profit_bundle_id),
     )
 

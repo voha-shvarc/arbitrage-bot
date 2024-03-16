@@ -9,7 +9,6 @@ from sqlalchemy.orm import joinedload
 from abstract.abstract import AbstractExchange
 from abstract.abstract import CreateOrderError
 from abstract.abstract import DepositAddressError
-from abstract.abstract import WithdrawError
 from analyze.price_analyzer import PriceAnalyzer
 from celery_app.tasks import monitor_bundle
 from db.base import Session
@@ -29,7 +28,7 @@ from exchanges import WhitebitAPI
 
 from ..keyboards.bundle import CreateOrderCallbackData
 from ..keyboards.bundle import ForceRefreshBundleCallbackData
-from ..keyboards.bundle import get_refresh_keyboard
+from ..keyboards.bundle import get_bundle_keyboard
 from ..keyboards.bundle import RefreshBundleCallbackData
 from ..keyboards.bundle import WithdrawBundleCallbackData
 from ..services.messages import get_bundle_message
@@ -89,7 +88,7 @@ async def recalculate_bundle_callback_query(query: CallbackQuery, callback_data:
         message = get_bundle_message(bundle, bundle_item, callback_data.show_more)
         await query.message.edit_text(
             message,
-            reply_markup=get_refresh_keyboard(bundle.id),
+            reply_markup=get_bundle_keyboard(bundle.id),
             disable_web_page_preview=True,
         )
     except TelegramBadRequest:
@@ -104,7 +103,7 @@ async def force_recalculate_bundle_callback_query(query: CallbackQuery, callback
     text = query.message.html_text
     await query.message.edit_text(
         f"{text}\n\nUpdating...",
-        reply_markup=get_refresh_keyboard(bundle_id),
+        reply_markup=get_bundle_keyboard(bundle_id),
         disable_web_page_preview=True,
     )
 
@@ -138,24 +137,21 @@ async def withdraw_bundle_callback_query(query: CallbackQuery, callback_data: Wi
     base_exchange: AbstractExchange = exchange_mapping[bundle.base_exchange.name](config, {})
     pair_exchange: AbstractExchange = exchange_mapping[bundle.pair_exchange.name](config, {})
 
+    text = query.message.html_text
+    withdraw_label = "✅"
     try:
         deposit_address = pair_exchange.get_deposit_address(bundle.deposit_coin_network_exchange)
     except DepositAddressError:
-        await query.message.reply("Couldn't get deposit address. Check logs")
-        return
+        withdraw_label = "❌"
+    else:
+        try:
+            base_exchange.withdraw(bundle.withdraw_coin_network_exchange, deposit_address)
+        except Exception:
+            withdraw_label = "❌"
 
-    try:
-        body = base_exchange.withdraw(bundle.withdraw_coin_network_exchange, deposit_address)
-    except WithdrawError as e:
-        await query.message.reply(f"Error - {e}")
-        return
-    except NotImplementedError:
-        await query.message.reply("Withdraw isn't implemented for this exchange.")
-        return
-
-    await query.message.reply(
-        f"Your deposit info addr = {deposit_address.address}, memo = {deposit_address.memo}\n"
-        f"Withdraw body - <code>{body}</code>",
+    await query.message.edit_text(
+        text,
+        reply_markup=get_bundle_keyboard(callback_data.profit_bundle_id, withdraw_label=withdraw_label),
     )
 
 
@@ -196,6 +192,8 @@ async def create_order_callback_query(query: CallbackQuery, callback_data: Creat
         logger.exception(e)
         return
 
+    text = query.message.html_text
+    buy_label = "❌"
     if price_analyzer.profit > BASE_USDT_PROFIT:
         try:
             base_exchange.create_order(
@@ -203,9 +201,12 @@ async def create_order_callback_query(query: CallbackQuery, callback_data: Creat
                 ccy_quantity=price_analyzer.user_based_coin_available_amount,
                 price=price_analyzer.user_based_max_buy_price,
             )
-        except CreateOrderError as e:
-            await query.message.reply(f"Error creating order: {e}")
+        except CreateOrderError:
+            pass
         else:
-            await query.message.reply("Order was successfully created!")
-    else:
-        await query.message.reply("Bundle is already dead")
+            buy_label = "✅"
+
+    await query.message.edit_text(
+        text,
+        reply_markup=get_bundle_keyboard(callback_data.profit_bundle_id, buy_label=buy_label),
+    )

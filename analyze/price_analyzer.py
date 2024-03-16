@@ -8,7 +8,7 @@ from db.models import CoinNetworkExchange
 from db.models import Pair
 from db.structs import Price
 from tgbot.config import load_config
-from tgbot.keyboards.bundle import get_refresh_keyboard
+from tgbot.keyboards.bundle import get_bundle_keyboard
 from tgbot.services.broadcaster import send_message
 
 
@@ -247,7 +247,7 @@ class PriceAnalyzer:
                 bot,
                 user_id,
                 message,
-                reply_markup=get_refresh_keyboard(
+                reply_markup=get_bundle_keyboard(
                     bundle_id,
                 ),
                 disable_web_page_preview=True,
