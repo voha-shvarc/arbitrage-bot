@@ -191,7 +191,7 @@ class KuCoinAPI(AbstractExchange):
         self.transfer(cne.coin.name, str(amount))
         body = {
             "currency": cne.coin.name,
-            "chain": cne.network.plain_network_name,
+            "chain": cne.plain_network_name,
             "address": deposit_address.address,
             "amount": amount,
             "isInner": False,
