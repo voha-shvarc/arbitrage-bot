@@ -28,7 +28,7 @@ def get_refresh_keyboard(profit_bundle_id):
     )
     keyboard.button(
         text="Buy",
-        callback_data=WithdrawBundleCallbackData(profit_bundle_id=profit_bundle_id),
+        callback_data=CreateOrderCallbackData(profit_bundle_id=profit_bundle_id),
     )
     keyboard.button(
         text="Withdraw",
