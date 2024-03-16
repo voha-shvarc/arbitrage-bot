@@ -8,11 +8,13 @@ from okx.Account import AccountAPI
 from okx.Funding import FundingAPI
 from okx.MarketData import MarketAPI
 from okx.PublicData import PublicAPI
+from okx.Trade import TradeAPI
 from retry import retry
 
 from abstract import AbstractExchange
 from abstract import NoPriceFound
 from abstract.abstract import DepositAddressError
+from abstract.abstract import WithdrawError
 from db.models import CoinNetworkExchange
 from db.models import Pair
 from db.structs import CoinNetworkExchangeDC
@@ -39,6 +41,13 @@ class OkxAPI(AbstractExchange):
         self.market_client = MarketAPI(self.api_key, self.api_secret, self.passphrase, flag=self.flag, debug=False)
         self.funding_client = FundingAPI(self.api_key, self.api_secret, self.passphrase, flag=self.flag, debug=False)
         self.account_client = AccountAPI(self.api_key, self.api_secret, self.passphrase, flag=self.flag, debug=False)
+        self.trade_client = TradeAPI(
+            self.api_key,
+            self.api_secret,
+            self.passphrase,
+            flag=self.flag,
+            debug=False,
+        )
 
     @retry(delay=1, tries=2)
     def get_trading_pairs(self) -> list:
@@ -173,3 +182,15 @@ class OkxAPI(AbstractExchange):
             raise DepositAddressError() from e
         else:
             raise DepositAddressError()
+
+    def create_order(self, pair: Pair, ccy_quantity: float, price: float):
+        res = self.trade_client.place_order(
+            instId=pair.dashed_name,
+            tdMode="cash",
+            side="buy",
+            ordType="fok",
+            sz=str(ccy_quantity),
+            px=str(price),
+        )
+        if res["code"] != "0":
+            raise WithdrawError(res["data"][0]["sMsg"])

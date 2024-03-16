@@ -32,7 +32,7 @@ def format_number(num):
     while num >= 1000 and suffix_index < len(suffixes) - 1:
         suffix_index += 1
         num /= 1000.0
-    return f"{num:.1f}{suffixes[suffix_index]}"
+    return f"{num:.2f}{suffixes[suffix_index]}"
 
 
 def get_bundle_message(bundle, bundle_item: ProfitBundleItem, show_more: bool = False) -> str:
@@ -52,7 +52,7 @@ def get_bundle_message(bundle, bundle_item: ProfitBundleItem, show_more: bool = 
     base_exchange_price_section = (
         f"📕 {bundle.base_exchange.name} | <a href='{base_ex_spot_link}'>spot</a> | <a href='{base_ex_withdraw_link}'>withdraw</a>\n"
         f"💲 [ <code>{bundle_item.user_based_base_exchange_min_price}</code> - "
-        f"<code>{bundle_item.user_based_base_exchange_max_price}</code> ] "
+        f"<code>{bundle_item.user_based_base_exchange_max_price}</code> ] | "
         f"{format_number(bundle_item.to_use_base_ccy)} {bundle.withdraw_coin_network_exchange.coin.name}\n"
         f"📈 {bundle_item.user_based_used_buy_orders} orders | {(bundle_item.user_based_percent_of_base_trading_vol * 100):.3f}%"
     )
@@ -64,7 +64,7 @@ def get_bundle_message(bundle, bundle_item: ProfitBundleItem, show_more: bool = 
     pair_exchange_price_section = (
         f"📗 {bundle.pair_exchange.name} | <a href='{pair_ex_spot_link}'>spot</a> | <a href='{pair_ex_deposit_link}'>deposit</a>\n"
         f"💲[ <code>{bundle_item.user_based_pair_exchange_min_price}</code> - "
-        f"<code>{bundle_item.user_based_pair_exchange_max_price}</code> ] "
+        f"<code>{bundle_item.user_based_pair_exchange_max_price}</code> ] | "
         f"{format_number(bundle_item.to_use_base_ccy)} {bundle.withdraw_coin_network_exchange.coin.name}\n"
         f"📈 {bundle_item.user_based_used_sell_orders} orders | {(bundle_item.user_based_percent_of_pair_trading_vol * 100):.3f}%"
     )

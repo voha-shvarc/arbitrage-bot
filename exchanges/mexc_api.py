@@ -11,6 +11,7 @@ import requests
 
 from abstract import AbstractExchange
 from abstract import NoPriceFound
+from abstract.abstract import CreateOrderError
 from abstract.abstract import DepositAddressError
 from abstract.abstract import WithdrawError
 from db.models import CoinNetworkExchange
@@ -72,7 +73,7 @@ class MexcAPI(AbstractExchange):
                 exchange=self.NAME,
             )
             for pair in data["symbols"]
-            if pair["quoteAsset"] == "USDT" and pair["status"] == "ENABLED"
+            if pair["quoteAsset"] == "USDT" and pair["status"] == "ENABLED" and pair["isSpotTradingAllowed"]
         ]
         return trading_pairs
 
@@ -209,3 +210,21 @@ class MexcAPI(AbstractExchange):
         #
         # if msg := data.get("code"):
         #     raise WithdrawError(msg)
+
+    def create_order(self, pair: Pair, ccy_quantity: float, price: float):
+        body = {
+            "symbol": pair.default_name,
+            "side": "BUY",
+            "type": "LIMIT",
+            "quantity": ccy_quantity,
+            "price": price,
+        }
+        response = self.sign_request("POST", "/api/v3/order", body)
+
+        try:
+            data = response.json()
+        except JSONDecodeError as e:
+            error_log.error(f"[mexc] couldn't parse response. {response.text}")
+            raise CreateOrderError("Couldn't parse response. Check logs") from e
+        if err_msg := data["msg"]:
+            raise CreateOrderError(err_msg)

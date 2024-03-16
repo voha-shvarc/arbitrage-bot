@@ -7,10 +7,12 @@ from logging import getLogger
 from typing import List
 
 from kucoin.client import MarketData
+from kucoin.client import TradeData
 from kucoin.client import UserData
 
 from abstract import AbstractExchange
 from abstract import NoPriceFound
+from abstract.abstract import CreateOrderError
 from abstract.abstract import DepositAddressError
 from abstract.abstract import WithdrawError
 from db.models import CoinNetworkExchange
@@ -35,6 +37,7 @@ class KuCoinAPI(AbstractExchange):
         self.api_passphrase = config["KUCOIN_API_PASSPHRASE"]
         self.client = MarketData(self.api_key, self.api_secret, self.api_passphrase)
         self.account_client = UserData(self.api_key, self.api_secret, self.api_passphrase)
+        self.trade_client = TradeData(self.api_key, self.api_secret, self.api_passphrase)
 
     def get_trading_pairs(self) -> List[TradingPair]:
         pairs_info = self.client.get_symbol_list_v2()
@@ -202,3 +205,17 @@ class KuCoinAPI(AbstractExchange):
         #     self.account_client.apply_withdrawal(**body)
         # except Exception as e:
         #     raise WithdrawError(f"[kucoin] error submitting withdrawal {e}") from e
+
+    def create_order(self, pair: Pair, ccy_quantity: float, price: float):
+        try:
+            self.trade_client.create_limit_order(
+                symbol=pair.dashed_name,
+                side="buy",
+                type="limit",
+                price=str(price),
+                size=str(ccy_quantity),
+                timeInForce="FOK",
+            )
+        except Exception as e:
+            error_log.exception(f"[kucoin] create order error - {e}")
+            raise CreateOrderError(str(e)) from e

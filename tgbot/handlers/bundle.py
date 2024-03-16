@@ -7,8 +7,10 @@ from dotenv import dotenv_values
 from sqlalchemy.orm import joinedload
 
 from abstract.abstract import AbstractExchange
+from abstract.abstract import CreateOrderError
 from abstract.abstract import DepositAddressError
 from abstract.abstract import WithdrawError
+from analyze.price_analyzer import PriceAnalyzer
 from celery_app.tasks import monitor_bundle
 from db.base import Session
 from db.models import CoinNetworkExchange
@@ -25,6 +27,7 @@ from exchanges import MexcAPI
 from exchanges import OkxAPI
 from exchanges import WhitebitAPI
 
+from ..keyboards.bundle import CreateOrderCallbackData
 from ..keyboards.bundle import ForceRefreshBundleCallbackData
 from ..keyboards.bundle import get_refresh_keyboard
 from ..keyboards.bundle import RefreshBundleCallbackData
@@ -48,6 +51,8 @@ exchange_mapping = {
     BingxAPI.NAME: BingxAPI,
     MexcAPI.NAME: MexcAPI,
 }
+
+BASE_USDT_PROFIT = 4  # 4 USDT
 
 
 @bundle_router.callback_query(RefreshBundleCallbackData.filter())
@@ -152,3 +157,55 @@ async def withdraw_bundle_callback_query(query: CallbackQuery, callback_data: Wi
         f"Your deposit info addr = {deposit_address.address}, memo = {deposit_address.memo}\n"
         f"Withdraw body - <code>{body}</code>",
     )
+
+
+@bundle_router.callback_query(CreateOrderCallbackData.filter())
+async def create_order_callback_query(query: CallbackQuery, callback_data: CreateOrderCallbackData):
+    await query.answer()
+
+    with Session() as session:
+        bundle = (
+            session.query(ProfitBundle)
+            .options(
+                joinedload(ProfitBundle.withdraw_coin_network_exchange),
+                joinedload(ProfitBundle.withdraw_coin_network_exchange).joinedload(CoinNetworkExchange.exchange),
+                joinedload(ProfitBundle.withdraw_coin_network_exchange).joinedload(CoinNetworkExchange.network),
+                joinedload(ProfitBundle.pair),
+                joinedload(ProfitBundle.pair).joinedload(Pair.base_coin),
+                joinedload(ProfitBundle.pair).joinedload(Pair.quote_coin),
+                joinedload(ProfitBundle.base_exchange),
+                joinedload(ProfitBundle.pair_exchange),
+            )
+            .get(callback_data.profit_bundle_id)
+        )
+
+    base_exchange = exchange_mapping[bundle.base_exchange.name](config, {})
+    pair_exchange = exchange_mapping[bundle.pair_exchange.name](config, {})
+
+    base_exchange_price = base_exchange.get_price(bundle.pair)
+    pair_exchange_price = pair_exchange.get_price(bundle.pair)
+
+    price_analyzer = PriceAnalyzer(
+        buy_price=base_exchange_price[0],
+        sell_price=pair_exchange_price[1],
+        withdraw_cne=bundle.withdraw_coin_network_exchange,
+    )
+    try:
+        price_analyzer.run()
+    except Exception as e:
+        logger.exception(e)
+        return
+
+    if price_analyzer.profit > BASE_USDT_PROFIT:
+        try:
+            base_exchange.create_order(
+                pair=bundle.pair,
+                ccy_quantity=price_analyzer.user_based_coin_available_amount,
+                price=price_analyzer.user_based_max_buy_price,
+            )
+        except CreateOrderError as e:
+            await query.message.reply(f"Error creating order: {e}")
+        else:
+            await query.message.reply("Order was successfully created!")
+    else:
+        await query.message.reply("Bundle is already dead")

@@ -2,10 +2,12 @@ from json import JSONDecodeError
 from logging import getLogger
 from typing import List
 
+from binance.error import ClientError
 from binance.spot import Spot
 
 from abstract import AbstractExchange
 from abstract import NoPriceFound
+from abstract.abstract import CreateOrderError
 from abstract.abstract import DepositAddressError
 from db.models import CoinNetworkExchange
 from db.models import Pair
@@ -130,3 +132,17 @@ class BinanceAPI(AbstractExchange):
             raise DepositAddressError() from e
         else:
             return address
+
+    def create_order(self, pair: Pair, ccy_quantity: float, price: float):
+        try:
+            self.client.new_order(
+                symbol=pair.default_name,
+                side="BUY",
+                type="LIMIT",
+                timeInForce="FOK",
+                quantity=ccy_quantity,
+                price=price,
+            )
+        except ClientError as e:
+            error_log.exception(f"[binance] create order error - {e}")
+            raise CreateOrderError(str(e)) from e

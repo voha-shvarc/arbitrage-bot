@@ -5,13 +5,17 @@ from typing import List
 from huobi.client.account import AccountClient
 from huobi.client.generic import GenericClient
 from huobi.client.market import MarketClient
+from huobi.client.trade import TradeClient
 from huobi.client.wallet import WalletClient
 from huobi.constant import DepthStep
 from huobi.constant import InstrumentStatus
+from huobi.constant.definition import OrderType
+from huobi.exception.huobi_api_exception import HuobiApiException
 
 from abstract import AbstractExchange
 from abstract import NoPriceFound
 from abstract.abstract import DepositAddressError
+from abstract.abstract import WithdrawError
 from db.models import CoinNetworkExchange
 from db.models import Pair
 from db.structs import CoinNetworkExchangeDC
@@ -24,6 +28,7 @@ error_log = getLogger("error")
 
 class HuobiAPI(AbstractExchange):
     NAME = "Huobi"
+    ACCOUNT_ID = 58372812
     base_url = "https://api.huobi.pro"
 
     def __init__(self, config, connection):
@@ -36,6 +41,7 @@ class HuobiAPI(AbstractExchange):
         self.price_client = MarketClient(api_key=api_key, secret_key=api_secret)
         self.account_client = AccountClient(api_key=api_key, secret_key=api_secret)
         self.wallet_client = WalletClient(api_key=api_key, secret_key=api_secret)
+        self.trade_client = TradeClient(api_key=api_key, secret_key=api_secret)
 
     def get_trading_pairs(self) -> List[TradingPair]:
         pairs_info = self.client.get_exchange_symbols()
@@ -138,3 +144,16 @@ class HuobiAPI(AbstractExchange):
             raise DepositAddressError() from e
         else:
             raise DepositAddressError()
+
+    def create_order(self, pair: Pair, ccy_quantity: float, price: float):
+        try:
+            self.trade_client.create_spot_order(
+                symbol=pair.huobi_name,
+                account_id=self.ACCOUNT_ID,
+                order_type=OrderType.BUY_LIMIT_FOK,
+                amount=ccy_quantity,
+                price=price,
+            )
+        except HuobiApiException as e:
+            error_log.exception(f"[bybit] create order error - {e}")
+            raise WithdrawError(str(e)) from e

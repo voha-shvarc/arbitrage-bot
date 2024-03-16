@@ -64,7 +64,7 @@ async def show_exchanges_liquidity(message: Message):
     with Session() as session:
         exchanges = session.query(Exchange)
 
-    exchanges_info = [f"{exchange.name}: <b>{exchange.max_liquid_amount}</b>" for exchange in exchanges]
+    exchanges_info = [f"{exchange.name}: <b>{exchange.max_liquid_amount}$</b>" for exchange in exchanges]
     await message.answer("Exchanges Liquid 💸\n\n" + "\n".join(exchanges_info))
 
 

@@ -3,10 +3,12 @@ from logging import getLogger
 from typing import List
 
 from bingX.api import API
+from bingX.error import ClientError
 from bingX.spot import Spot
 
 from abstract import AbstractExchange
 from abstract import NoPriceFound
+from abstract.abstract import CreateOrderError
 from abstract.abstract import DepositAddressError
 from abstract.abstract import WithdrawError
 from db.models import CoinNetworkExchange
@@ -162,3 +164,16 @@ class BingxAPI(AbstractExchange):
         # if data["code"] != 0:
         #     msg = data["msg"]
         #     raise WithdrawError(msg)
+
+    def create_order(self, pair: Pair, ccy_quantity: float, price: float):
+        try:
+            self.client.place_order(
+                symbol=pair.dashed_name,
+                side="BUY",
+                type="LIMIT",
+                quantity=ccy_quantity,
+                price=price,
+            )
+        except ClientError as e:
+            error_log.exception(f"[bingx] create order error - {e}")
+            raise CreateOrderError(str(e)) from e

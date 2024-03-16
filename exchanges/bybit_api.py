@@ -2,11 +2,13 @@ from json import JSONDecodeError
 from logging import getLogger
 from typing import List
 
+from pybit.exceptions import InvalidRequestError
 from pybit.unified_trading import HTTP
 
 from abstract import AbstractExchange
 from abstract import NoPriceFound
 from abstract.abstract import DepositAddressError
+from abstract.abstract import WithdrawError
 from db.models import CoinNetworkExchange
 from db.models import Pair
 from db.structs import CoinNetworkExchangeDC
@@ -130,3 +132,18 @@ class BybitAPI(AbstractExchange):
             raise DepositAddressError() from e
         else:
             return address
+
+    def create_order(self, pair: Pair, ccy_quantity: float, price: float):
+        try:
+            self.session.place_order(
+                category="spot",
+                symbol=pair.default_name,
+                side="Buy",
+                orderType="Limit",
+                qty=str(ccy_quantity),
+                price=str(price),
+                timeInForce="FOK",
+            )
+        except InvalidRequestError as e:
+            error_log.exception(f"[bybit] create order error - {e}")
+            raise WithdrawError(str(e)) from e

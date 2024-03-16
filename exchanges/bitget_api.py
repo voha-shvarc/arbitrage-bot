@@ -7,14 +7,17 @@ from typing import List
 
 from abstract import AbstractExchange
 from abstract import NoPriceFound
+from abstract.abstract import CreateOrderError
 from abstract.abstract import DepositAddressError
 from db.models import CoinNetworkExchange
 from db.models import Pair
 from db.structs import CoinNetworkExchangeDC
 from db.structs import DepositAddress
 from db.structs import TradingPair
+from exchanges.bitget.exceptions import BitgetAPIException
 from exchanges.bitget.v1.spot.account_api import AccountApi
 from exchanges.bitget.v1.spot.market_api import MarketApi
+from exchanges.bitget.v1.spot.order_api import OrderApi
 from exchanges.bitget.v1.spot.wallet_api import WalletApi
 
 
@@ -39,6 +42,11 @@ class BitgetAPI(AbstractExchange):
             passphrase=self.api_passphrase,
         )
         self.wallet_client = WalletApi(
+            api_key=self.api_key,
+            api_secret_key=self.api_secret,
+            passphrase=self.api_passphrase,
+        )
+        self.order_client = OrderApi(
             api_key=self.api_key,
             api_secret_key=self.api_secret,
             passphrase=self.api_passphrase,
@@ -181,3 +189,18 @@ class BitgetAPI(AbstractExchange):
             raise DepositAddressError() from e
         else:
             return address
+
+    def create_order(self, pair: Pair, ccy_quantity: float, price: float):
+        try:
+            body = {
+                "symbol": pair.bitget_name,
+                "side": "buy",
+                "orderType": "limit",
+                "force": "fok",
+                "price": str(price),
+                "quantity": str(ccy_quantity),
+            }
+            self.order_client.placeOrder(params=body)
+        except BitgetAPIException as e:
+            error_log.exception(f"[bitget] create order error - {e}")
+            raise CreateOrderError(str(e)) from e
