@@ -21,6 +21,9 @@ def get_menu_keyboard():
     keyboard.button(
         text="Exchanges 🛒",
     )
+    keyboard.button(
+        text="Exchanges Liquid 💸",
+    )
 
     return keyboard.as_markup(resize_keyboard=True)
 
