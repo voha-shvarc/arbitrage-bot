@@ -65,11 +65,14 @@ async def recalculate_bundle_callback_query(query: CallbackQuery, callback_data:
                 bundle.joinedload(ProfitBundle.pair),
                 bundle.joinedload(ProfitBundle.pair).joinedload(Pair.base_coin),
                 bundle.joinedload(ProfitBundle.pair).joinedload(Pair.quote_coin),
+                bundle.joinedload(ProfitBundle.deposit_coin_network_exchange),
+                bundle.joinedload(ProfitBundle.deposit_coin_network_exchange).joinedload(CoinNetworkExchange.network),
+                bundle.joinedload(ProfitBundle.deposit_coin_network_exchange).joinedload(CoinNetworkExchange.coin),
                 bundle.joinedload(ProfitBundle.withdraw_coin_network_exchange),
                 bundle.joinedload(ProfitBundle.withdraw_coin_network_exchange).joinedload(CoinNetworkExchange.network),
                 bundle.joinedload(ProfitBundle.withdraw_coin_network_exchange).joinedload(CoinNetworkExchange.coin),
                 bundle.joinedload(ProfitBundle.withdraw_coin_network_exchange).joinedload(
-                    CoinNetworkExchange.base_network
+                    CoinNetworkExchange.base_network,
                 ),
             )
             .order_by(ProfitBundleItem.created_at.desc())
