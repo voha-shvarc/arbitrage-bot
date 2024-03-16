@@ -3,7 +3,10 @@ from abc import abstractmethod
 from typing import List
 
 from db.base import Session
+from db.models import CoinNetworkExchange
 from db.models import Exchange
+from db.models import Pair
+from db.structs import DepositAddress
 from db.structs import TradingPair
 
 
@@ -19,11 +22,11 @@ class AbstractExchange(ABC):
         pass
 
     @abstractmethod
-    async def get_price(self, pair, limit=10) -> tuple[list[list[str]], list[list[str]]]:
+    async def get_price(self, pair: Pair, limit=10) -> tuple[list[list[str]], list[list[str]]]:
         pass
 
     @abstractmethod
-    def get_pair_trading_volume(self, pair) -> float:
+    def get_pair_trading_volume(self, pair: Pair) -> float:
         pass
 
     @classmethod
@@ -33,24 +36,38 @@ class AbstractExchange(ABC):
         return exchange_id
 
     @classmethod
-    def spot_link(cls, pair) -> str:
+    def spot_link(cls, pair: Pair) -> str:
         raise NotImplementedError()
 
     @classmethod
-    def deposit_link(cls, coin) -> str:
+    def deposit_link(cls, cne: CoinNetworkExchange) -> str:
         raise NotImplementedError()
 
     @classmethod
-    def withdraw_link(cls, coin) -> str:
+    def withdraw_link(cls, cne: CoinNetworkExchange) -> str:
         raise NotImplementedError()
 
-    def get_pair_chart_change(self, pair) -> float:
+    def get_pair_chart_change(self, pair: Pair) -> float:
         """Returns pair chart change for the last 15 minutes in percents"""
         raise NotImplementedError()
 
     def get_balance(self) -> float:
         raise NotImplementedError()
 
+    def get_deposit_address(self, cne: CoinNetworkExchange) -> DepositAddress:
+        raise NotImplementedError()
+
+    def withdraw(self, cne: CoinNetworkExchange, deposit_address: DepositAddress) -> bool:
+        raise NotImplementedError()
+
 
 class NoPriceFound(Exception):
+    pass
+
+
+class DepositAddressError(Exception):
+    pass
+
+
+class WithdrawError(Exception):
     pass

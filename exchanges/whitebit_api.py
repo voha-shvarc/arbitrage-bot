@@ -8,9 +8,11 @@ from whitebit.client import _create_uri
 
 from abstract import AbstractExchange
 from abstract import NoPriceFound
+from abstract.abstract import DepositAddressError
 from db.models import CoinNetworkExchange
 from db.models import Pair
 from db.structs import CoinNetworkExchangeDC
+from db.structs import DepositAddress
 from db.structs import TradingPair
 
 
@@ -24,10 +26,8 @@ class WhitebitAPI(AbstractExchange):
     def __init__(self, config, connection):
         self.connection = connection
 
-        # api_key = config["WHITEBIT_API_KEY"]
-        # api_secret = config["WHITEBIT_API_SECRET"]
-        api_key = ""
-        api_secret = ""
+        api_key = config["WHITEBIT_API_KEY"]
+        api_secret = config["WHITEBIT_API_SECRET"]
         self.account_client = MainAccountClient(api_key, api_secret)
         self.market_client = TradeMarketClient(api_key, api_secret)
 
@@ -110,3 +110,19 @@ class WhitebitAPI(AbstractExchange):
 
     def get_balance(self) -> float:
         return 0
+
+    def get_deposit_address(self, cne: CoinNetworkExchange) -> DepositAddress:
+        uri = "/api/v4/main-account/address"
+        try:
+            data = self.account_client._request(
+                "POST",
+                uri=uri,
+                params={"ticker": cne.coin.name, "network": cne.network.name},
+                auth=True,
+            )
+            address = DepositAddress(data["account"]["address"], data["account"].get("memo"))
+        except Exception as e:
+            error_log.error(f"[bybit] deposit address error - {e}")
+            raise DepositAddressError() from e
+        else:
+            return address

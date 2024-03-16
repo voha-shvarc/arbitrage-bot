@@ -19,7 +19,6 @@ from exchanges import BinanceAPI
 from exchanges import BingxAPI
 from exchanges import BitgetAPI
 from exchanges import BybitAPI
-from exchanges import GateIOAPI
 from exchanges import HuobiAPI
 from exchanges import KuCoinAPI
 from exchanges import MexcAPI
@@ -38,7 +37,6 @@ exchange_mapping = {
     BinanceAPI.NAME: BinanceAPI,
     BybitAPI.NAME: BybitAPI,
     HuobiAPI.NAME: HuobiAPI,
-    GateIOAPI.NAME: GateIOAPI,
     OkxAPI.NAME: OkxAPI,
     KuCoinAPI.NAME: KuCoinAPI,
     BitgetAPI.NAME: BitgetAPI,
@@ -59,9 +57,9 @@ def monitor_bundle(self: Task, bundle_id, force_refresh: bool = False):
         bundle = (
             session.query(ProfitBundle)
             .options(
-                joinedload(ProfitBundle.coin_network_exchange),
-                joinedload(ProfitBundle.coin_network_exchange).joinedload(CoinNetworkExchange.exchange),
-                joinedload(ProfitBundle.coin_network_exchange).joinedload(CoinNetworkExchange.network),
+                joinedload(ProfitBundle.withdraw_coin_network_exchange),
+                joinedload(ProfitBundle.withdraw_coin_network_exchange).joinedload(CoinNetworkExchange.exchange),
+                joinedload(ProfitBundle.withdraw_coin_network_exchange).joinedload(CoinNetworkExchange.network),
                 joinedload(ProfitBundle.pair),
                 joinedload(ProfitBundle.pair).joinedload(Pair.base_coin),
                 joinedload(ProfitBundle.pair).joinedload(Pair.quote_coin),
@@ -83,7 +81,7 @@ def monitor_bundle(self: Task, bundle_id, force_refresh: bool = False):
     price_analyzer = PriceAnalyzer(
         buy_price=base_exchange_price[0],
         sell_price=pair_exchange_price[1],
-        network=bundle.coin_network_exchange,
+        withdraw_cne=bundle.withdraw_coin_network_exchange,
     )
     try:
         price_analyzer.run()
@@ -147,10 +145,10 @@ def send_tg_message(bundle_id):
                 bundle.joinedload(ProfitBundle.pair),
                 bundle.joinedload(ProfitBundle.pair).joinedload(Pair.base_coin),
                 bundle.joinedload(ProfitBundle.pair).joinedload(Pair.quote_coin),
-                bundle.joinedload(ProfitBundle.coin_network_exchange),
-                bundle.joinedload(ProfitBundle.coin_network_exchange).joinedload(CoinNetworkExchange.network),
-                bundle.joinedload(ProfitBundle.coin_network_exchange).joinedload(CoinNetworkExchange.coin),
-                bundle.joinedload(ProfitBundle.coin_network_exchange).joinedload(
+                bundle.joinedload(ProfitBundle.withdraw_coin_network_exchange),
+                bundle.joinedload(ProfitBundle.withdraw_coin_network_exchange).joinedload(CoinNetworkExchange.network),
+                bundle.joinedload(ProfitBundle.withdraw_coin_network_exchange).joinedload(CoinNetworkExchange.coin),
+                bundle.joinedload(ProfitBundle.withdraw_coin_network_exchange).joinedload(
                     CoinNetworkExchange.base_network,
                 ),
             )

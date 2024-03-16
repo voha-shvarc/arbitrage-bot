@@ -6,9 +6,11 @@ from pybit.unified_trading import HTTP
 
 from abstract import AbstractExchange
 from abstract import NoPriceFound
+from abstract.abstract import DepositAddressError
 from db.models import CoinNetworkExchange
 from db.models import Pair
 from db.structs import CoinNetworkExchangeDC
+from db.structs import DepositAddress
 from db.structs import TradingPair
 
 
@@ -117,3 +119,14 @@ class BybitAPI(AbstractExchange):
             balance = 0
 
         return balance
+
+    def get_deposit_address(self, cne: CoinNetworkExchange) -> DepositAddress:
+        try:
+            response = self.session.get_master_deposit_address(coin=cne.coin.name, chainType=cne.network.name)
+            data = response["result"]["chains"][0]
+            address = DepositAddress(data["addressDeposit"], data["tagDeposit"])
+        except Exception as e:
+            error_log.error(f"[bybit] deposit address error - {e}")
+            raise DepositAddressError() from e
+        else:
+            return address

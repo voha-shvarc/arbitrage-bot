@@ -17,6 +17,7 @@ class NetworkExchange:
     can_withdraw: bool
     withdraw_fee: float
     confirmations_needed: Union[int, float, None] = None
+    plain_name: Union[str, None] = None
 
     @classmethod
     def from_binance(cls, data):
@@ -53,7 +54,7 @@ class NetworkExchange:
         withdraw_fee = float(data["minFee"])
         confirmations_needed = int(data["minDepArrivalConfirm"])
 
-        return cls(name, can_deposit, can_withdraw, withdraw_fee, confirmations_needed)
+        return cls(name, can_deposit, can_withdraw, withdraw_fee, confirmations_needed, plain_name=data["chain"])
 
     @classmethod
     def from_gateio(cls, data: Currency):
@@ -71,17 +72,20 @@ class NetworkExchange:
         withdraw_fee = network.transactFeeWithdraw
         confirmations_needed = network.numOfFastConfirmations
 
-        return cls(name.upper(), can_deposit, can_withdraw, withdraw_fee, confirmations_needed)
+        return cls(
+            name.upper(), can_deposit, can_withdraw, withdraw_fee, confirmations_needed, plain_name=network.chain
+        )
 
     @classmethod
     def from_kucoin(cls, data):
         net_name = data["chainName"]
+        plain_name = data["chainId"]
         can_deposit = data["isDepositEnabled"]
         can_withdraw = data["isWithdrawEnabled"]
         withdraw_fee = data["withdrawalMinFee"]
         confirmations_needed = data["preConfirms"]
 
-        return cls(net_name, can_deposit, can_withdraw, withdraw_fee, confirmations_needed)
+        return cls(net_name, can_deposit, can_withdraw, withdraw_fee, confirmations_needed, plain_name)
 
     @classmethod
     def from_bitget(cls, data):
@@ -105,9 +109,11 @@ class NetworkExchange:
 
     @classmethod
     def from_mexc(cls, data: dict):
+        plain_name = None
         net_name = data["network"]
         short_name_index = net_name.find("(")
         if short_name_index != -1:
+            plain_name = net_name
             net_name = net_name[short_name_index + 1 : -1]
 
         can_deposit = data["depositEnable"]
@@ -115,7 +121,7 @@ class NetworkExchange:
         withdraw_fee = float(data["withdrawFee"])
         confirmations_needed = data["minConfirm"]
 
-        return cls(net_name, can_deposit, can_withdraw, withdraw_fee, confirmations_needed)
+        return cls(net_name, can_deposit, can_withdraw, withdraw_fee, confirmations_needed, plain_name)
 
 
 @dataclass
@@ -137,6 +143,7 @@ class CoinNetworkExchangeDC:
             "withdraw_fee": net.withdraw_fee,
             "extra_info": self.extra_info,
             "confirmations_needed": net.confirmations_needed,
+            "plain_network_name": net.plain_name,
         }
         return data
 
@@ -245,3 +252,9 @@ class Price:
     price: float
     amount_available: float
     partial_exhausted: bool = False
+
+
+@dataclass
+class DepositAddress:
+    address: str
+    memo: Union[str, None]

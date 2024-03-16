@@ -2,6 +2,7 @@ import asyncio
 import logging
 import time
 from typing import Tuple
+from typing import Union
 
 from httpcore import ConnectError
 from httpx import PoolTimeout
@@ -32,15 +33,15 @@ error_log = logging.getLogger("error")
 
 
 class ExchangePairAnalyzer:
-    BASE_USDT_PROFIT = 4  # 4 USDT
+    BASE_USDT_PROFIT = 0.5  # 4 USDT
 
     def __init__(self, base_exchange, pair_exchange):
         self.base_exchange = base_exchange
         self.pair_exchange = pair_exchange
 
     async def manage_pair(self, pair):
-        base_to_second_network, second_to_base_network = self._get_best_networks(pair.base_coin)
-        if not base_to_second_network and not second_to_base_network:
+        base_to_second_network_mapping, second_to_base_network_mapping = self._get_best_networks(pair.base_coin)
+        if not base_to_second_network_mapping and not second_to_base_network_mapping:
             log.info(f"no network found - {pair.default_name}")
             return
 
@@ -57,11 +58,12 @@ class ExchangePairAnalyzer:
             error_log.error(f"unknown error getting price - {e} - {pair.default_name}")
             return
 
-        if base_to_second_network and base_to_second_network.withdraw_fee:
+        if base_to_second_network_mapping and base_to_second_network_mapping[self.base_exchange.NAME].withdraw_fee:
             buy_price_analyzer = PriceAnalyzer(
                 buy_price=base_exchange_price[0],
                 sell_price=pair_exchange_price[1],
-                network=base_to_second_network,
+                withdraw_cne=base_to_second_network_mapping[self.base_exchange.NAME],
+                deposit_cne=base_to_second_network_mapping[self.pair_exchange.NAME],
             )
             try:
                 buy_price_analyzer.run()
@@ -71,11 +73,12 @@ class ExchangePairAnalyzer:
             if buy_price_analyzer.profit > self.BASE_USDT_PROFIT:
                 await self._start_monitoring(pair, buy_price_analyzer)
 
-        if second_to_base_network and second_to_base_network.withdraw_fee:
+        if second_to_base_network_mapping and second_to_base_network_mapping[self.pair_exchange.NAME].withdraw_fee:
             sell_price_analyzer = PriceAnalyzer(
                 buy_price=pair_exchange_price[0],
                 sell_price=base_exchange_price[1],
-                network=second_to_base_network,
+                withdraw_cne=second_to_base_network_mapping[self.pair_exchange.NAME],
+                deposit_cne=second_to_base_network_mapping[self.base_exchange.NAME],
             )
             try:
                 sell_price_analyzer.run()
@@ -135,7 +138,10 @@ class ExchangePairAnalyzer:
             )
             return pairs
 
-    def _get_best_networks(self, coin: Coin) -> Tuple[CoinNetworkExchange, CoinNetworkExchange]:
+    def _get_best_networks(
+        self,
+        coin: Coin,
+    ) -> Tuple[Union[dict[str, CoinNetworkExchange], None], Union[dict[str, CoinNetworkExchange], None]]:
         with Session() as session:
             query = (
                 session.query(CoinNetworkExchange.base_network_id, func.array_agg(CoinNetworkExchange.id))
@@ -168,14 +174,14 @@ class ExchangePairAnalyzer:
                 }
 
         available_nets_to_transfer_from_base_to_second = [
-            cne_mapping[self.base_exchange.NAME]
+            cne_mapping
             for net_name, cne_mapping in nets_mapping.items()
             if len(cne_mapping) == 2
             and cne_mapping[self.base_exchange.NAME].can_withdraw
             and cne_mapping[self.pair_exchange.NAME].can_deposit
         ]
         available_nets_to_transfer_from_second_to_base = [
-            cne_mapping[self.pair_exchange.NAME]
+            cne_mapping
             for net_name, cne_mapping in nets_mapping.items()
             if len(cne_mapping) == 2
             and cne_mapping[self.pair_exchange.NAME].can_withdraw
@@ -185,9 +191,13 @@ class ExchangePairAnalyzer:
         if available_nets_to_transfer_from_base_to_second:
             best_base_to_second_network = min(
                 available_nets_to_transfer_from_base_to_second,
-                key=lambda cne: (cne.confirmations_needed * cne.network.block_creation_time)
-                if cne.confirmations_needed and cne.network.block_creation_time
-                else cne.withdraw_fee,
+                key=lambda cne_mapping: (
+                    cne_mapping[self.base_exchange.NAME].confirmations_needed
+                    * cne_mapping[self.base_exchange.NAME].network.block_creation_time
+                )
+                if cne_mapping[self.base_exchange.NAME].confirmations_needed
+                and cne_mapping[self.base_exchange.NAME].network.block_creation_time
+                else cne_mapping[self.base_exchange.NAME].withdraw_fee,
             )
         else:
             best_base_to_second_network = None
@@ -195,9 +205,13 @@ class ExchangePairAnalyzer:
         if available_nets_to_transfer_from_second_to_base:
             best_second_to_base_network = min(
                 available_nets_to_transfer_from_second_to_base,
-                key=lambda cne: (cne.confirmations_needed * cne.network.block_creation_time)
-                if cne.confirmations_needed and cne.network.block_creation_time
-                else cne.withdraw_fee,
+                key=lambda cne_mapping: (
+                    cne_mapping[self.pair_exchange.NAME].confirmations_needed
+                    * cne_mapping[self.pair_exchange.NAME].network.block_creation_time
+                )
+                if cne_mapping[self.pair_exchange.NAME].confirmations_needed
+                and cne_mapping[self.pair_exchange.NAME].network.block_creation_time
+                else cne_mapping[self.pair_exchange.NAME].withdraw_fee,
             )
         else:
             best_second_to_base_network = None
@@ -215,7 +229,7 @@ class ExchangePairAnalyzer:
                 exists().where(
                     and_(
                         ProfitBundle.status == BundleStatus.in_progress,
-                        ProfitBundle.coin_network_exchange_id == price_analyzer.coin_network_exchange.id,
+                        ProfitBundle.withdraw_coin_network_exchange_id == price_analyzer.withdraw_cne.id,
                         ProfitBundle.pair_id == pair.id,
                         ProfitBundle.base_exchange_id == from_exchange.get_db_id(),
                         ProfitBundle.pair_exchange_id == to_exchange.get_db_id(),
@@ -225,26 +239,17 @@ class ExchangePairAnalyzer:
             if same_processing_bundle:
                 return False
 
-            deposit_coin_network_exchange = (
-                session.query(CoinNetworkExchange)
-                .filter(
-                    CoinNetworkExchange.exchange_id == to_exchange.get_db_id(),
-                    CoinNetworkExchange.coin_id == price_analyzer.coin_network_exchange.coin_id,
-                    CoinNetworkExchange.base_network_id == price_analyzer.coin_network_exchange.base_network_id,
-                )
-                .first()
-            )
-            if not deposit_coin_network_exchange:
+            if not price_analyzer.deposit_cne:
                 error_log.error("Error in setting up deposit cne")
                 return False
 
             if (
-                deposit_coin_network_exchange.confirmations_needed
-                and deposit_coin_network_exchange.base_network.block_creation_time
+                price_analyzer.deposit_cne.confirmations_needed
+                and price_analyzer.deposit_cne.base_network.block_creation_time
             ):
                 network_speed = (
-                    deposit_coin_network_exchange.confirmations_needed
-                    * deposit_coin_network_exchange.base_network.block_creation_time
+                    price_analyzer.deposit_cne.confirmations_needed
+                    * price_analyzer.deposit_cne.base_network.block_creation_time
                     / 60
                 )
             else:
@@ -252,7 +257,8 @@ class ExchangePairAnalyzer:
 
             bundle = ProfitBundle()
             bundle.pair_id = pair.id
-            bundle.coin_network_exchange_id = price_analyzer.coin_network_exchange.id
+            bundle.withdraw_coin_network_exchange_id = price_analyzer.withdraw_cne.id
+            bundle.deposit_coin_network_exchange_id = price_analyzer.deposit_cne.id
             bundle.base_exchange_id = from_exchange.get_db_id()
             bundle.pair_exchange_id = to_exchange.get_db_id()
             bundle.network_speed = network_speed

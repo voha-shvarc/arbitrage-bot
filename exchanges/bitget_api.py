@@ -7,12 +7,15 @@ from typing import List
 
 from abstract import AbstractExchange
 from abstract import NoPriceFound
+from abstract.abstract import DepositAddressError
 from db.models import CoinNetworkExchange
 from db.models import Pair
 from db.structs import CoinNetworkExchangeDC
+from db.structs import DepositAddress
 from db.structs import TradingPair
 from exchanges.bitget.v1.spot.account_api import AccountApi
 from exchanges.bitget.v1.spot.market_api import MarketApi
+from exchanges.bitget.v1.spot.wallet_api import WalletApi
 
 
 error_log = getLogger("error")
@@ -31,6 +34,11 @@ class BitgetAPI(AbstractExchange):
         self.api_passphrase = config["BITGET_API_PASSPHRASE"]
         self.client = MarketApi(api_key=self.api_key, api_secret_key=self.api_secret, passphrase=self.api_passphrase)
         self.account_client = AccountApi(
+            api_key=self.api_key,
+            api_secret_key=self.api_secret,
+            passphrase=self.api_passphrase,
+        )
+        self.wallet_client = WalletApi(
             api_key=self.api_key,
             api_secret_key=self.api_secret,
             passphrase=self.api_passphrase,
@@ -163,3 +171,13 @@ class BitgetAPI(AbstractExchange):
             balance = 0
 
         return balance
+
+    def get_deposit_address(self, cne: CoinNetworkExchange) -> DepositAddress:
+        try:
+            response = self.wallet_client.depositAddress(params={"coin": cne.coin.name, "chain": cne.network.name})
+            address = DepositAddress(response["data"]["address"], response["data"]["tag"])
+        except Exception as e:
+            error_log.error(f"[bitget] deposit address error - {e}")
+            raise DepositAddressError() from e
+        else:
+            return address

@@ -15,7 +15,6 @@ from exchanges import BinanceAPI
 from exchanges import BingxAPI
 from exchanges import BitgetAPI
 from exchanges import BybitAPI
-from exchanges import GateIOAPI
 from exchanges import HuobiAPI
 from exchanges import KuCoinAPI
 from exchanges import MexcAPI
@@ -25,7 +24,7 @@ from exchanges import WhitebitAPI
 
 config = dotenv_values(".env")
 
-EXCHANGES = {BinanceAPI, BybitAPI, OkxAPI, GateIOAPI, HuobiAPI, KuCoinAPI, BitgetAPI, WhitebitAPI, BingxAPI, MexcAPI}
+EXCHANGES = {BinanceAPI, BybitAPI, OkxAPI, HuobiAPI, KuCoinAPI, BitgetAPI, WhitebitAPI, BingxAPI, MexcAPI}
 
 
 @app.task

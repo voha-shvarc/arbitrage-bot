@@ -3,10 +3,15 @@ from datetime import datetime
 import pytz
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
-from sqlalchemy.orm import joinedload, contains_eager
+from sqlalchemy.orm import contains_eager
+from sqlalchemy.orm import joinedload
 
 from db.base import Session
-from db.models import ProfitBundle, ProfitBundleItem, Pair, CoinNetworkExchange, BundleStatus
+from db.models import BundleStatus
+from db.models import CoinNetworkExchange
+from db.models import Pair
+from db.models import ProfitBundle
+from db.models import ProfitBundleItem
 
 
 class SendAnalyticsService:
@@ -99,7 +104,8 @@ class SendAnalyticsService:
         }
 
         self.sheets_service.batchUpdate(
-            spreadsheetId=self.spreadsheet_id, body={"requests": [format_request]}
+            spreadsheetId=self.spreadsheet_id,
+            body={"requests": [format_request]},
         ).execute()
 
     def _set_header_row(self, sheet_name):
@@ -124,7 +130,8 @@ class SendAnalyticsService:
         }
 
         self.sheets_service.batchUpdate(
-            spreadsheetId=self.spreadsheet_id, body={"requests": [format_request]}
+            spreadsheetId=self.spreadsheet_id,
+            body={"requests": [format_request]},
         ).execute()
 
     def _create_sheet(self, sheet_name):
@@ -160,7 +167,8 @@ class SendAnalyticsService:
 
         with Session() as session:
             to_sync_bundle_ids_subq = session.query(ProfitBundle.id).filter(
-                ProfitBundle.status == BundleStatus.done, ProfitBundle.synced.is_(False)
+                ProfitBundle.status == BundleStatus.done,
+                ProfitBundle.synced.is_(False),
             )
 
             bundles_qs = (
@@ -194,17 +202,17 @@ class SendAnalyticsService:
 
                     if bundle.pair_exchange_trading_volume:
                         percent_of_pair_trading_volume = (
-                                bundle_item.to_use_base_ccy / bundle.pair_exchange_trading_volume
+                            bundle_item.to_use_base_ccy / bundle.pair_exchange_trading_volume
                         )
                     else:
                         percent_of_pair_trading_volume = 0
 
-                    exhausted_label = ' DRY' if bundle_item.is_exhausted else ''
+                    exhausted_label = " DRY" if bundle_item.is_exhausted else ""
                     row = [
                         bundle.base_exchange.name,
                         bundle.pair_exchange.name,
                         bundle.pair.default_name,
-                        bundle.coin_network_exchange.network.name,
+                        bundle.withdraw_coin_network_exchange.network.name,
                         bundle_item.used_buy_orders,
                         bundle_item.used_sell_orders,
                         f"{round(bundle_item.to_use_usdt, 3)}{exhausted_label}",
@@ -225,7 +233,8 @@ class SendAnalyticsService:
                     rows.append(row)
 
             session.query(ProfitBundle).filter(ProfitBundle.id.in_(to_sync_bundle_ids_subq)).update(
-                {"synced": True}, synchronize_session=False
+                {"synced": True},
+                synchronize_session=False,
             )
             session.commit()
 

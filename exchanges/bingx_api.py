@@ -2,13 +2,17 @@ from json import JSONDecodeError
 from logging import getLogger
 from typing import List
 
+from bingX.api import API
 from bingX.spot import Spot
 
 from abstract import AbstractExchange
 from abstract import NoPriceFound
+from abstract.abstract import DepositAddressError
+from abstract.abstract import WithdrawError
 from db.models import CoinNetworkExchange
 from db.models import Pair
 from db.structs import CoinNetworkExchangeDC
+from db.structs import DepositAddress
 from db.structs import TradingPair
 
 
@@ -24,6 +28,7 @@ class BingxAPI(AbstractExchange):
         api_key = config["BINGX_API_KEY"]
         api_secret = config["BINGX_API_SECRET"]
         self.client = Spot(api_key, api_secret)
+        self.api_client = API(api_key, api_secret, base_url="https://open-api.bingx.com")
 
     def get_trading_pairs(self) -> List[TradingPair]:
         pairs_info = self.client.symbols()
@@ -60,6 +65,10 @@ class BingxAPI(AbstractExchange):
             data = response.json()
         except JSONDecodeError:
             error_log.error(f"[bingx] {pair.default_name} - {response.text}")
+            raise NoPriceFound()
+
+        if "code" in data and data["code"]:
+            error_log.error(f"[bingx] {pair.default_name} - {data['code']}, {data['msg']}")
             raise NoPriceFound()
 
         try:
@@ -106,12 +115,50 @@ class BingxAPI(AbstractExchange):
         change = (closed - opened) / opened * 100
         return change
 
-    def get_balance(self) -> float:
+    def get_balance(self, coin_name: str = "USDT") -> float:
         data = self.client.assets()
-        balance = 0
         for balance_data in data["balances"]:
-            if balance_data["asset"] == "USDT":
+            if balance_data["asset"] == coin_name:
                 balance = float(balance_data["free"])
-                break
+                return balance
 
-        return balance
+        raise WithdrawError(f"No available balance for {coin_name}")
+
+    def get_deposit_address(self, cne: CoinNetworkExchange) -> DepositAddress:
+        try:
+            data = self.api_client.get("/openApi/wallets/v1/capital/deposit/address", params={"coin": cne.coin.name})
+            for network_data in data["data"]["data"]:
+                if network_data["network"] == cne.network.name:
+                    address = DepositAddress(network_data["address"], network_data.get("tag"))
+                    return address
+        except JSONDecodeError as e:
+            raise DepositAddressError() from e
+        except Exception as e:
+            error_log.error(f"[bingx] deposit address error - {e}")
+            raise DepositAddressError() from e
+        else:
+            error_log.error(f"[bingx] empty deposit address data - {data}")
+            raise DepositAddressError()
+
+    def withdraw(self, cne: CoinNetworkExchange, deposit_address: DepositAddress) -> None:
+        amount = self.get_balance(cne.coin.name)
+        body = {
+            "coin": cne.coin.name,
+            "network": cne.network.name,
+            "address": deposit_address.address,
+            "amount": amount,
+            "walletType": "1",
+        }
+        if deposit_address.memo:
+            body["addressTag"] = deposit_address.memo
+
+        return body
+        # try:
+        #     data = self.api_client.post("/openApi/wallets/v1/capital/withdraw/apply", params=body)
+        # except Exception as e:
+        #     error_log.exception(e)
+        #     raise WithdrawError(f"[bingx] unknown exception {e}") from e
+        #
+        # if data["code"] != 0:
+        #     msg = data["msg"]
+        #     raise WithdrawError(msg)

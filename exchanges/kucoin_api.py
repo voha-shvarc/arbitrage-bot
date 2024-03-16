@@ -2,6 +2,8 @@ import base64
 import hashlib
 import hmac
 import time
+from json import JSONDecodeError
+from logging import getLogger
 from typing import List
 
 from kucoin.client import MarketData
@@ -9,10 +11,16 @@ from kucoin.client import UserData
 
 from abstract import AbstractExchange
 from abstract import NoPriceFound
+from abstract.abstract import DepositAddressError
+from abstract.abstract import WithdrawError
 from db.models import CoinNetworkExchange
 from db.models import Pair
 from db.structs import CoinNetworkExchangeDC
+from db.structs import DepositAddress
 from db.structs import TradingPair
+
+
+error_log = getLogger("error")
 
 
 class KuCoinAPI(AbstractExchange):
@@ -67,10 +75,7 @@ class KuCoinAPI(AbstractExchange):
             hmac.new(self.api_secret.encode("utf-8"), self.api_passphrase.encode("utf-8"), hashlib.sha256).digest(),
         )
         headers = self.get_header(sign, now_time, passphrase)
-        from json import JSONDecodeError
-        from logging import getLogger
 
-        error_log = getLogger("error")
         response = await self.connection.get(url, params=body, headers=headers)
         try:
             data = response.json()
@@ -147,11 +152,53 @@ class KuCoinAPI(AbstractExchange):
         change = (closed - opened) / opened * 100
         return change
 
-    def get_balance(self) -> float:
-        response = self.account_client.get_account_list(currency="USDT", account_type="trade")
+    def get_balance(self, coin_name: str = "USDT") -> float:
+        response = self.account_client.get_account_list(currency=coin_name, account_type="trade")
         try:
             balance = float(response[0]["balance"])
-        except (KeyError, IndexError):
-            balance = 0
+        except (KeyError, IndexError) as e:
+            error_log.exception(f"[kucoin] error getting balance: {coin_name}, {e}")
+            raise WithdrawError(f"No available balance for {coin_name}") from e
+        else:
+            return balance
 
-        return balance
+    def transfer(self, coin_name: str, amount: str, from_account: str = "trade", to_account: str = "main"):
+        try:
+            self.account_client.inner_transfer(coin_name, from_account, to_account, amount)
+        except Exception as e:
+            error_log.exception(f"[kucoin] transfer error: {e}")
+            raise WithdrawError(f"Couldn't transfer from {from_account} to {to_account}. {e}") from e
+
+    def get_deposit_address(self, cne: CoinNetworkExchange) -> DepositAddress:
+        try:
+            data = self.account_client.get_deposit_addressv2(cne.coin.name, cne.plain_network_name)
+            if isinstance(data, dict):
+                data = self.account_client.create_deposit_address(cne.coin.name, cne.plain_network_name)
+            else:
+                data = data[0]
+            address = DepositAddress(data["address"], data["memo"])
+        except Exception as e:
+            error_log.error(f"[kucoin] deposit address error - {e}")
+            raise DepositAddressError() from e
+        else:
+            return address
+
+    def withdraw(self, cne: CoinNetworkExchange, deposit_address: DepositAddress) -> None:
+        amount = self.get_balance(cne.coin.name)
+        self.transfer(cne.coin.name, str(amount))
+        body = {
+            "currency": cne.coin.name,
+            "chain": cne.network.plain_network_name,
+            "address": deposit_address.address,
+            "amount": amount,
+            "isInner": False,
+            "feeDeductType": "INTERNAL",
+        }
+        if deposit_address.memo:
+            body["memo"] = deposit_address.memo
+
+        return body
+        # try:
+        #     self.account_client.apply_withdrawal(**body)
+        # except Exception as e:
+        #     raise WithdrawError(f"[kucoin] error submitting withdrawal {e}") from e

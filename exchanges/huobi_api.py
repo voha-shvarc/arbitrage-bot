@@ -5,14 +5,17 @@ from typing import List
 from huobi.client.account import AccountClient
 from huobi.client.generic import GenericClient
 from huobi.client.market import MarketClient
+from huobi.client.wallet import WalletClient
 from huobi.constant import DepthStep
 from huobi.constant import InstrumentStatus
 
 from abstract import AbstractExchange
 from abstract import NoPriceFound
+from abstract.abstract import DepositAddressError
 from db.models import CoinNetworkExchange
 from db.models import Pair
 from db.structs import CoinNetworkExchangeDC
+from db.structs import DepositAddress
 from db.structs import TradingPair
 
 
@@ -32,6 +35,7 @@ class HuobiAPI(AbstractExchange):
         self.client = GenericClient(api_key=api_key, secret_key=api_secret)
         self.price_client = MarketClient(api_key=api_key, secret_key=api_secret)
         self.account_client = AccountClient(api_key=api_key, secret_key=api_secret)
+        self.wallet_client = WalletClient(api_key=api_key, secret_key=api_secret)
 
     def get_trading_pairs(self) -> List[TradingPair]:
         pairs_info = self.client.get_exchange_symbols()
@@ -122,3 +126,15 @@ class HuobiAPI(AbstractExchange):
     def get_balance(self) -> float:
         response = self.account_client.get_account_asset_valuation("spot", "USD")
         return float(response.balance)
+
+    def get_deposit_address(self, cne: CoinNetworkExchange) -> DepositAddress:
+        try:
+            data = self.wallet_client.get_account_deposit_address(cne.coin.name.lower())
+            for net in data:
+                if net.chain == cne.plain_network_name:
+                    return DepositAddress(net.address, net.addressTag)
+        except Exception as e:
+            error_log.error(f"[huobi] deposit address error - {e}")
+            raise DepositAddressError() from e
+        else:
+            raise DepositAddressError()

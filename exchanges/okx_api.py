@@ -12,9 +12,11 @@ from retry import retry
 
 from abstract import AbstractExchange
 from abstract import NoPriceFound
+from abstract.abstract import DepositAddressError
 from db.models import CoinNetworkExchange
 from db.models import Pair
 from db.structs import CoinNetworkExchangeDC
+from db.structs import DepositAddress
 from db.structs import TradingPair
 
 
@@ -159,3 +161,15 @@ class OkxAPI(AbstractExchange):
             balance = 0
 
         return balance
+
+    def get_deposit_address(self, cne: CoinNetworkExchange) -> DepositAddress:
+        try:
+            data = self.funding_client.get_deposit_address(cne.coin.name)
+            for net in data["data"]:
+                if net["chain"] == cne.plain_network_name:
+                    return DepositAddress(net["addr"], net.get("tag") or net.get("memo"))
+        except Exception as e:
+            error_log.error(f"[okx] deposit address error - {e}")
+            raise DepositAddressError() from e
+        else:
+            raise DepositAddressError()

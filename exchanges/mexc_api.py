@@ -11,9 +11,12 @@ import requests
 
 from abstract import AbstractExchange
 from abstract import NoPriceFound
+from abstract.abstract import DepositAddressError
+from abstract.abstract import WithdrawError
 from db.models import CoinNetworkExchange
 from db.models import Pair
 from db.structs import CoinNetworkExchangeDC
+from db.structs import DepositAddress
 from db.structs import TradingPair
 
 
@@ -141,13 +144,65 @@ class MexcAPI(AbstractExchange):
         change = (closed - opened) / opened * 100
         return change
 
-    def get_balance(self) -> float:
+    def get_balance(self, coin_name: str = "USDT") -> float:
         response = self.sign_request("GET", "/api/v3/account")
-        data = response.json()
-        balance = 0
+        try:
+            data = response.json()
+        except JSONDecodeError as e:
+            error_log.error(f"[mexc] Error getting balance for {coin_name}. {response.text}")
+            raise WithdrawError("Couldn't get balance") from e
         for balance_data in data["balances"]:
-            if balance_data["asset"] == "USDT":
+            if balance_data["asset"] == coin_name:
                 balance = float(balance_data["free"])
-                break
+                return balance
 
-        return balance
+        raise WithdrawError(f"No available balance for {coin_name}")
+
+    def get_deposit_address(self, cne: CoinNetworkExchange) -> DepositAddress:
+        try:
+            response = self.sign_request(
+                "POST",
+                "/api/v3/capital/deposit/address",
+                params={
+                    "coin": cne.coin.name,
+                    "network": cne.plain_network_name or cne.network.name,
+                },
+            )
+            data = response.json()
+            address = DepositAddress(data["address"], data.get("memo"))
+        except Exception as e:
+            error_log.error(f"[mexc] deposit address error - {e}")
+            raise DepositAddressError() from e
+        else:
+            return address
+
+    def withdraw(self, cne: CoinNetworkExchange, deposit_address: DepositAddress) -> None:
+        amount = self.get_balance(cne.coin.name)
+        body = {
+            "coin": cne.coin.name,
+            "network": cne.plain_network_name,
+            "address": deposit_address.address,
+            "amount": str(amount),
+        }
+        if deposit_address.memo:
+            body["memo"] = deposit_address.memo
+        return body
+
+        # try:
+        #     response = self.sign_request(
+        #         "POST",
+        #         "/api/v3/capital/withdraw/apply",
+        #         params=body,
+        #     )
+        # except Exception as e:
+        #     error_log.exception(e)
+        #     raise WithdrawError(f"[mexc]Unknown exception, {e}") from e
+        #
+        # try:
+        #     data = response.json()
+        # except JSONDecodeError as e:
+        #     error_log.exception(e)
+        #     raise WithdrawError(f"[mexc]Couldn't parse response, {response.text}") from e
+        #
+        # if msg := data.get("code"):
+        #     raise WithdrawError(msg)

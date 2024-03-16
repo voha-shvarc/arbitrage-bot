@@ -6,7 +6,6 @@ from exchanges import BinanceAPI
 from exchanges import BingxAPI
 from exchanges import BitgetAPI
 from exchanges import BybitAPI
-from exchanges import GateIOAPI
 from exchanges import HuobiAPI
 from exchanges import KuCoinAPI
 from exchanges import MexcAPI
@@ -18,7 +17,6 @@ exchange_mapping = {
     BinanceAPI.NAME: BinanceAPI,
     BybitAPI.NAME: BybitAPI,
     HuobiAPI.NAME: HuobiAPI,
-    GateIOAPI.NAME: GateIOAPI,
     OkxAPI.NAME: OkxAPI,
     KuCoinAPI.NAME: KuCoinAPI,
     BitgetAPI.NAME: BitgetAPI,
@@ -38,9 +36,9 @@ def get_bundle_message(bundle, bundle_item: ProfitBundleItem, show_more: bool = 
     pair_exchange = exchange_mapping[bundle.pair_exchange.name]
 
     base_ex_spot_link = base_exchange.spot_link(bundle.pair)
-    base_ex_withdraw_link = base_exchange.withdraw_link(bundle.coin_network_exchange)
+    base_ex_withdraw_link = base_exchange.withdraw_link(bundle.withdraw_coin_network_exchange)
     pair_ex_spot_link = pair_exchange.spot_link(bundle.pair)
-    pair_ex_deposit_link = pair_exchange.deposit_link(bundle.coin_network_exchange)
+    pair_ex_deposit_link = pair_exchange.deposit_link(bundle.deposit_coin_network_exchange)
 
     base_exchange_price_section = (
         f"📕 {bundle.base_exchange.name} | <a href='{base_ex_spot_link}'>spot</a> | <a href='{base_ex_withdraw_link}'>withdraw</a>\n"
@@ -74,7 +72,7 @@ def get_bundle_message(bundle, bundle_item: ProfitBundleItem, show_more: bool = 
     message = (
         f"<b>{bundle.base_exchange.name} -> {bundle.pair_exchange.name} | <code>{bundle_item.user_based_to_use_usdt:.2f}</code>$ "
         f"{bundle_item.user_based_profit:+.2f}$ ({bundle_item.user_based_avg_spread * 100:.2f}%)</b>\n\n"
-        f"<b>{bundle.pair.dashed_name}</b> | <b>{bundle.coin_network_exchange.base_network.name}</b>\n\n"
+        f"<b>{bundle.pair.dashed_name}</b> | <b>{bundle.withdraw_coin_network_exchange.base_network.name}</b>\n\n"
         f"{base_exchange_price_section}\n\n"
         f"{pair_exchange_price_section}\n\n"
         f"{fees_section}\n\n"

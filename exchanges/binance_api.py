@@ -6,9 +6,11 @@ from binance.spot import Spot
 
 from abstract import AbstractExchange
 from abstract import NoPriceFound
+from abstract.abstract import DepositAddressError
 from db.models import CoinNetworkExchange
 from db.models import Pair
 from db.structs import CoinNetworkExchangeDC
+from db.structs import DepositAddress
 from db.structs import TradingPair
 
 
@@ -118,3 +120,13 @@ class BinanceAPI(AbstractExchange):
             balance = 0
 
         return balance
+
+    def get_deposit_address(self, cne: CoinNetworkExchange) -> DepositAddress:
+        try:
+            data = self.client.deposit_address(coin=cne.coin.name, network=cne.network.name)
+            address = DepositAddress(data["address"], data["tag"])
+        except Exception as e:
+            error_log.error(f"[binance] deposit address error - {e}")
+            raise DepositAddressError() from e
+        else:
+            return address

@@ -64,6 +64,7 @@ class CoinNetworkExchange(Base):
     can_deposit = Column(Boolean, default=False, server_default="false", index=True, nullable=False)
     extra_info = Column(JSONB, server_default="{}", nullable=False)
     confirmations_needed = Column(Integer)
+    plain_network_name = Column(String(50))
 
     created_at = db_created()
     updated_at = db_updated()
@@ -129,7 +130,8 @@ class ProfitBundle(Base):
 
     id = Column(Integer, primary_key=True)
     pair_id = Column(ForeignKey("pairs.id"), index=True)
-    coin_network_exchange_id = Column(ForeignKey("coin_network_exchange.id"), index=True)
+    withdraw_coin_network_exchange_id = Column(ForeignKey("coin_network_exchange.id"), index=True)
+    deposit_coin_network_exchange_id = Column(ForeignKey("coin_network_exchange.id"), index=True)
     base_exchange_id = Column(ForeignKey("exchanges.id"), index=True)
     pair_exchange_id = Column(ForeignKey("exchanges.id"), index=True)
 
@@ -151,7 +153,16 @@ class ProfitBundle(Base):
     updated_at = db_updated()
 
     pair = relationship("Pair", uselist=False)
-    coin_network_exchange = relationship("CoinNetworkExchange", uselist=False)
+    withdraw_coin_network_exchange = relationship(
+        "CoinNetworkExchange",
+        uselist=False,
+        foreign_keys=[withdraw_coin_network_exchange_id],
+    )
+    deposit_coin_network_exchange = relationship(
+        "CoinNetworkExchange",
+        uselist=False,
+        foreign_keys=[deposit_coin_network_exchange_id],
+    )
     base_exchange = relationship("Exchange", uselist=False, foreign_keys=[base_exchange_id])
     pair_exchange = relationship("Exchange", uselist=False, foreign_keys=[pair_exchange_id])
 

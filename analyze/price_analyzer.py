@@ -1,3 +1,5 @@
+from typing import Union
+
 from aiogram import Bot
 from retry import retry
 
@@ -15,9 +17,16 @@ class PriceAnalyzer:
     EXCHANGE_BUY_COMMISSION = 0.001  # 0.1%
     EXCHANGE_SELL_COMMISSION = 0.001  # 0.1%
 
-    def __init__(self, buy_price, sell_price, network: CoinNetworkExchange):
-        self.coin_network_exchange = network
-        self.MAX_LIQUID_AMOUNT = network.exchange.max_liquid_amount
+    def __init__(
+        self,
+        buy_price,
+        sell_price,
+        withdraw_cne: CoinNetworkExchange,
+        deposit_cne: Union[CoinNetworkExchange, None] = None,
+    ):
+        self.withdraw_cne = withdraw_cne
+        self.deposit_cne = deposit_cne
+        self.MAX_LIQUID_AMOUNT = withdraw_cne.exchange.max_liquid_amount
 
         self.exchange_commission = self.EXCHANGE_BUY_COMMISSION + self.EXCHANGE_SELL_COMMISSION
         self.buy_prices = buy_price
@@ -196,7 +205,7 @@ class PriceAnalyzer:
 
         if self.coin_available_amount:
             self.spot_fee = self.exchange_commission * self.coin_available_amount * self.avg_sell_price
-            self.network_fee = self.coin_network_exchange.withdraw_fee * self.avg_sell_price
+            self.network_fee = self.withdraw_cne.withdraw_fee * self.avg_sell_price
             self.profit = self.base_profit - self.total_fees
 
             self.user_based_spot_fee = (
@@ -215,13 +224,13 @@ class PriceAnalyzer:
         network_speed,
     ):
         base_ex_spot_link = base_exchange.spot_link(pair)
-        base_ex_withdraw_link = base_exchange.withdraw_link(self.coin_network_exchange)
+        base_ex_withdraw_link = base_exchange.withdraw_link(self.withdraw_cne)
         pair_ex_spot_link = pair_exchange.spot_link(pair)
-        pair_ex_deposit_link = pair_exchange.deposit_link(self.coin_network_exchange)
+        pair_ex_deposit_link = pair_exchange.deposit_link(self.withdraw_cne)
 
         message = (
             f"<b>{base_exchange.NAME} -> {pair_exchange.NAME} | {self.user_based_to_use_usdt:.2f}$ +{self.user_based_profit:.2f}$ ({self.user_based_avg_spread * 100:.2f}%)</b>\n\n"
-            f"{pair.dashed_name} | <b>{self.coin_network_exchange.base_network.name}</b>\n\n"
+            f"{pair.dashed_name} | <b>{self.withdraw_cne.base_network.name}</b>\n\n"
             f"📕 {base_exchange.NAME} | <a href='{base_ex_spot_link}'>spot</a> | <a href='{base_ex_withdraw_link}'>withdraw</a>\n"
             f"📈 [ {round(self.user_based_min_buy_price, 12)}-{round(self.user_based_max_buy_price, 12)} ] | {self.user_based_used_buy_orders} orders\n\n"
             f"📗 {pair_exchange.NAME} | <a href='{pair_ex_spot_link}'>spot</a> | <a href='{pair_ex_deposit_link}'>deposit</a>\n"
@@ -238,7 +247,9 @@ class PriceAnalyzer:
                 bot,
                 user_id,
                 message,
-                reply_markup=get_refresh_keyboard(bundle_id),
+                reply_markup=get_refresh_keyboard(
+                    bundle_id,
+                ),
                 disable_web_page_preview=True,
             )
 

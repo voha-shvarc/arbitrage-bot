@@ -12,6 +12,10 @@ class ForceRefreshBundleCallbackData(CallbackData, prefix="force_refresh"):
     profit_bundle_id: int
 
 
+class WithdrawBundleCallbackData(CallbackData, prefix="withdraw"):
+    profit_bundle_id: int
+
+
 def get_refresh_keyboard(profit_bundle_id):
     keyboard = InlineKeyboardBuilder()
 
@@ -20,12 +24,16 @@ def get_refresh_keyboard(profit_bundle_id):
         callback_data=RefreshBundleCallbackData(profit_bundle_id=profit_bundle_id),
     )
     keyboard.button(
-        text="More",
-        callback_data=RefreshBundleCallbackData(profit_bundle_id=profit_bundle_id, show_more=True),
-    )
-    keyboard.button(
         text="Force Refresh",
         callback_data=ForceRefreshBundleCallbackData(profit_bundle_id=profit_bundle_id),
+    )
+    keyboard.button(
+        text="Withdraw",
+        callback_data=WithdrawBundleCallbackData(profit_bundle_id=profit_bundle_id),
+    )
+    keyboard.button(
+        text="More",
+        callback_data=RefreshBundleCallbackData(profit_bundle_id=profit_bundle_id, show_more=True),
     )
 
     return keyboard.as_markup()
