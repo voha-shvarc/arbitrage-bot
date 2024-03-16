@@ -190,26 +190,25 @@ class MexcAPI(AbstractExchange):
         }
         if deposit_address.memo:
             body["memo"] = deposit_address.memo
-        return body
 
-        # try:
-        #     response = self.sign_request(
-        #         "POST",
-        #         "/api/v3/capital/withdraw/apply",
-        #         params=body,
-        #     )
-        # except Exception as e:
-        #     error_log.exception(e)
-        #     raise WithdrawError(f"[mexc]Unknown exception, {e}") from e
-        #
-        # try:
-        #     data = response.json()
-        # except JSONDecodeError as e:
-        #     error_log.exception(e)
-        #     raise WithdrawError(f"[mexc]Couldn't parse response, {response.text}") from e
-        #
-        # if msg := data.get("code"):
-        #     raise WithdrawError(msg)
+        try:
+            response = self.sign_request(
+                "POST",
+                "/api/v3/capital/withdraw/apply",
+                params=body,
+            )
+        except Exception as e:
+            error_log.exception(e)
+            raise WithdrawError(f"[mexc]Unknown exception, {e}") from e
+
+        try:
+            data = response.json()
+        except JSONDecodeError as e:
+            error_log.exception(e)
+            raise WithdrawError(f"[mexc]Couldn't parse response, {response.text}") from e
+
+        if msg := data.get("code"):
+            raise WithdrawError(msg)
 
     def create_order(self, pair: Pair, ccy_quantity: float, price: float):
         body = {

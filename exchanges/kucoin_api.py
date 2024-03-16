@@ -200,11 +200,10 @@ class KuCoinAPI(AbstractExchange):
         if deposit_address.memo:
             body["memo"] = deposit_address.memo
 
-        return body
-        # try:
-        #     self.account_client.apply_withdrawal(**body)
-        # except Exception as e:
-        #     raise WithdrawError(f"[kucoin] error submitting withdrawal {e}") from e
+        try:
+            self.account_client.apply_withdrawal(**body)
+        except Exception as e:
+            raise WithdrawError(f"[kucoin] error submitting withdrawal {e}") from e
 
     def create_order(self, pair: Pair, ccy_quantity: float, price: float):
         try:

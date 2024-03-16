@@ -154,16 +154,15 @@ class BingxAPI(AbstractExchange):
         if deposit_address.memo:
             body["addressTag"] = deposit_address.memo
 
-        return body
-        # try:
-        #     data = self.api_client.post("/openApi/wallets/v1/capital/withdraw/apply", params=body)
-        # except Exception as e:
-        #     error_log.exception(e)
-        #     raise WithdrawError(f"[bingx] unknown exception {e}") from e
-        #
-        # if data["code"] != 0:
-        #     msg = data["msg"]
-        #     raise WithdrawError(msg)
+        try:
+            data = self.api_client.post("/openApi/wallets/v1/capital/withdraw/apply", params=body)
+        except Exception as e:
+            error_log.exception(e)
+            raise WithdrawError(f"[bingx] unknown exception {e}") from e
+
+        if data["code"] != 0:
+            msg = data["msg"]
+            raise WithdrawError(msg)
 
     def create_order(self, pair: Pair, ccy_quantity: float, price: float):
         try:
