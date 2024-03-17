@@ -193,4 +193,5 @@ class OkxAPI(AbstractExchange):
             px=str(price),
         )
         if res["code"] != "0":
+            error_log.error(f"[okx] error creating order {res['data'][0]['sMsg']}")
             raise WithdrawError(res["data"][0]["sMsg"])

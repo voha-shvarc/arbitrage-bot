@@ -226,4 +226,5 @@ class MexcAPI(AbstractExchange):
             error_log.error(f"[mexc] couldn't parse response. {response.text}")
             raise CreateOrderError("Couldn't parse response. Check logs") from e
         if err_msg := data.get("msg"):
+            error_log.error(f"[mexc] error creating order. {err_msg}")
             raise CreateOrderError(err_msg)

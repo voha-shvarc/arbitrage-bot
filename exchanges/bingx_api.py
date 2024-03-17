@@ -162,6 +162,7 @@ class BingxAPI(AbstractExchange):
 
         if data["code"] != 0:
             msg = data["msg"]
+            error_log.error(f"[bingx] error creating order - {data['msg']}")
             raise WithdrawError(msg)
 
     def create_order(self, pair: Pair, ccy_quantity: float, price: float):
