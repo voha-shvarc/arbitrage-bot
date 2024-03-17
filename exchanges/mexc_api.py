@@ -209,8 +209,8 @@ class MexcAPI(AbstractExchange):
             error_log.exception(e)
             raise WithdrawError(f"[mexc]Couldn't parse response, {response.text}") from e
 
-        if msg := data.get("code"):
-            raise WithdrawError(msg)
+        if data.get("code"):
+            raise WithdrawError(data["msg"])
 
     def create_order(self, pair: Pair, ccy_quantity: float, ccy_precision: int, price: float, price_precision: int):
         body = {
