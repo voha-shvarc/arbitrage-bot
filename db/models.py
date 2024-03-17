@@ -118,10 +118,13 @@ class PairExchange(Base):
     id = Column(Integer, primary_key=True)
     pair_id = Column(ForeignKey("pairs.id"), index=True)
     exchange_id = Column(ForeignKey("exchanges.id"), index=True)
+
+    base_coin_precision = Column(Integer)
+    quote_coin_precision = Column(Integer)
     created_at = db_created()
     updated_at = db_updated()
 
-    pair = relationship("Pair", uselist=False)
+    pair = relationship("Pair", backref=backref("pair_exchanges"), uselist=False)
     exchange = relationship("Exchange", uselist=False)
 
 

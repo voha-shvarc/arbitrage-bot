@@ -53,9 +53,15 @@ class OkxAPI(AbstractExchange):
     def get_trading_pairs(self) -> list:
         pairs_info = self.public_data_client.get_instruments(instType="SPOT")
         trading_pairs = [
-            TradingPair(base_coin=pair["baseCcy"], quote_coin=pair["quoteCcy"], exchange=self.NAME)
+            TradingPair(
+                base_coin=pair["baseCcy"],
+                quote_coin=pair["quoteCcy"],
+                exchange=self.NAME,
+                base_coin_precision=len(pair["lotSz"]) - 2 if pair["lotSz"] != "1" else 1,
+                quote_coin_precision=len(pair["tickSz"]) - 2 if pair["tickSz"] != "1" else 1,
+            )
             for pair in pairs_info["data"]
-            if pair["instId"].endswith("USDT")
+            if pair["quoteCcy"] == "USDT"
         ]
         return trading_pairs
 
@@ -183,14 +189,14 @@ class OkxAPI(AbstractExchange):
         else:
             raise DepositAddressError()
 
-    def create_order(self, pair: Pair, ccy_quantity: float, price: float):
+    def create_order(self, pair: Pair, ccy_quantity: float, ccy_precision: int, price: float, price_precision: int):
         body = {
             "instId": pair.dashed_name,
             "tdMode": "cash",
             "side": "buy",
             "ordType": "fok",
-            "sz": str(ccy_quantity),
-            "px": str(price),
+            "sz": str(round(ccy_quantity, ccy_precision)),
+            "px": str(round(price, price_precision)),
         }
         res = self.trade_client.place_order(**body)
         if res["code"] != "0":

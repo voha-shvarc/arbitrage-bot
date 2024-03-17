@@ -42,7 +42,13 @@ class KuCoinAPI(AbstractExchange):
     def get_trading_pairs(self) -> List[TradingPair]:
         pairs_info = self.client.get_symbol_list_v2()
         trading_pairs = [
-            TradingPair(base_coin=pair["baseCurrency"], quote_coin=pair["quoteCurrency"], exchange=self.NAME)
+            TradingPair(
+                base_coin=pair["baseCurrency"],
+                quote_coin=pair["quoteCurrency"],
+                exchange=self.NAME,
+                base_coin_precision=len(pair["baseIncrement"]) - 2,
+                quote_coin_precision=len(pair["priceIncrement"]) - 2,
+            )
             for pair in pairs_info
             if self._is_valid_pair(pair)
         ]
@@ -205,13 +211,13 @@ class KuCoinAPI(AbstractExchange):
         except Exception as e:
             raise WithdrawError(f"[kucoin] error submitting withdrawal {e}") from e
 
-    def create_order(self, pair: Pair, ccy_quantity: float, price: float):
+    def create_order(self, pair: Pair, ccy_quantity: float, ccy_precision: int, price: float, price_precision: int):
         body = {
             "symbol": pair.dashed_name,
             "side": "buy",
             "type": "limit",
-            "price": str(price),
-            "size": str(ccy_quantity),
+            "price": str(round(price, price_precision)),
+            "size": str(round(ccy_quantity, ccy_precision)),
             "timeInForce": "FOK",
         }
         try:

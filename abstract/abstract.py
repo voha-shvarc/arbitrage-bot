@@ -60,7 +60,7 @@ class AbstractExchange(ABC):
     def withdraw(self, cne: CoinNetworkExchange, deposit_address: DepositAddress) -> bool:
         raise NotImplementedError()
 
-    def create_order(self, pair: Pair, ccy_quantity: float, price: float):
+    def create_order(self, pair: Pair, ccy_quantity: float, ccy_precision: int, price: float, price_precision: int):
         raise NotImplementedError()
 
 

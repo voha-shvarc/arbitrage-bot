@@ -73,7 +73,12 @@ class NetworkExchange:
         confirmations_needed = network.numOfFastConfirmations
 
         return cls(
-            name.upper(), can_deposit, can_withdraw, withdraw_fee, confirmations_needed, plain_name=network.chain
+            name.upper(),
+            can_deposit,
+            can_withdraw,
+            withdraw_fee,
+            confirmations_needed,
+            plain_name=network.chain,
         )
 
     @classmethod
@@ -238,6 +243,8 @@ class CoinNetworkExchangeDC:
 class TradingPair:
     base_coin: str
     quote_coin: str
+    base_coin_precision: int
+    quote_coin_precision: int
     exchange: str
 
     def to_standard(self):
@@ -245,6 +252,13 @@ class TradingPair:
 
     def to_dashed(self):
         return f"{self.base_coin}-{self.quote_coin}"
+
+    def to_db(self):
+        data = {
+            "base_coin_precision": self.base_coin_precision,
+            "quote_coin_precision": self.quote_coin_precision,
+        }
+        return data
 
 
 @dataclass

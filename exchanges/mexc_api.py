@@ -70,6 +70,8 @@ class MexcAPI(AbstractExchange):
             TradingPair(
                 base_coin=pair["baseAsset"],
                 quote_coin=pair["quoteAsset"],
+                base_coin_precision=pair["baseAssetPrecision"],
+                quote_coin_precision=pair["quoteAssetPrecision"],
                 exchange=self.NAME,
             )
             for pair in data["symbols"]
@@ -210,13 +212,13 @@ class MexcAPI(AbstractExchange):
         if msg := data.get("code"):
             raise WithdrawError(msg)
 
-    def create_order(self, pair: Pair, ccy_quantity: float, price: float):
+    def create_order(self, pair: Pair, ccy_quantity: float, ccy_precision: int, price: float, price_precision: int):
         body = {
             "symbol": pair.default_name,
             "side": "BUY",
             "type": "LIMIT",
-            "quantity": ccy_quantity,
-            "price": price,
+            "quantity": round(ccy_quantity, ccy_precision),
+            "price": round(price, price_precision),
         }
         response = self.sign_request("POST", "/api/v3/order", body)
 

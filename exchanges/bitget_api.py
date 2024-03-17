@@ -55,7 +55,13 @@ class BitgetAPI(AbstractExchange):
     def get_trading_pairs(self) -> List[TradingPair]:
         pairs_info = self.client.products(params={})
         trading_pairs = [
-            TradingPair(base_coin=pair["baseCoin"], quote_coin=pair["quoteCoin"], exchange=self.NAME)
+            TradingPair(
+                base_coin=pair["baseCoin"],
+                quote_coin=pair["quoteCoin"],
+                exchange=self.NAME,
+                base_coin_precision=int(pair["quantityScale"]),
+                quote_coin_precision=int(pair["priceScale"]),
+            )
             for pair in pairs_info["data"]
             if self._is_valid_pair(pair)
         ]
@@ -190,14 +196,14 @@ class BitgetAPI(AbstractExchange):
         else:
             return address
 
-    def create_order(self, pair: Pair, ccy_quantity: float, price: float):
+    def create_order(self, pair: Pair, ccy_quantity: float, ccy_precision: int, price: float, price_precision: int):
         body = {
             "symbol": pair.bitget_name,
             "side": "buy",
             "orderType": "limit",
             "force": "fok",
-            "price": str(price),
-            "quantity": str(ccy_quantity),
+            "price": str(round(price, price_precision)),
+            "quantity": str(round(ccy_quantity, ccy_precision)),
         }
         try:
             self.order_client.placeOrder(params=body)

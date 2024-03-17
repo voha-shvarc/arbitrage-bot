@@ -120,22 +120,19 @@ def sync_pairs():
 
             exchange, created = get_or_create(session, Exchange, name=exchange_api.NAME)
             pairs = exchange_api.get_trading_pairs()
-            base_coins = {pair.base_coin for pair in pairs}
-
-            existing_base_coins = (
-                session.query(Coin.name)
-                .join(Pair, Coin.id == Pair.base_coin_id)
-                .join(PairExchange)
-                .filter(PairExchange.exchange_id == exchange.id)
-                .all()
-            )
-
-            solution_temporary = [coin.name for coin in existing_base_coins]
-            diff_coins = base_coins.difference(solution_temporary)
-            for new_coin in diff_coins:
-                base_coin, created = get_or_create(session, Coin, name=new_coin)
+            for pair_data in pairs:
+                base_coin, created = get_or_create(session, Coin, name=pair_data.base_coin)
                 pair, _ = get_or_create(session, Pair, base_coin_id=base_coin.id, quote_coin_id=quote_coin.id)
-                pair_exchange, _ = get_or_create(session, PairExchange, pair_id=pair.id, exchange_id=exchange.id)
+                pair_exchange, created = get_or_create(
+                    session,
+                    PairExchange,
+                    defaults=pair_data.to_db(),
+                    pair_id=pair.id,
+                    exchange_id=exchange.id,
+                )
+                if not created:
+                    pair_exchange.base_coin_precision = pair_data.base_coin_precision
+                    pair_exchange.quote_coin_precision = pair_data.quote_coin_precision
 
         session.commit()
 

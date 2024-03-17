@@ -39,11 +39,21 @@ class BingxAPI(AbstractExchange):
                 base_coin=pair["symbol"].split("-")[0],
                 quote_coin=pair["symbol"].split("-")[1],
                 exchange=self.NAME,
+                base_coin_precision=self.__step_to_precision(pair["stepSize"]),
+                quote_coin_precision=self.__step_to_precision(pair["tickSize"]),
             )
             for pair in pairs_info["symbols"]
             if pair["symbol"].split("-")[1] == "USDT"
         ]
         return trading_pairs
+
+    @staticmethod
+    def __step_to_precision(step: float) -> int:
+        precision = str(step)
+        if "1e-" in precision:
+            return int(precision[-2:])
+        else:
+            return len(precision) - 2
 
     def get_coin_exchange_networks(self):
         for coin_data in self.client.get("/openApi/wallets/v1/capital/config/getall")["data"]:
@@ -165,13 +175,13 @@ class BingxAPI(AbstractExchange):
             error_log.error(f"[bingx] error creating order - {data['msg']}")
             raise WithdrawError(msg)
 
-    def create_order(self, pair: Pair, ccy_quantity: float, price: float):
+    def create_order(self, pair: Pair, ccy_quantity: float, ccy_precision: int, price: float, price_precision: int):
         body = {
             "symbol": pair.dashed_name,
             "side": "BUY",
             "type": "LIMIT",
-            "quantity": ccy_quantity,
-            "price": price,
+            "quantity": round(ccy_quantity, ccy_precision),
+            "price": round(price, price_precision),
         }
         try:
             self.client.place_order(**body)

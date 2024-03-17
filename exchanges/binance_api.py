@@ -36,11 +36,30 @@ class BinanceAPI(AbstractExchange):
     def get_trading_pairs(self) -> List[TradingPair]:
         pairs_info = self.client.exchange_info(permissions=["SPOT"])
         trading_pairs = [
-            TradingPair(base_coin=pair["baseAsset"], quote_coin=pair["quoteAsset"], exchange=self.NAME)
+            TradingPair(
+                base_coin=pair["baseAsset"],
+                quote_coin=pair["quoteAsset"],
+                exchange=self.NAME,
+                base_coin_precision=self.__get_precision(pair["filters"], "LOT_SIZE", "stepSize"),
+                quote_coin_precision=self.__get_precision(pair["filters"], "PRICE_FILTER", "tickSize"),
+            )
             for pair in pairs_info["symbols"]
             if self._is_valid_pair(pair)
         ]
         return trading_pairs
+
+    def __get_precision(self, filters: list[dict], filter_name: str, step_name: str):
+        for filter_data in filters:
+            if filter_data["filterType"] == filter_name:
+                return self.__step_to_precision(filter_data[step_name])
+
+    @staticmethod
+    def __step_to_precision(step: str) -> int:
+        precision = str(float(step))  # to remove redundant zeroes
+        if "1e-" in precision:
+            return int(precision[-2:])
+        else:
+            return len(precision) - 2
 
     def _is_valid_pair(self, coin_data):
         return (
@@ -133,14 +152,14 @@ class BinanceAPI(AbstractExchange):
         else:
             return address
 
-    def create_order(self, pair: Pair, ccy_quantity: float, price: float):
+    def create_order(self, pair: Pair, ccy_quantity: float, ccy_precision: int, price: float, price_precision: int):
         body = {
             "symbol": pair.default_name,
             "side": "BUY",
             "type": "LIMIT",
             "timeInForce": "FOK",
-            "quantity": ccy_quantity,
-            "price": price,
+            "quantity": round(ccy_quantity, ccy_precision),
+            "price": round(price, price_precision),
         }
         try:
             self.client.new_order(**body)

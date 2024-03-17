@@ -47,12 +47,14 @@ class HuobiAPI(AbstractExchange):
         pairs_info = self.client.get_exchange_symbols()
         trading_pairs = [
             TradingPair(
-                base_coin=pair.base_currency.upper(),
-                quote_coin=pair.quote_currency.upper(),
+                base_coin=pair_info.base_currency.upper(),
+                quote_coin=pair_info.quote_currency.upper(),
                 exchange=self.NAME,
+                base_coin_precision=pair_info.amount_precision,
+                quote_coin_precision=pair_info.price_precision,
             )
-            for pair in pairs_info
-            if pair.state == "online"
+            for pair_info in pairs_info
+            if pair_info.state == "online"
         ]
         return trading_pairs
 
@@ -145,13 +147,13 @@ class HuobiAPI(AbstractExchange):
         else:
             raise DepositAddressError()
 
-    def create_order(self, pair: Pair, ccy_quantity: float, price: float):
+    def create_order(self, pair: Pair, ccy_quantity: float, ccy_precision: int, price: float, price_precision: int):
         body = {
             "symbol": pair.huobi_name,
             "account_id": self.ACCOUNT_ID,
             "order_type": OrderType.BUY_LIMIT_FOK,
-            "amount": ccy_quantity,
-            "price": price,
+            "amount": round(ccy_quantity, ccy_precision),
+            "price": round(price, price_precision),
         }
         try:
             self.trade_client.create_spot_order(**body)

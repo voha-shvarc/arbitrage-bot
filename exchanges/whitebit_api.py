@@ -34,7 +34,13 @@ class WhitebitAPI(AbstractExchange):
     def get_trading_pairs(self) -> List[TradingPair]:
         pairs_info = self.market_client.get_markets_info()
         trading_pairs = [
-            TradingPair(base_coin=pair["stock"], quote_coin=pair["money"], exchange=self.NAME)
+            TradingPair(
+                base_coin=pair["stock"],
+                quote_coin=pair["money"],
+                exchange=self.NAME,
+                base_coin_precision=int(pair["stockPrec"]),
+                quote_coin_precision=int(pair["moneyPrec"]),
+            )
             for pair in pairs_info["result"]
             if pair["money"] == "USDT"
         ]

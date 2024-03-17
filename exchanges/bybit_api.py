@@ -33,7 +33,13 @@ class BybitAPI(AbstractExchange):
     def get_trading_pairs(self) -> List[TradingPair]:
         pairs_info = self.session.get_instruments_info(category="spot")
         trading_pairs = [
-            TradingPair(base_coin=pair["baseCoin"], quote_coin=pair["quoteCoin"], exchange=self.NAME)
+            TradingPair(
+                base_coin=pair["baseCoin"],
+                quote_coin=pair["quoteCoin"],
+                exchange=self.NAME,
+                base_coin_precision=len(pair["lotSizeFilter"]["basePrecision"]) - 2,
+                quote_coin_precision=len(pair["priceFilter"]["tickSize"]) - 2,
+            )
             for pair in pairs_info["result"]["list"]
             if pair["quoteCoin"] == "USDT"
         ]
@@ -133,14 +139,14 @@ class BybitAPI(AbstractExchange):
         else:
             return address
 
-    def create_order(self, pair: Pair, ccy_quantity: float, price: float):
+    def create_order(self, pair: Pair, ccy_quantity: float, ccy_precision: int, price: float, price_precision: int):
         body = {
             "category": "spot",
             "symbol": pair.default_name,
             "side": "Buy",
             "orderType": "Limit",
-            "qty": str(ccy_quantity),
-            "price": str(price),
+            "qty": str(round(ccy_quantity, ccy_precision)),
+            "price": str(round(price, price_precision)),
             "timeInForce": "FOK",
         }
         try:

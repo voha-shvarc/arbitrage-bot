@@ -14,6 +14,7 @@ from celery_app.tasks import monitor_bundle
 from db.base import Session
 from db.models import CoinNetworkExchange
 from db.models import Pair
+from db.models import PairExchange
 from db.models import ProfitBundle
 from db.models import ProfitBundleItem
 from exchanges import BinanceAPI
@@ -161,7 +162,7 @@ async def create_order_callback_query(query: CallbackQuery, callback_data: Creat
     await query.answer()
 
     with Session() as session:
-        bundle = (
+        bundle: ProfitBundle = (
             session.query(ProfitBundle)
             .options(
                 joinedload(ProfitBundle.withdraw_coin_network_exchange),
@@ -174,6 +175,14 @@ async def create_order_callback_query(query: CallbackQuery, callback_data: Creat
                 joinedload(ProfitBundle.pair_exchange),
             )
             .get(callback_data.profit_bundle_id)
+        )
+        pair_to_exchange: PairExchange = (
+            session.query(PairExchange)
+            .filter(
+                PairExchange.exchange_id == bundle.base_exchange_id,
+                PairExchange.pair_id == bundle.pair_id,
+            )
+            .first()
         )
 
     base_exchange = exchange_mapping[bundle.base_exchange.name](config, {})
@@ -196,16 +205,21 @@ async def create_order_callback_query(query: CallbackQuery, callback_data: Creat
     text = query.message.html_text
     buy_label = "❌"
     if price_analyzer.profit > BASE_USDT_PROFIT:
-        try:
-            base_exchange.create_order(
-                pair=bundle.pair,
-                ccy_quantity=price_analyzer.user_based_coin_available_amount,
-                price=price_analyzer.user_based_max_buy_price,
-            )
-        except CreateOrderError:
-            pass
+        if pair_to_exchange.base_coin_precision and pair_to_exchange.quote_coin_precision:
+            try:
+                base_exchange.create_order(
+                    pair=bundle.pair,
+                    ccy_quantity=price_analyzer.user_based_coin_available_amount,
+                    ccy_precision=pair_to_exchange.base_coin_precision,
+                    price=price_analyzer.user_based_max_buy_price,
+                    price_precision=pair_to_exchange.quote_coin_precision,
+                )
+            except CreateOrderError:
+                pass
+            else:
+                buy_label = "✅"
         else:
-            buy_label = "✅"
+            logger.error("Creating order. No precision info found")
 
     await query.message.edit_text(
         text,
