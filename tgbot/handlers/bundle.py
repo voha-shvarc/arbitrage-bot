@@ -143,11 +143,13 @@ async def withdraw_bundle_callback_query(query: CallbackQuery, callback_data: Wi
     try:
         deposit_address = pair_exchange.get_deposit_address(bundle.deposit_coin_network_exchange)
     except DepositAddressError:
+        await query.message.reply("Error getting deposit")
         withdraw_label = "❌"
     else:
         try:
             base_exchange.withdraw(bundle.withdraw_coin_network_exchange, deposit_address)
-        except Exception:
+        except Exception as e:
+            await query.message.reply(f"Error proceeding withdraw. {e}")
             withdraw_label = "❌"
 
     await query.message.edit_text(
