@@ -134,16 +134,17 @@ class BybitAPI(AbstractExchange):
             return address
 
     def create_order(self, pair: Pair, ccy_quantity: float, price: float):
+        body = {
+            "category": "spot",
+            "symbol": pair.default_name,
+            "side": "Buy",
+            "orderType": "Limit",
+            "qty": str(ccy_quantity),
+            "price": str(price),
+            "timeInForce": "FOK",
+        }
         try:
-            self.session.place_order(
-                category="spot",
-                symbol=pair.default_name,
-                side="Buy",
-                orderType="Limit",
-                qty=str(ccy_quantity),
-                price=str(price),
-                timeInForce="FOK",
-            )
+            self.session.place_order(**body)
         except InvalidRequestError as e:
-            error_log.exception(f"[bybit] create order error - {e}")
+            error_log.exception(f"[bybit] create order error - {e}. {body = }")
             raise WithdrawError(str(e)) from e

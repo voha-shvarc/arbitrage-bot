@@ -146,14 +146,15 @@ class HuobiAPI(AbstractExchange):
             raise DepositAddressError()
 
     def create_order(self, pair: Pair, ccy_quantity: float, price: float):
+        body = {
+            "symbol": pair.huobi_name,
+            "account_id": self.ACCOUNT_ID,
+            "order_type": OrderType.BUY_LIMIT_FOK,
+            "amount": ccy_quantity,
+            "price": price,
+        }
         try:
-            self.trade_client.create_spot_order(
-                symbol=pair.huobi_name,
-                account_id=self.ACCOUNT_ID,
-                order_type=OrderType.BUY_LIMIT_FOK,
-                amount=ccy_quantity,
-                price=price,
-            )
+            self.trade_client.create_spot_order(**body)
         except HuobiApiException as e:
-            error_log.exception(f"[bybit] create order error - {e}")
+            error_log.exception(f"[bybit] create order error - {e}. {body = }")
             raise WithdrawError(str(e)) from e

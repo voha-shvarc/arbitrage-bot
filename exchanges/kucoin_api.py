@@ -206,15 +206,16 @@ class KuCoinAPI(AbstractExchange):
             raise WithdrawError(f"[kucoin] error submitting withdrawal {e}") from e
 
     def create_order(self, pair: Pair, ccy_quantity: float, price: float):
+        body = {
+            "symbol": pair.dashed_name,
+            "side": "buy",
+            "type": "limit",
+            "price": str(price),
+            "size": str(ccy_quantity),
+            "timeInForce": "FOK",
+        }
         try:
-            self.trade_client.create_limit_order(
-                symbol=pair.dashed_name,
-                side="buy",
-                type="limit",
-                price=str(price),
-                size=str(ccy_quantity),
-                timeInForce="FOK",
-            )
+            self.trade_client.create_limit_order(**body)
         except Exception as e:
-            error_log.exception(f"[kucoin] create order error - {e}")
+            error_log.exception(f"[kucoin] create order error - {e}. {body = }")
             raise CreateOrderError(str(e)) from e

@@ -134,15 +134,16 @@ class BinanceAPI(AbstractExchange):
             return address
 
     def create_order(self, pair: Pair, ccy_quantity: float, price: float):
+        body = {
+            "symbol": pair.default_name,
+            "side": "BUY",
+            "type": "LIMIT",
+            "timeInForce": "FOK",
+            "quantity": ccy_quantity,
+            "price": price,
+        }
         try:
-            self.client.new_order(
-                symbol=pair.default_name,
-                side="BUY",
-                type="LIMIT",
-                timeInForce="FOK",
-                quantity=ccy_quantity,
-                price=price,
-            )
+            self.client.new_order(**body)
         except ClientError as e:
-            error_log.exception(f"[binance] create order error - {e}")
+            error_log.exception(f"[binance] create order error - {e}. {body = }")
             raise CreateOrderError(str(e)) from e

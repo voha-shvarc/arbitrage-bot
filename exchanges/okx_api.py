@@ -184,14 +184,15 @@ class OkxAPI(AbstractExchange):
             raise DepositAddressError()
 
     def create_order(self, pair: Pair, ccy_quantity: float, price: float):
-        res = self.trade_client.place_order(
-            instId=pair.dashed_name,
-            tdMode="cash",
-            side="buy",
-            ordType="fok",
-            sz=str(ccy_quantity),
-            px=str(price),
-        )
+        body = {
+            "instId": pair.dashed_name,
+            "tdMode": "cash",
+            "side": "buy",
+            "ordType": "fok",
+            "sz": str(ccy_quantity),
+            "px": str(price),
+        }
+        res = self.trade_client.place_order(**body)
         if res["code"] != "0":
-            error_log.error(f"[okx] error creating order {res['data'][0]['sMsg']}")
+            error_log.error(f"[okx] error creating order {res['data'][0]['sMsg']}. {body = }")
             raise WithdrawError(res["data"][0]["sMsg"])

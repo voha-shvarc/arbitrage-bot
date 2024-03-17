@@ -166,14 +166,15 @@ class BingxAPI(AbstractExchange):
             raise WithdrawError(msg)
 
     def create_order(self, pair: Pair, ccy_quantity: float, price: float):
+        body = {
+            "symbol": pair.dashed_name,
+            "side": "BUY",
+            "type": "LIMIT",
+            "quantity": ccy_quantity,
+            "price": price,
+        }
         try:
-            self.client.place_order(
-                symbol=pair.dashed_name,
-                side="BUY",
-                type="LIMIT",
-                quantity=ccy_quantity,
-                price=price,
-            )
+            self.client.place_order(**body)
         except ClientError as e:
-            error_log.exception(f"[bingx] create order error - {e}")
+            error_log.exception(f"[bingx] create order error - {e}. {body = }")
             raise CreateOrderError(str(e)) from e

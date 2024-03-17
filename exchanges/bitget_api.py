@@ -191,16 +191,16 @@ class BitgetAPI(AbstractExchange):
             return address
 
     def create_order(self, pair: Pair, ccy_quantity: float, price: float):
+        body = {
+            "symbol": pair.bitget_name,
+            "side": "buy",
+            "orderType": "limit",
+            "force": "fok",
+            "price": str(price),
+            "quantity": str(ccy_quantity),
+        }
         try:
-            body = {
-                "symbol": pair.bitget_name,
-                "side": "buy",
-                "orderType": "limit",
-                "force": "fok",
-                "price": str(price),
-                "quantity": str(ccy_quantity),
-            }
             self.order_client.placeOrder(params=body)
         except BitgetAPIException as e:
-            error_log.exception(f"[bitget] create order error - {e}")
+            error_log.exception(f"[bitget] create order error - {e}. {body = }")
             raise CreateOrderError(str(e)) from e
