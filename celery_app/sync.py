@@ -79,6 +79,8 @@ def sync_coin_exchange_networks():
                     Coin.name == "RED",  # different coins
                     Coin.name == "LUNC",  # takes additional 0.5% for smart c and 0.5% as exchange fee
                     Coin.name == "PLT",  # different coins
+                    Coin.name == "TABOO",  # takes additional 4% for smart c
+                    Coin.name == "BRISE",  # takes additional 10% for smart c
                     # after mex and bingx integration
                     and_(Exchange.name == "Mexc", Coin.name == "KT"),
                     and_(Exchange.name == "Mexc", Coin.name == "STC"),

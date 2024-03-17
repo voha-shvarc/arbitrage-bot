@@ -225,5 +225,5 @@ class MexcAPI(AbstractExchange):
         except JSONDecodeError as e:
             error_log.error(f"[mexc] couldn't parse response. {response.text}")
             raise CreateOrderError("Couldn't parse response. Check logs") from e
-        if err_msg := data["msg"]:
+        if err_msg := data.get("msg"):
             raise CreateOrderError(err_msg)

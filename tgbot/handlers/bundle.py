@@ -152,6 +152,7 @@ async def withdraw_bundle_callback_query(query: CallbackQuery, callback_data: Wi
     await query.message.edit_text(
         text,
         reply_markup=get_bundle_keyboard(callback_data.profit_bundle_id, withdraw_label=withdraw_label),
+        disable_web_page_preview=True,
     )
 
 
@@ -209,4 +210,5 @@ async def create_order_callback_query(query: CallbackQuery, callback_data: Creat
     await query.message.edit_text(
         text,
         reply_markup=get_bundle_keyboard(callback_data.profit_bundle_id, buy_label=buy_label),
+        disable_web_page_preview=True,
     )
