@@ -171,13 +171,18 @@ class MexcAPI(AbstractExchange):
                     "network": cne.plain_network_name or cne.network.name,
                 },
             )
+        except Exception as e:
+            error_log.error(f"[mexc] deposit address error - {e}")
+            raise DepositAddressError() from e
+
+        try:
             data = response.json()
             address = DepositAddress(data["address"], data.get("memo"))
         except JSONDecodeError as e:
             error_log.error(f"[mexc] deposit address error. couldn't parse response. {response.text}")
             raise DepositAddressError() from e
-        except Exception as e:
-            error_log.error(f"[mexc] deposit address error - {e}")
+        except KeyError as e:
+            error_log.error(f"[mexc] deposit address error. couldn't parse response. {data}")
             raise DepositAddressError() from e
         else:
             return address
@@ -217,8 +222,8 @@ class MexcAPI(AbstractExchange):
             "symbol": pair.default_name,
             "side": "BUY",
             "type": "LIMIT",
-            "quantity": round(ccy_quantity, ccy_precision),
-            "price": round(price, price_precision),
+            "quantity": f"{ccy_quantity:.{ccy_precision}f}",
+            "price": f"{price:.{price_precision}f}",
         }
         response = self.sign_request("POST", "/api/v3/order", body)
 

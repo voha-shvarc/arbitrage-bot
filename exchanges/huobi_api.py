@@ -152,8 +152,8 @@ class HuobiAPI(AbstractExchange):
             "symbol": pair.huobi_name,
             "account_id": self.ACCOUNT_ID,
             "order_type": OrderType.BUY_LIMIT_FOK,
-            "amount": round(ccy_quantity, ccy_precision),
-            "price": round(price, price_precision),
+            "amount": f"{ccy_quantity:.{ccy_precision}f}",
+            "price": f"{price:.{price_precision}f}",
         }
         try:
             self.trade_client.create_spot_order(**body)

@@ -216,8 +216,8 @@ class KuCoinAPI(AbstractExchange):
             "symbol": pair.dashed_name,
             "side": "buy",
             "type": "limit",
-            "price": str(round(price, price_precision)),
-            "size": str(round(ccy_quantity, ccy_precision)),
+            "size": f"{ccy_quantity:.{ccy_precision}f}",
+            "price": f"{price:.{price_precision}f}",
             "timeInForce": "FOK",
         }
         try:

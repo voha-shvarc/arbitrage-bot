@@ -158,8 +158,8 @@ class BinanceAPI(AbstractExchange):
             "side": "BUY",
             "type": "LIMIT",
             "timeInForce": "FOK",
-            "quantity": round(ccy_quantity, ccy_precision),
-            "price": round(price, price_precision),
+            "quantity": f"{ccy_quantity:.{ccy_precision}f}",
+            "price": f"{price:.{price_precision}f}",
         }
         try:
             self.client.new_order(**body)

@@ -202,8 +202,8 @@ class BitgetAPI(AbstractExchange):
             "side": "buy",
             "orderType": "limit",
             "force": "fok",
-            "price": str(round(price, price_precision)),
-            "quantity": str(round(ccy_quantity, ccy_precision)),
+            "quantity": f"{ccy_quantity:.{ccy_precision}f}",
+            "price": f"{price:.{price_precision}f}",
         }
         try:
             self.order_client.placeOrder(params=body)

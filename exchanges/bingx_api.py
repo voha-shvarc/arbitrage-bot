@@ -180,8 +180,8 @@ class BingxAPI(AbstractExchange):
             "symbol": pair.dashed_name,
             "side": "BUY",
             "type": "LIMIT",
-            "quantity": round(ccy_quantity, ccy_precision),
-            "price": round(price, price_precision),
+            "quantity": f"{ccy_quantity:.{ccy_precision}f}",
+            "price": f"{price:.{price_precision}f}",
         }
         try:
             self.client.place_order(**body)

@@ -195,8 +195,8 @@ class OkxAPI(AbstractExchange):
             "tdMode": "cash",
             "side": "buy",
             "ordType": "fok",
-            "sz": str(round(ccy_quantity, ccy_precision)),
-            "px": str(round(price, price_precision)),
+            "sz": f"{ccy_quantity:.{ccy_precision}f}",
+            "px": f"{price:.{price_precision}f}",
         }
         res = self.trade_client.place_order(**body)
         if res["code"] != "0":

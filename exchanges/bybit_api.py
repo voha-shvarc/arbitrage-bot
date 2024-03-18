@@ -145,8 +145,8 @@ class BybitAPI(AbstractExchange):
             "symbol": pair.default_name,
             "side": "Buy",
             "orderType": "Limit",
-            "qty": str(round(ccy_quantity, ccy_precision)),
-            "price": str(round(price, price_precision)),
+            "qty": f"{ccy_quantity:.{ccy_precision}f}",
+            "price": f"{price:.{price_precision}f}",
             "timeInForce": "FOK",
         }
         try:
