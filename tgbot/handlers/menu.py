@@ -41,7 +41,7 @@ logger = logging.getLogger(__name__)
 menu_router = Router()
 
 
-@menu_router.message(F.text == "Total Balance💰")
+@menu_router.message(F.text == "Balance💰")
 async def get_total_balance(message: Message):
     config = dotenv_values(".env")
     info = ""
@@ -63,7 +63,7 @@ async def configure_exchanges(message: Message):
     await message.answer("Configure your exchanges...", reply_markup=reply_markup)
 
 
-@menu_router.message(F.text == "Exchanges Liquid 💸")
+@menu_router.message(F.text == "Limits 💸")
 async def show_exchanges_liquidity(message: Message):
     with Session() as session:
         exchanges = session.query(Exchange)

@@ -16,13 +16,13 @@ def get_menu_keyboard():
     keyboard = ReplyKeyboardBuilder()
 
     keyboard.button(
-        text="Total Balance💰",
+        text="Balance💰",
     )
     keyboard.button(
         text="Exchanges 🛒",
     )
     keyboard.button(
-        text="Exchanges Liquid 💸",
+        text="Limits 💸",
     )
 
     return keyboard.as_markup(resize_keyboard=True)
