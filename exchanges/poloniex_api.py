@@ -1,3 +1,4 @@
+import json
 from json import JSONDecodeError
 from logging import getLogger
 from typing import List
@@ -61,14 +62,14 @@ class PoloniexAPI(AbstractExchange):
                 yield CoinNetworkExchangeDC.from_poloniex(coin_data)
 
     def get_price(self, pair: Pair, limit=50) -> tuple[list[list[str]], list[list[str]]]:
-        response = self.market_client.get_orderbook(pair.underscored_name, limit=limit)
-        buy = response["asks"]
-        sell = response["bids"]
+        data = self.market_client.get_orderbook(pair.underscored_name, limit=limit)
+        buy = [[data["asks"][idx * 2], data["asks"][idx * 2 + 1]] for idx in range(len(data["asks"]) // 2)]
+        sell = [[data["bids"][idx * 2], data["bids"][idx * 2 + 1]] for idx in range(len(data["bids"]) // 2)]
         if not buy or not sell:
             raise NoPriceFound()
         return buy, sell
 
-    async def async_get_price(self, pair: Pair, limit=30):
+    async def async_get_price(self, pair: Pair, limit=50):
         path = f"/markets/{pair.underscored_name}/orderBook"
         params = {"limit": limit}
         headers = {
@@ -84,13 +85,13 @@ class PoloniexAPI(AbstractExchange):
             raise NoPriceFound()
 
         if "code" in data and data["code"]:
-            self.logger.error(f"[poloniex] {pair.default_name} - {data['code']}, {data['msg']}")
+            self.logger.error(f"[poloniex] {pair.default_name} - {data['code']}, {json.dumps(data)}")
             raise NoPriceFound()
 
         try:
-            buy = data["data"]["asks"]
-            sell = data["data"]["bids"]
-        except KeyError as e:
+            buy = [[data["asks"][idx * 2], data["asks"][idx * 2 + 1]] for idx in range(len(data["asks"]) // 2)]
+            sell = [[data["bids"][idx * 2], data["bids"][idx * 2 + 1]] for idx in range(len(data["bids"]) // 2)]
+        except (KeyError, IndexError) as e:
             self.logger.error(f"[poloniex] {pair.default_name} - error parsing data {data =}\n{e}")
             raise NoPriceFound()
 
