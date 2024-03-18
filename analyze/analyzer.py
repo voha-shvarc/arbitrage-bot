@@ -52,10 +52,14 @@ class ExchangePairAnalyzer:
             log.info(f"no price found - {pair.default_name}")
             return
         except (PoolTimeout, ConnectError):
-            error_log.error(f"connection error - {pair.default_name}")
+            error_log.error(
+                f"[{self.base_exchange.NAME};{self.pair_exchange.NAME}] connection error - {pair.default_name}"
+            )
             return
         except Exception as e:
-            error_log.error(f"unknown error getting price - {e} - {pair.default_name}")
+            error_log.error(
+                f"[{self.base_exchange.NAME};{self.pair_exchange.NAME}]unknown error getting price - {e} - {pair.default_name}"
+            )
             return
 
         if base_to_second_network_mapping and base_to_second_network_mapping[self.base_exchange.NAME].withdraw_fee:
