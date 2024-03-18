@@ -100,6 +100,16 @@ def sync_coin_exchange_networks():
                     and_(Exchange.name == "Mexc", Coin.name == "PAW"),
                     and_(Exchange.name == "Bitget", Coin.name == "PIT"),
                     and_(Exchange.name.in_(["Mexc", "KuCoin"]), Coin.name == "HERO"),
+                    and_(Exchange.name == "Poloniex", Coin.name == "AC"),
+                    and_(Exchange.name == "Poloniex", Coin.name == "BOBO"),
+                    and_(Exchange.name == "Poloniex", Coin.name == "CLOSEDAI"),
+                    and_(Exchange.name == "Poloniex", Coin.name == "AGI"),
+                    and_(Exchange.name == "Poloniex", Coin.name == "DYP"),
+                    and_(Exchange.name == "Poloniex", Coin.name == "MEOW"),
+                    and_(Exchange.name == "Poloniex", Coin.name == "MILK"),
+                    and_(Exchange.name == "Poloniex", Coin.name == "GPU"),
+                    and_(Exchange.name == "Poloniex", Coin.name == "KNOB"),
+                    and_(Exchange.name == "Poloniex", Coin.name == "WSB"),
                 ),
             )
         )
