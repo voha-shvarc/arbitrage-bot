@@ -121,7 +121,7 @@ class BingxAPI(AbstractExchange):
     def get_pair_chart_change(self, pair: Pair) -> float:
         response = self.client.get(
             "/openApi/spot/v2/market/kline",
-            params={"symbol": "BTC-USDT", "interval": "1m", "limit": 15},
+            params={"symbol": "BTC-USDT", "interval": "1m", "limit": 10},
         )
         opened = response["data"][-1][1]
         closed = response["data"][0][4]

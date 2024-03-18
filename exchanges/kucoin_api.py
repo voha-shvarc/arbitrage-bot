@@ -157,7 +157,7 @@ class KuCoinAPI(AbstractExchange):
 
     def get_pair_chart_change(self, pair: Pair) -> float:
         response = self.client.get_kline(symbol=pair.dashed_name, kline_type="1min")
-        opened = float(response[14][1])
+        opened = float(response[9][1])
         closed = float(response[0][2])
         change = (closed - opened) / opened * 100
         return change

@@ -126,7 +126,7 @@ class HuobiAPI(AbstractExchange):
         return link
 
     def get_pair_chart_change(self, pair: Pair) -> float:
-        response = self.price_client.get_candlestick(symbol=pair.huobi_name, period="1min", size=15)
+        response = self.price_client.get_candlestick(symbol=pair.huobi_name, period="1min", size=10)
         opened = response[-1].open
         closed = response[0].close
         change = (closed - opened) / opened * 100

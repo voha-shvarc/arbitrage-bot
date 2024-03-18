@@ -163,7 +163,7 @@ class OkxAPI(AbstractExchange):
         return link
 
     def get_pair_chart_change(self, pair: Pair) -> float:
-        response = self.market_client.get_candlesticks(pair.dashed_name, bar="1m", limit=15)
+        response = self.market_client.get_candlesticks(pair.dashed_name, bar="1m", limit=10)
         opened = float(response["data"][-1][1])
         closed = float(response["data"][0][4])
         change = (closed - opened) / opened * 100

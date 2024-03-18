@@ -131,7 +131,7 @@ class BinanceAPI(AbstractExchange):
         return link
 
     def get_pair_chart_change(self, pair: Pair) -> float:
-        response = self.client.rolling_window_ticker(symbol=pair.default_name, windowSize="15m")
+        response = self.client.rolling_window_ticker(symbol=pair.default_name, windowSize="10m")
         return float(response["priceChangePercent"])
 
     def get_balance(self) -> float:

@@ -167,7 +167,7 @@ class BitgetAPI(AbstractExchange):
         params = {
             "symbol": pair.bitget_name,
             "period": "1min",
-            "limit": "15",
+            "limit": "10",
         }
         response = self.client.candles(params=params)
         opened = float(response["data"][0]["open"])

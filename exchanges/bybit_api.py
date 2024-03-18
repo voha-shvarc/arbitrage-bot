@@ -114,7 +114,7 @@ class BybitAPI(AbstractExchange):
         return link
 
     def get_pair_chart_change(self, pair: Pair) -> float:
-        response = self.session.get_kline(category="spot", symbol=pair.default_name, interval=1, limit=15)
+        response = self.session.get_kline(category="spot", symbol=pair.default_name, interval=1, limit=10)
         opened = float(response["result"]["list"][-1][1])
         closed = float(response["result"]["list"][0][2])
         change = (closed - opened) / opened * 100

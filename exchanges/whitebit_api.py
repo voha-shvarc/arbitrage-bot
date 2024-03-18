@@ -94,7 +94,7 @@ class WhitebitAPI(AbstractExchange):
         return total
 
     def get_pair_chart_change(self, pair) -> float:
-        response = self.market_client.get_kline(market=pair.underscored_name, interval="30m", limit="48")
+        response = self.market_client.get_kline(market=pair.underscored_name, interval="1m", limit="10")
         opened = float(response["result"][0][1])
         closed = float(response["result"][-1][2])
         change = (closed - opened) / opened * 100
