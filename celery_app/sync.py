@@ -19,12 +19,13 @@ from exchanges import HuobiAPI
 from exchanges import KuCoinAPI
 from exchanges import MexcAPI
 from exchanges import OkxAPI
+from exchanges import PoloniexAPI
 from exchanges import WhitebitAPI
 
 
 config = dotenv_values(".env")
 
-EXCHANGES = {BinanceAPI, BybitAPI, OkxAPI, HuobiAPI, KuCoinAPI, BitgetAPI, WhitebitAPI, BingxAPI, MexcAPI}
+EXCHANGES = {BinanceAPI, BybitAPI, OkxAPI, HuobiAPI, KuCoinAPI, BitgetAPI, WhitebitAPI, BingxAPI, MexcAPI, PoloniexAPI}
 
 
 @app.task

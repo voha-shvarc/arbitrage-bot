@@ -128,6 +128,17 @@ class NetworkExchange:
 
         return cls(net_name, can_deposit, can_withdraw, withdraw_fee, confirmations_needed, plain_name)
 
+    @classmethod
+    def from_poloniex(cls, data: dict):
+        net_name = data["blockchain"]
+        plain_name = data["coin"]
+        can_deposit = data["depositEnable"]
+        can_withdraw = data["withdrawalEnable"]
+        withdraw_fee = float(data["withdrawFee"])
+        confirmations_needed = data["minConfirm"]
+
+        return cls(net_name, can_deposit, can_withdraw, withdraw_fee, confirmations_needed, plain_name)
+
 
 @dataclass
 class CoinNetworkExchangeDC:
@@ -237,6 +248,13 @@ class CoinNetworkExchangeDC:
         networks = [NetworkExchange.from_mexc(net_data) for net_data in data["networkList"]]
 
         return cls(coin_name, "Mexc", networks, {})
+
+    @classmethod
+    def from_poloniex(cls, data: dict):
+        coin_name = data["coin"]
+        networks = [NetworkExchange.from_poloniex(net_data) for net_data in data["networkList"]]
+
+        return cls(coin_name, "Poloniex", networks, {})
 
 
 @dataclass

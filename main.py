@@ -18,6 +18,7 @@ from exchanges import HuobiAPI
 from exchanges import KuCoinAPI
 from exchanges import MexcAPI
 from exchanges import OkxAPI
+from exchanges import PoloniexAPI
 from exchanges import WhitebitAPI
 
 
@@ -38,6 +39,7 @@ log.addHandler(handler)
 
 
 EXCHANGES_MAPPING = {
+    PoloniexAPI.NAME: PoloniexAPI,
     BinanceAPI.NAME: BinanceAPI,
     BybitAPI.NAME: BybitAPI,
     HuobiAPI.NAME: HuobiAPI,

@@ -8,3 +8,4 @@ from .bitget_api import BitgetAPI
 from .whitebit_api import WhitebitAPI
 from .bingx_api import BingxAPI
 from .mexc_api import MexcAPI
+from .poloniex_api import PoloniexAPI

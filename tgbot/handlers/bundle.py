@@ -25,6 +25,7 @@ from exchanges import HuobiAPI
 from exchanges import KuCoinAPI
 from exchanges import MexcAPI
 from exchanges import OkxAPI
+from exchanges import PoloniexAPI
 from exchanges import WhitebitAPI
 
 from ..keyboards.bundle import CreateOrderCallbackData
@@ -50,6 +51,7 @@ exchange_mapping = {
     WhitebitAPI.NAME: WhitebitAPI,
     BingxAPI.NAME: BingxAPI,
     MexcAPI.NAME: MexcAPI,
+    PoloniexAPI.NAME: PoloniexAPI,
 }
 
 BASE_USDT_PROFIT = 4  # 4 USDT
