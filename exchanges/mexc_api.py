@@ -21,15 +21,16 @@ from db.structs import DepositAddress
 from db.structs import TradingPair
 
 
-error_log = getLogger("error")
+error_logger = getLogger("error")
 
 
 class MexcAPI(AbstractExchange):
     NAME = "Mexc"
     base_url = "https://api.mexc.com"
 
-    def __init__(self, config, connection):
+    def __init__(self, config, connection, logger=None):
         self.connection = connection
+        self.logger = logger or error_logger
 
         self.api_key = config["MEXC_API_KEY"]
         self.api_secret = config["MEXC_API_SECRET"]
@@ -100,14 +101,14 @@ class MexcAPI(AbstractExchange):
         try:
             data = response.json()
         except JSONDecodeError:
-            error_log.error(f"[mexc] {pair.default_name} - {response.text}")
+            self.logger.error(f"[mexc] {pair.default_name} - {response.text}")
             raise NoPriceFound()
 
         try:
             buy = data["asks"]
             sell = data["bids"]
         except KeyError:
-            error_log.error(f"[mexc] {pair.default_name} - error parsing {data = }")
+            self.logger.error(f"[mexc] {pair.default_name} - error parsing {data = }")
             raise NoPriceFound()
 
         if not buy or not sell:
@@ -152,7 +153,7 @@ class MexcAPI(AbstractExchange):
         try:
             data = response.json()
         except JSONDecodeError as e:
-            error_log.error(f"[mexc] Error getting balance for {coin_name}. {response.text}")
+            self.logger.error(f"[mexc] Error getting balance for {coin_name}. {response.text}")
             raise WithdrawError("Couldn't get balance") from e
         for balance_data in data["balances"]:
             if balance_data["asset"] == coin_name:
@@ -172,17 +173,17 @@ class MexcAPI(AbstractExchange):
                 },
             )
         except Exception as e:
-            error_log.error(f"[mexc] deposit address error - {e}")
+            self.logger.error(f"[mexc] deposit address error - {e}")
             raise DepositAddressError() from e
 
         try:
             data = response.json()
             address = DepositAddress(data["address"], data.get("memo"))
         except JSONDecodeError as e:
-            error_log.error(f"[mexc] deposit address error. couldn't parse response. {response.text}")
+            self.logger.error(f"[mexc] deposit address error. couldn't parse response. {response.text}")
             raise DepositAddressError() from e
         except KeyError as e:
-            error_log.error(f"[mexc] deposit address error. couldn't parse response. {data}")
+            self.logger.error(f"[mexc] deposit address error. couldn't parse response. {data}")
             raise DepositAddressError() from e
         else:
             return address
@@ -205,13 +206,13 @@ class MexcAPI(AbstractExchange):
                 params=body,
             )
         except Exception as e:
-            error_log.exception(e)
+            self.logger.exception(e)
             raise WithdrawError(f"[mexc]Unknown exception, {e}") from e
 
         try:
             data = response.json()
         except JSONDecodeError as e:
-            error_log.exception(e)
+            self.logger.exception(e)
             raise WithdrawError(f"[mexc]Couldn't parse response, {response.text}") from e
 
         import json
@@ -232,8 +233,8 @@ class MexcAPI(AbstractExchange):
         try:
             data = response.json()
         except JSONDecodeError as e:
-            error_log.error(f"[mexc] couldn't parse response. {response.text}. {body = }")
+            self.logger.error(f"[mexc] couldn't parse response. {response.text}. {body = }")
             raise CreateOrderError("Couldn't parse response. Check logs") from e
         if err_msg := data.get("msg"):
-            error_log.error(f"[mexc] error creating order. {err_msg}. {body = }")
+            self.logger.error(f"[mexc] error creating order. {err_msg}. {body = }")
             raise CreateOrderError(err_msg)

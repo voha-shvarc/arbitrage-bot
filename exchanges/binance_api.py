@@ -16,7 +16,7 @@ from db.structs import DepositAddress
 from db.structs import TradingPair
 
 
-error_log = getLogger("error")
+error_logger = getLogger("error")
 
 
 class BinanceAPI(AbstractExchange):
@@ -26,8 +26,9 @@ class BinanceAPI(AbstractExchange):
     NOT_ALLOWED_STATUS = "BREAK"
     base_url = "https://api.binance.com"
 
-    def __init__(self, config, connection):
+    def __init__(self, config, connection, logger=None):
         self.connection = connection
+        self.logger = logger or error_logger
 
         self.api_key = config["BINANCE_API_KEY"]
         api_secret = config["BINANCE_API_SECRET"]
@@ -95,14 +96,14 @@ class BinanceAPI(AbstractExchange):
         try:
             data = response.json()
         except JSONDecodeError:
-            error_log.error(f"[binance] {pair.default_name} - {response.text}")
+            self.logger.error(f"[binance] {pair.default_name} - {response.text}")
             raise NoPriceFound()
 
         try:
             buy = data["asks"]
             sell = data["bids"]
         except KeyError as e:
-            error_log.error(f"[binance] {pair.default_name} - error parsing data {data =}\n{e}")
+            self.logger.error(f"[binance] {pair.default_name} - error parsing data {data =}\n{e}")
             raise NoPriceFound()
 
         if not buy or not sell:
@@ -147,7 +148,7 @@ class BinanceAPI(AbstractExchange):
             data = self.client.deposit_address(coin=cne.coin.name, network=cne.network.name)
             address = DepositAddress(data["address"], data["tag"])
         except Exception as e:
-            error_log.error(f"[binance] deposit address error - {e}")
+            self.logger.error(f"[binance] deposit address error - {e}")
             raise DepositAddressError() from e
         else:
             return address
@@ -164,5 +165,5 @@ class BinanceAPI(AbstractExchange):
         try:
             self.client.new_order(**body)
         except ClientError as e:
-            error_log.exception(f"[binance] create order error - {e}. {body = }")
+            self.logger.exception(f"[binance] create order error - {e}. {body = }")
             raise CreateOrderError(str(e)) from e

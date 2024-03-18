@@ -16,15 +16,16 @@ from db.structs import DepositAddress
 from db.structs import TradingPair
 
 
-error_log = getLogger("error")
+error_logger = getLogger("error")
 
 
 class WhitebitAPI(AbstractExchange):
     NAME = "Whitebit"
     base_url = "https://whitebit.com"
 
-    def __init__(self, config, connection):
+    def __init__(self, config, connection, logger=None):
         self.connection = connection
+        self.logger = logger or error_logger
 
         api_key = config["WHITEBIT_API_KEY"]
         api_secret = config["WHITEBIT_API_SECRET"]
@@ -72,14 +73,14 @@ class WhitebitAPI(AbstractExchange):
         try:
             data = response.json()
         except JSONDecodeError:
-            error_log.error(f"[whitebit] {pair.default_name} - {response.text}")
+            self.logger.error(f"[whitebit] {pair.default_name} - {response.text}")
             raise NoPriceFound()
 
         try:
             buy = data["asks"]
             sell = data["bids"]
         except KeyError as e:
-            error_log.error(f"[whitebit] {pair.default_name} - error parsing data {data = }\n{e}")
+            self.logger.error(f"[whitebit] {pair.default_name} - error parsing data {data = }\n{e}")
             raise NoPriceFound()
 
         if not buy or not sell:
@@ -128,7 +129,7 @@ class WhitebitAPI(AbstractExchange):
             )
             address = DepositAddress(data["account"]["address"], data["account"].get("memo"))
         except Exception as e:
-            error_log.error(f"[bybit] deposit address error - {e}")
+            self.logger.error(f"[bybit] deposit address error - {e}")
             raise DepositAddressError() from e
         else:
             return address

@@ -18,7 +18,7 @@ from exchanges.polosdk.rest.request import Request
 from exchanges.polosdk.rest.wallets import Wallets
 
 
-error_log = getLogger("error")
+error_logger = getLogger("error")
 
 
 class PoloniexAPI(AbstractExchange):
@@ -26,8 +26,9 @@ class PoloniexAPI(AbstractExchange):
     ACCOUNT_ID = 292397646520455168
     base_url = "https://api.poloniex.com"
 
-    def __init__(self, config, connection):
+    def __init__(self, config, connection, logger=None):
         self.connection = connection
+        self.logger = logger or error_logger
 
         api_key = config["POLONIEX_API_KEY"]
         api_secret = config["POLONIEX_API_SECRET"]
@@ -79,18 +80,18 @@ class PoloniexAPI(AbstractExchange):
         try:
             data = response.json()
         except JSONDecodeError:
-            error_log.error(f"[poloniex] {pair.default_name} - {response.text}")
+            self.logger.error(f"[poloniex] {pair.default_name} - {response.text}")
             raise NoPriceFound()
 
         if "code" in data and data["code"]:
-            error_log.error(f"[poloniex] {pair.default_name} - {data['code']}, {data['msg']}")
+            self.logger.error(f"[poloniex] {pair.default_name} - {data['code']}, {data['msg']}")
             raise NoPriceFound()
 
         try:
             buy = data["data"]["asks"]
             sell = data["data"]["bids"]
         except KeyError as e:
-            error_log.error(f"[poloniex] {pair.default_name} - error parsing data {data =}\n{e}")
+            self.logger.error(f"[poloniex] {pair.default_name} - error parsing data {data =}\n{e}")
             raise NoPriceFound()
 
         if not buy or not sell:
@@ -144,7 +145,7 @@ class PoloniexAPI(AbstractExchange):
             body["addressTag"] = deposit_address.memo
 
         response = self.request("POST", "v2/wallets/withdraw", params=body)
-        error_log.error(f"[poloniex withdraw] - {response}")
+        self.logger.error(f"[poloniex withdraw] - {response}")
 
     def create_order(self, pair: Pair, ccy_quantity: float, ccy_precision: int, price: float, price_precision: int):
         body = {
@@ -160,8 +161,8 @@ class PoloniexAPI(AbstractExchange):
         try:
             data = response.json()
         except JSONDecodeError as e:
-            error_log.error(f"[poloniex] couldn't parse response. {response.text}. {body = }")
+            self.logger.error(f"[poloniex] couldn't parse response. {response.text}. {body = }")
             raise CreateOrderError("Couldn't parse response. Check logs") from e
         if err_msg := data.get("msg"):
-            error_log.error(f"[poloniex] error creating order. {err_msg}. {body = }")
+            self.logger.error(f"[poloniex] error creating order. {err_msg}. {body = }")
             raise CreateOrderError(err_msg)

@@ -16,15 +16,16 @@ from db.structs import DepositAddress
 from db.structs import TradingPair
 
 
-error_log = getLogger("error")
+error_logger = getLogger("error")
 
 
 class BybitAPI(AbstractExchange):
     NAME = "ByBit"
     base_url = "https://api.bybit.com"
 
-    def __init__(self, config, connection):
+    def __init__(self, config, connection, logger=None):
         self.connection = connection
+        self.logger = logger or error_logger
 
         api_key = config["BYBIT_API_KEY"]
         api_secret = config["BYBIT_API_SECRET"]
@@ -76,14 +77,14 @@ class BybitAPI(AbstractExchange):
         try:
             data = response.json()
         except JSONDecodeError:
-            error_log.error(f"[bybit] {pair.default_name} - {response.text}")
+            self.logger.error(f"[bybit] {pair.default_name} - {response.text}")
             raise NoPriceFound()
 
         try:
             buy = data["result"]["a"]
             sell = data["result"]["b"]
         except KeyError as e:
-            error_log.error(f"[bybit] {pair.default_name} - error parsing data {data =}\n{e}")
+            self.logger.error(f"[bybit] {pair.default_name} - error parsing data {data =}\n{e}")
             raise NoPriceFound()
 
         if not buy or not sell:
@@ -134,7 +135,7 @@ class BybitAPI(AbstractExchange):
             data = response["result"]["chains"][0]
             address = DepositAddress(data["addressDeposit"], data["tagDeposit"])
         except Exception as e:
-            error_log.error(f"[bybit] deposit address error - {e}")
+            self.logger.error(f"[bybit] deposit address error - {e}")
             raise DepositAddressError() from e
         else:
             return address
@@ -152,5 +153,5 @@ class BybitAPI(AbstractExchange):
         try:
             self.session.place_order(**body)
         except InvalidRequestError as e:
-            error_log.exception(f"[bybit] create order error - {e}. {body = }")
+            self.logger.exception(f"[bybit] create order error - {e}. {body = }")
             raise WithdrawError(str(e)) from e

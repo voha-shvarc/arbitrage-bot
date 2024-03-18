@@ -22,15 +22,16 @@ from db.structs import DepositAddress
 from db.structs import TradingPair
 
 
-error_log = getLogger("error")
+error_logger = getLogger("error")
 
 
 class KuCoinAPI(AbstractExchange):
     NAME = "KuCoin"
     base_url = "https://api.kucoin.com"
 
-    def __init__(self, config, connection):
+    def __init__(self, config, connection, logger=None):
         self.connection = connection
+        self.logger = logger or error_logger
 
         self.api_key = config["KUCOIN_API_KEY"]
         self.api_secret = config["KUCOIN_API_SECRET"]
@@ -89,7 +90,7 @@ class KuCoinAPI(AbstractExchange):
         try:
             data = response.json()
         except JSONDecodeError:
-            error_log.error(f"[kucoin] {pair.default_name} - {response.text}")
+            self.logger.error(f"[kucoin] {pair.default_name} - {response.text}")
             raise NoPriceFound()
 
         if data.get("code") == "400002":  # invalid timestamp error
@@ -99,7 +100,7 @@ class KuCoinAPI(AbstractExchange):
             buy = data["data"]["asks"]
             sell = data["data"]["bids"]
         except KeyError as e:
-            error_log.error(f"[kucoin] {pair.default_name} - error parsing data {data =}\n{e}")
+            self.logger.error(f"[kucoin] {pair.default_name} - error parsing data {data =}\n{e}")
             raise NoPriceFound()
 
         if not buy or not sell:
@@ -166,7 +167,7 @@ class KuCoinAPI(AbstractExchange):
         try:
             balance = float(response[0]["balance"])
         except (KeyError, IndexError) as e:
-            error_log.exception(f"[kucoin] error getting balance: {coin_name}, {e}")
+            self.logger.exception(f"[kucoin] error getting balance: {coin_name}, {e}")
             raise WithdrawError(f"No available balance for {coin_name}") from e
         else:
             return balance
@@ -175,7 +176,7 @@ class KuCoinAPI(AbstractExchange):
         try:
             self.account_client.inner_transfer(coin_name, from_account, to_account, amount)
         except Exception as e:
-            error_log.exception(f"[kucoin] transfer error: {e}")
+            self.logger.exception(f"[kucoin] transfer error: {e}")
             raise WithdrawError(f"Couldn't transfer from {from_account} to {to_account}. {e}") from e
 
     def get_deposit_address(self, cne: CoinNetworkExchange) -> DepositAddress:
@@ -187,7 +188,7 @@ class KuCoinAPI(AbstractExchange):
                 data = data[0]
             address = DepositAddress(data["address"], data["memo"])
         except Exception as e:
-            error_log.error(f"[kucoin] deposit address error - {e}")
+            self.logger.error(f"[kucoin] deposit address error - {e}")
             raise DepositAddressError() from e
         else:
             return address
@@ -223,5 +224,5 @@ class KuCoinAPI(AbstractExchange):
         try:
             self.trade_client.create_limit_order(**body)
         except Exception as e:
-            error_log.exception(f"[kucoin] create order error - {e}. {body = }")
+            self.logger.exception(f"[kucoin] create order error - {e}. {body = }")
             raise CreateOrderError(str(e)) from e

@@ -137,8 +137,8 @@ async def withdraw_bundle_callback_query(query: CallbackQuery, callback_data: Wi
             .get(bundle_id)
         )
 
-    base_exchange: AbstractExchange = exchange_mapping[bundle.base_exchange.name](config, {})
-    pair_exchange: AbstractExchange = exchange_mapping[bundle.pair_exchange.name](config, {})
+    base_exchange: AbstractExchange = exchange_mapping[bundle.base_exchange.name](config, {}, logger)
+    pair_exchange: AbstractExchange = exchange_mapping[bundle.pair_exchange.name](config, {}, logger)
 
     text = query.message.html_text
     withdraw_label = "✅"
@@ -191,8 +191,8 @@ async def create_order_callback_query(query: CallbackQuery, callback_data: Creat
             .first()
         )
 
-    base_exchange = exchange_mapping[bundle.base_exchange.name](config, {})
-    pair_exchange = exchange_mapping[bundle.pair_exchange.name](config, {})
+    base_exchange = exchange_mapping[bundle.base_exchange.name](config, {}, logger)
+    pair_exchange = exchange_mapping[bundle.pair_exchange.name](config, {}, logger)
 
     base_exchange_price = base_exchange.get_price(bundle.pair)
     pair_exchange_price = pair_exchange.get_price(bundle.pair)

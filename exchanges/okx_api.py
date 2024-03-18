@@ -22,7 +22,7 @@ from db.structs import DepositAddress
 from db.structs import TradingPair
 
 
-error_log = getLogger("error")
+error_logger = getLogger("error")
 
 
 class OkxAPI(AbstractExchange):
@@ -30,8 +30,9 @@ class OkxAPI(AbstractExchange):
     flag = "0"  # Production trading: 0, Demo trading: 1
     base_url = "https://www.okx.com"
 
-    def __init__(self, config, connection):
+    def __init__(self, config, connection, logger=None):
         self.connection = connection
+        self.logger = logger or error_logger
 
         self.api_key = config["OKX_API_KEY"]
         self.api_secret = config["OKX_API_SECRET"]
@@ -97,18 +98,18 @@ class OkxAPI(AbstractExchange):
         try:
             data = response.json()
         except JSONDecodeError:
-            error_log.error(f"[okx] {pair.default_name} - {response.text}")
+            self.logger.error(f"[okx] {pair.default_name} - {response.text}")
             raise NoPriceFound()
 
         if data.get("code") in ["50011", "51001"]:  # too many requests or wrong instID
-            error_log.error(f"[okx] {pair.default_name} - {data['code']}")
+            self.logger.error(f"[okx] {pair.default_name} - {data['code']}")
             raise NoPriceFound()
 
         try:
             buy = data["data"][0]["asks"]
             sell = data["data"][0]["bids"]
         except (KeyError, IndexError) as e:
-            error_log.error(f"[okx] {pair.default_name} - error parsing data {data =}\n{e}")
+            self.logger.error(f"[okx] {pair.default_name} - error parsing data {data =}\n{e}")
             raise NoPriceFound()
 
         if not buy or not sell:
@@ -184,7 +185,7 @@ class OkxAPI(AbstractExchange):
                 if net["chain"] == cne.plain_network_name:
                     return DepositAddress(net["addr"], net.get("tag") or net.get("memo"))
         except Exception as e:
-            error_log.error(f"[okx] deposit address error - {e}")
+            self.logger.error(f"[okx] deposit address error - {e}")
             raise DepositAddressError() from e
         else:
             raise DepositAddressError()
@@ -200,5 +201,5 @@ class OkxAPI(AbstractExchange):
         }
         res = self.trade_client.place_order(**body)
         if res["code"] != "0":
-            error_log.error(f"[okx] error creating order {res['data'][0]['sMsg']}. {body = }")
+            self.logger.error(f"[okx] error creating order {res['data'][0]['sMsg']}. {body = }")
             raise WithdrawError(res["data"][0]["sMsg"])

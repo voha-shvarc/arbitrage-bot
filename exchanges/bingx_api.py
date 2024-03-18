@@ -18,14 +18,15 @@ from db.structs import DepositAddress
 from db.structs import TradingPair
 
 
-error_log = getLogger("error")
+error_logger = getLogger("error")
 
 
 class BingxAPI(AbstractExchange):
     NAME = "Bingx"
 
-    def __init__(self, config, connection):
+    def __init__(self, config, connection, logger=None):
         self.connection = connection
+        self.logger = logger or error_logger
 
         api_key = config["BINGX_API_KEY"]
         api_secret = config["BINGX_API_SECRET"]
@@ -76,18 +77,18 @@ class BingxAPI(AbstractExchange):
         try:
             data = response.json()
         except JSONDecodeError:
-            error_log.error(f"[bingx] {pair.default_name} - {response.text}")
+            self.logger.error(f"[bingx] {pair.default_name} - {response.text}")
             raise NoPriceFound()
 
         if "code" in data and data["code"]:
-            error_log.error(f"[bingx] {pair.default_name} - {data['code']}, {data['msg']}")
+            self.logger.error(f"[bingx] {pair.default_name} - {data['code']}, {data['msg']}")
             raise NoPriceFound()
 
         try:
             buy = data["data"]["asks"]
             sell = data["data"]["bids"]
         except KeyError as e:
-            error_log.error(f"[bingx] {pair.default_name} - error parsing data {data =}\n{e}")
+            self.logger.error(f"[bingx] {pair.default_name} - error parsing data {data =}\n{e}")
             raise NoPriceFound()
 
         if not buy or not sell:
@@ -144,10 +145,10 @@ class BingxAPI(AbstractExchange):
                     address = DepositAddress(network_data["address"], network_data.get("tag"))
                     return address
         except Exception as e:
-            error_log.error(f"[bingx] deposit address error - {e}")
+            self.logger.error(f"[bingx] deposit address error - {e}")
             raise DepositAddressError(str(e)) from e
         else:
-            error_log.error(f"[bingx] empty deposit address data - {data}")
+            self.logger.error(f"[bingx] empty deposit address data - {data}")
             raise DepositAddressError(f"empty deposit address data - {data}")
 
     def withdraw(self, cne: CoinNetworkExchange, deposit_address: DepositAddress) -> None:
@@ -165,12 +166,12 @@ class BingxAPI(AbstractExchange):
         try:
             data = self.api_client.post("/openApi/wallets/v1/capital/withdraw/apply", params=body)
         except Exception as e:
-            error_log.exception(e)
+            self.logger.exception(e)
             raise WithdrawError(f"[bingx] unknown exception {e}") from e
 
         if data["code"] != 0:
             msg = data["msg"]
-            error_log.error(f"[bingx] error creating order - {data['msg']}")
+            self.logger.error(f"[bingx] error creating order - {data['msg']}")
             raise WithdrawError(msg)
 
     def create_order(self, pair: Pair, ccy_quantity: float, ccy_precision: int, price: float, price_precision: int):
@@ -184,5 +185,5 @@ class BingxAPI(AbstractExchange):
         try:
             self.client.place_order(**body)
         except ClientError as e:
-            error_log.exception(f"[bingx] create order error - {e}. {body = }")
+            self.logger.exception(f"[bingx] create order error - {e}. {body = }")
             raise CreateOrderError(str(e)) from e

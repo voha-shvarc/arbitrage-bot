@@ -23,7 +23,7 @@ from db.structs import DepositAddress
 from db.structs import TradingPair
 
 
-error_log = getLogger("error")
+error_logger = getLogger("error")
 
 
 class HuobiAPI(AbstractExchange):
@@ -31,8 +31,9 @@ class HuobiAPI(AbstractExchange):
     ACCOUNT_ID = 58372812
     base_url = "https://api.huobi.pro"
 
-    def __init__(self, config, connection):
+    def __init__(self, config, connection, logger=None):
         self.connection = connection
+        self.logger = logger or error_logger
 
         api_key = config["HUOBI_API_KEY"]
         api_secret = config["HUOBI_API_SECRET"]
@@ -86,18 +87,18 @@ class HuobiAPI(AbstractExchange):
         try:
             data = response.json()
         except JSONDecodeError:
-            error_log.error(f"[huobi] {pair.default_name} - {response.text}")
+            self.logger.error(f"[huobi] {pair.default_name} - {response.text}")
             raise NoPriceFound()
 
         if data.get("err-msg") in ["invalid symbol", "request limit"]:
-            error_log.error(f"[huobi] {pair.default_name} - {data['err-msg']}")
+            self.logger.error(f"[huobi] {pair.default_name} - {data['err-msg']}")
             raise NoPriceFound()
 
         try:
             buy = data["tick"]["asks"]
             sell = data["tick"]["bids"]
         except KeyError as e:
-            error_log.error(f"[huobi] {pair.default_name} - error parsing data {data =}\n{e}")
+            self.logger.error(f"[huobi] {pair.default_name} - error parsing data {data =}\n{e}")
             raise NoPriceFound()
 
         if not sell or not buy:
@@ -142,7 +143,7 @@ class HuobiAPI(AbstractExchange):
                 if net.chain == cne.plain_network_name:
                     return DepositAddress(net.address, net.addressTag)
         except Exception as e:
-            error_log.error(f"[huobi] deposit address error - {e}")
+            self.logger.error(f"[huobi] deposit address error - {e}")
             raise DepositAddressError() from e
         else:
             raise DepositAddressError()
@@ -158,5 +159,5 @@ class HuobiAPI(AbstractExchange):
         try:
             self.trade_client.create_spot_order(**body)
         except HuobiApiException as e:
-            error_log.exception(f"[bybit] create order error - {e}. {body = }")
+            self.logger.exception(f"[bybit] create order error - {e}. {body = }")
             raise WithdrawError(str(e)) from e

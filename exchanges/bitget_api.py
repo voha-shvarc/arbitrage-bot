@@ -21,7 +21,7 @@ from exchanges.bitget.v1.spot.order_api import OrderApi
 from exchanges.bitget.v1.spot.wallet_api import WalletApi
 
 
-error_log = getLogger("error")
+error_logger = getLogger("error")
 
 
 class BitgetAPI(AbstractExchange):
@@ -29,8 +29,9 @@ class BitgetAPI(AbstractExchange):
     ALLOWED_STATUS = "online"
     base_url = "https://api.bitget.com"
 
-    def __init__(self, config, connection):
+    def __init__(self, config, connection, logger=None):
         self.connection = connection
+        self.logger = logger or error_logger
 
         self.api_key = config["BITGET_API_KEY"]
         self.api_secret = config["BITGET_API_SECRET"]
@@ -100,14 +101,14 @@ class BitgetAPI(AbstractExchange):
         try:
             data = response.json()
         except JSONDecodeError:
-            error_log.error(f"[bitget] {pair.default_name} - {response.text}")
+            self.logger.error(f"[bitget] {pair.default_name} - {response.text}")
             raise NoPriceFound()
 
         try:
             buy = data["data"]["asks"]
             sell = data["data"]["bids"]
         except KeyError as e:
-            error_log.error(f"[bitget] {pair.default_name} - error parsing data {data = }\n{e}")
+            self.logger.error(f"[bitget] {pair.default_name} - error parsing data {data = }\n{e}")
             raise NoPriceFound()
 
         if not buy or not sell:
@@ -191,7 +192,7 @@ class BitgetAPI(AbstractExchange):
             response = self.wallet_client.depositAddress(params={"coin": cne.coin.name, "chain": cne.network.name})
             address = DepositAddress(response["data"]["address"], response["data"]["tag"])
         except Exception as e:
-            error_log.error(f"[bitget] deposit address error - {e}")
+            self.logger.error(f"[bitget] deposit address error - {e}")
             raise DepositAddressError() from e
         else:
             return address
@@ -208,5 +209,5 @@ class BitgetAPI(AbstractExchange):
         try:
             self.order_client.placeOrder(params=body)
         except BitgetAPIException as e:
-            error_log.exception(f"[bitget] create order error - {e}. {body = }")
+            self.logger.exception(f"[bitget] create order error - {e}. {body = }")
             raise CreateOrderError(str(e)) from e

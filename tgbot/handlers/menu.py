@@ -1,3 +1,5 @@
+import logging
+
 from aiogram import F
 from aiogram import Router
 from aiogram.types import CallbackQuery
@@ -36,6 +38,8 @@ exchange_mapping = {
     PoloniexAPI.NAME: PoloniexAPI,
 }
 
+logger = logging.getLogger(__name__)
+
 menu_router = Router()
 
 
@@ -45,7 +49,7 @@ async def get_total_balance(message: Message):
     info = ""
     total_balance = 0
     for name, exchange in exchange_mapping.items():
-        exchange = exchange(config, {})
+        exchange = exchange(config, {}, logger)
         balance = exchange.get_balance()
         info += f"{name}: <b>{balance:.2f}$</b>\n"
         total_balance += balance
