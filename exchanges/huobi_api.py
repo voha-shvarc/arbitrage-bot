@@ -14,8 +14,8 @@ from huobi.exception.huobi_api_exception import HuobiApiException
 
 from abstract import AbstractExchange
 from abstract import NoPriceFound
+from abstract.abstract import CreateOrderError
 from abstract.abstract import DepositAddressError
-from abstract.abstract import WithdrawError
 from db.models import CoinNetworkExchange
 from db.models import Pair
 from db.structs import CoinNetworkExchangeDC
@@ -159,5 +159,5 @@ class HuobiAPI(AbstractExchange):
         try:
             self.trade_client.create_spot_order(**body)
         except HuobiApiException as e:
-            self.logger.exception(f"[bybit] create order error - {e}. {body = }")
-            raise WithdrawError(str(e)) from e
+            self.logger.exception(f"[huobi] create order error - {e}. {body = }")
+            raise CreateOrderError(str(e)) from e

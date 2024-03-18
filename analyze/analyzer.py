@@ -53,12 +53,12 @@ class ExchangePairAnalyzer:
             return
         except (PoolTimeout, ConnectError):
             error_log.error(
-                f"[{self.base_exchange.NAME};{self.pair_exchange.NAME}] connection error - {pair.default_name}"
+                f"[{self.base_exchange.NAME};{self.pair_exchange.NAME}] connection error - {pair.default_name}",
             )
             return
         except Exception as e:
             error_log.error(
-                f"[{self.base_exchange.NAME};{self.pair_exchange.NAME}]unknown error getting price - {e} - {pair.default_name}"
+                f"[{self.base_exchange.NAME};{self.pair_exchange.NAME}]unknown error getting price - {e} - {pair.default_name}",
             )
             return
 
@@ -111,7 +111,7 @@ class ExchangePairAnalyzer:
             elif self.base_exchange.NAME in ["Bitget", "Bingx"] or self.pair_exchange.NAME in ["Bitget", "Bingx"]:
                 await asyncio.sleep(0.07)
             elif self.base_exchange.NAME in ["Mexc"] or self.pair_exchange.NAME in ["Mexc"]:
-                await asyncio.sleep(0.06)
+                await asyncio.sleep(0.064)
             elif self.base_exchange.NAME in ["GateIO"] or self.pair_exchange.NAME in ["GateIO"]:
                 await asyncio.sleep(0.053)
             elif self.base_exchange.NAME in ["KuCoin"] or self.pair_exchange.NAME in ["KuCoin"]:

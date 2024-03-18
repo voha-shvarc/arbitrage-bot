@@ -7,8 +7,8 @@ from pybit.unified_trading import HTTP
 
 from abstract import AbstractExchange
 from abstract import NoPriceFound
+from abstract.abstract import CreateOrderError
 from abstract.abstract import DepositAddressError
-from abstract.abstract import WithdrawError
 from db.models import CoinNetworkExchange
 from db.models import Pair
 from db.structs import CoinNetworkExchangeDC
@@ -154,4 +154,4 @@ class BybitAPI(AbstractExchange):
             self.session.place_order(**body)
         except InvalidRequestError as e:
             self.logger.exception(f"[bybit] create order error - {e}. {body = }")
-            raise WithdrawError(str(e)) from e
+            raise CreateOrderError(str(e)) from e

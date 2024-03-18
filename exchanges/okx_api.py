@@ -13,8 +13,8 @@ from retry import retry
 
 from abstract import AbstractExchange
 from abstract import NoPriceFound
+from abstract.abstract import CreateOrderError
 from abstract.abstract import DepositAddressError
-from abstract.abstract import WithdrawError
 from db.models import CoinNetworkExchange
 from db.models import Pair
 from db.structs import CoinNetworkExchangeDC
@@ -202,4 +202,4 @@ class OkxAPI(AbstractExchange):
         res = self.trade_client.place_order(**body)
         if res["code"] != "0":
             self.logger.error(f"[okx] error creating order {res['data'][0]['sMsg']}. {body = }")
-            raise WithdrawError(res["data"][0]["sMsg"])
+            raise CreateOrderError(res["data"][0]["sMsg"])
