@@ -149,7 +149,9 @@ async def withdraw_bundle_callback_query(query: CallbackQuery, callback_data: Wi
         try:
             base_exchange.withdraw(bundle.withdraw_coin_network_exchange, deposit_address)
         except Exception as e:
-            await query.message.reply(f"Error proceeding withdraw. {e}")
+            await query.message.reply(
+                f"Error proceeding withdraw. {e}. {deposit_address.address = }, {deposit_address.memo = }",
+            )
             withdraw_label = "❌"
 
     await query.message.edit_text(
@@ -207,7 +209,7 @@ async def create_order_callback_query(query: CallbackQuery, callback_data: Creat
     text = query.message.html_text
     buy_label = "❌"
     if price_analyzer.profit > BASE_USDT_PROFIT:
-        if pair_to_exchange.base_coin_precision and pair_to_exchange.quote_coin_precision:
+        if pair_to_exchange.base_coin_precision is not None and pair_to_exchange.quote_coin_precision is not None:
             try:
                 base_exchange.create_order(
                     pair=bundle.pair,

@@ -143,14 +143,12 @@ class BingxAPI(AbstractExchange):
                 if network_data["network"] == cne.network.name:
                     address = DepositAddress(network_data["address"], network_data.get("tag"))
                     return address
-        except JSONDecodeError as e:
-            raise DepositAddressError() from e
         except Exception as e:
             error_log.error(f"[bingx] deposit address error - {e}")
-            raise DepositAddressError() from e
+            raise DepositAddressError(str(e)) from e
         else:
             error_log.error(f"[bingx] empty deposit address data - {data}")
-            raise DepositAddressError()
+            raise DepositAddressError(f"empty deposit address data - {data}")
 
     def withdraw(self, cne: CoinNetworkExchange, deposit_address: DepositAddress) -> None:
         amount = self.get_balance(cne.coin.name)
