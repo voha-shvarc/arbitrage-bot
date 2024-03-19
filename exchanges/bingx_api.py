@@ -142,7 +142,10 @@ class BingxAPI(AbstractExchange):
             data = self.api_client.get("/openApi/wallets/v1/capital/deposit/address", params={"coin": cne.coin.name})
             for network_data in data["data"]["data"]:
                 if network_data["network"] == cne.network.name:
-                    address = DepositAddress(network_data["address"], network_data.get("tag"))
+                    address = network_data["address"]
+                    if address == "0494d7654faf6ac77cabf002aab0e1ba5534404c":
+                        address = f"0x{address}"
+                    address = DepositAddress(address, network_data.get("tag"))
                     return address
         except Exception as e:
             self.logger.error(f"[bingx] deposit address error - {e}")
