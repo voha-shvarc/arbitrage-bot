@@ -6,6 +6,7 @@ from typing import List
 from abstract import AbstractExchange
 from abstract.abstract import CreateOrderError
 from abstract.abstract import NoPriceFound
+from abstract.abstract import WithdrawError
 from db.models import CoinNetworkExchange
 from db.models import Pair
 from db.structs import CoinNetworkExchangeDC
@@ -127,8 +128,16 @@ class PoloniexAPI(AbstractExchange):
         return link
 
     def get_balance(self, coin_name: str = "USDT") -> float:
-        # res = account_client.get_account_balances()
-        return 0
+        response = self.account_client.get_account_balances(self.ACCOUNT_ID)
+        try:
+            for balance_data in response[0]["balances"]:
+                if balance_data["currency"] == coin_name:
+                    return float(balance_data["available"])
+        except (KeyError, IndexError) as e:
+            self.logger.error(f"[poloniex] Error getting balance for {coin_name}. {response}")
+            raise WithdrawError("Couldn't get balance") from e
+
+        raise WithdrawError(f"No available balance for {coin_name}")
 
     def get_deposit_address(self, cne: CoinNetworkExchange) -> DepositAddress:
         response = self.wallet_client.create_address(cne.plain_network_name)
