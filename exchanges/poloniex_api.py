@@ -132,7 +132,7 @@ class PoloniexAPI(AbstractExchange):
 
     def get_deposit_address(self, cne: CoinNetworkExchange) -> DepositAddress:
         response = self.wallet_client.create_address(cne.plain_network_name)
-        return DepositAddress(response[cne.coin.name])
+        return DepositAddress(response["address"])
 
     def withdraw(self, cne: CoinNetworkExchange, deposit_address: DepositAddress) -> bool:
         amount = self.get_balance(cne.coin.name)

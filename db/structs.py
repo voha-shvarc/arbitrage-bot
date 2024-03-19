@@ -289,7 +289,7 @@ class Price:
 @dataclass
 class DepositAddress:
     address: str
-    memo: Union[str, None]
+    memo: Union[str, None] = None
 
 
 @dataclass
