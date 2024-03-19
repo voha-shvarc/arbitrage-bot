@@ -290,3 +290,11 @@ class Price:
 class DepositAddress:
     address: str
     memo: Union[str, None]
+
+
+@dataclass
+class ExchangeLiquidity:
+    exchange_id: int
+    name: str
+    current_limit: float
+    balance: float

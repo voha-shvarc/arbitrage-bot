@@ -4,12 +4,18 @@ from aiogram.utils.keyboard import InlineKeyboardButton
 from aiogram.utils.keyboard import ReplyKeyboardBuilder
 
 from db.models import Exchange
+from db.structs import ExchangeLiquidity
 
 
 class ConfigExchangeCallbackData(CallbackData, prefix="config_exchange"):
     exchange_id: int
     type_name: str
     set_active: bool
+
+
+class SetExchangeLiquidityLimitCallbackData(CallbackData, prefix="set_liquidity_limit"):
+    exchange_id: int
+    exchange_name: str
 
 
 def get_menu_keyboard():
@@ -32,8 +38,8 @@ def get_config_exchanges_keyboard(session):
     keyboard = InlineKeyboardBuilder()
 
     keyboard.row(
-        InlineKeyboardButton(text="📕", callback_data="buy"),
-        InlineKeyboardButton(text="📗", callback_data="sell"),
+        InlineKeyboardButton(text="📕", callback_data="not_clickable"),
+        InlineKeyboardButton(text="📗", callback_data="not_clickable"),
     )
     for exchange in session.query(Exchange).order_by(Exchange.id):
         keyboard.button(
@@ -54,4 +60,40 @@ def get_config_exchanges_keyboard(session):
         )
 
     keyboard.adjust(2)
+    return keyboard.as_markup()
+
+
+def get_config_exchanges_liquidity_keyboard(exchanges_info: list[ExchangeLiquidity]):
+    keyboard = InlineKeyboardBuilder()
+
+    keyboard.row(
+        InlineKeyboardButton(text="Exchange 📕", callback_data="not_clickable"),
+        InlineKeyboardButton(text="Current Limit 💼", callback_data="not_clickable"),
+        InlineKeyboardButton(text="Balance 💰", callback_data="not_clickable"),
+    )
+
+    for exchange_info in exchanges_info:
+        keyboard.button(
+            text=exchange_info.name,
+            callback_data=SetExchangeLiquidityLimitCallbackData(
+                exchange_id=exchange_info.exchange_id,
+                exchange_name=exchange_info.name,
+            ),
+        )
+        keyboard.button(
+            text=f"{exchange_info.current_limit:.2f}",
+            callback_data=SetExchangeLiquidityLimitCallbackData(
+                exchange_id=exchange_info.exchange_id,
+                exchange_name=exchange_info.name,
+            ),
+        )
+        keyboard.button(
+            text=f"{exchange_info.balance:.2f}",
+            callback_data=SetExchangeLiquidityLimitCallbackData(
+                exchange_id=exchange_info.exchange_id,
+                exchange_name=exchange_info.name,
+            ),
+        )
+
+    keyboard.adjust(3)
     return keyboard.as_markup()

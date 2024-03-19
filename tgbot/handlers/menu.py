@@ -2,12 +2,15 @@ import logging
 
 from aiogram import F
 from aiogram import Router
+from aiogram.filters import StateFilter
+from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery
 from aiogram.types import Message
 from dotenv import dotenv_values
 
 from db.base import Session
 from db.models import Exchange
+from db.structs import ExchangeLiquidity
 from exchanges import BinanceAPI
 from exchanges import BingxAPI
 from exchanges import BitgetAPI
@@ -21,6 +24,8 @@ from exchanges import WhitebitAPI
 
 from ..keyboards.menu import ConfigExchangeCallbackData
 from ..keyboards.menu import get_config_exchanges_keyboard
+from ..keyboards.menu import get_config_exchanges_liquidity_keyboard
+from ..keyboards.menu import SetExchangeLiquidityLimitCallbackData
 
 
 exchange_mapping = {
@@ -37,13 +42,20 @@ exchange_mapping = {
 }
 
 logger = logging.getLogger(__name__)
+config = dotenv_values(".env")
 
 menu_router = Router()
+
+from aiogram.fsm.state import State
+from aiogram.fsm.state import StatesGroup
+
+
+class SetExchangeLiquidity(StatesGroup):
+    set_amount = State()
 
 
 @menu_router.message(F.text == "Balance💰")
 async def get_total_balance(message: Message):
-    config = dotenv_values(".env")
     info = ""
     total_balance = 0
     for name, exchange in exchange_mapping.items():
@@ -64,16 +76,58 @@ async def configure_exchanges(message: Message):
 
 
 @menu_router.message(F.text == "Limits 💸")
-async def show_exchanges_liquidity(message: Message):
+async def configure_exchanges_liquidity(message: Message):
     with Session() as session:
-        exchanges = session.query(Exchange)
+        exchanges = session.query(Exchange).filter(Exchange.active_buy)
 
-    exchanges_info = [f"{exchange.name}: <b>{exchange.max_liquid_amount}$</b>" for exchange in exchanges]
-    await message.answer("Exchanges Liquid 💸\n\n" + "\n".join(exchanges_info))
+    exchanges_info = [
+        ExchangeLiquidity(
+            exchange.id,
+            exchange.name,
+            exchange.max_liquid_amount,
+            exchange_mapping[exchange.name](config, {}, logger).get_balance(),
+        )
+        for exchange in exchanges
+    ]
+    await message.answer(
+        "Exchanges Liquid 💸\n\n",
+        reply_markup=get_config_exchanges_liquidity_keyboard(exchanges_info),
+    )
+
+
+@menu_router.callback_query(StateFilter(None), SetExchangeLiquidityLimitCallbackData.filter())
+async def configure_exchanges_liquidity_callback_query(
+    query: CallbackQuery,
+    callback_data: SetExchangeLiquidityLimitCallbackData,
+    state: FSMContext,
+):
+    await query.answer()
+    await query.message.reply(f"Set your liquidity for {callback_data.exchange_name}...")
+    await state.set_state(SetExchangeLiquidity.set_amount)
+    await state.set_data({"exchange_id": callback_data.exchange_id})
+
+
+@menu_router.message(SetExchangeLiquidity.set_amount)
+async def set_exchange_liquidity(message: Message, state: FSMContext):
+    amount = message.text
+    state_data = await state.get_data()
+    if amount.isnumeric():
+        with Session() as session:
+            (
+                session.query(Exchange)
+                .filter(Exchange.id == state_data["exchange_id"])
+                .update({"max_liquid_amount": amount})
+            )
+            session.commit()
+
+        await message.reply("Successfully set")
+        await state.clear()
+    else:
+        await message.reply("Please enter a number...")
 
 
 @menu_router.callback_query(ConfigExchangeCallbackData.filter())
-async def configure_exchange_callback_query(query: CallbackQuery, callback_data: ConfigExchangeCallbackData):
+async def configure_active_exchanges_callback_query(query: CallbackQuery, callback_data: ConfigExchangeCallbackData):
     await query.answer()
     with Session() as session:
         (
@@ -87,6 +141,6 @@ async def configure_exchange_callback_query(query: CallbackQuery, callback_data:
     await query.message.edit_text("Configure your exchanges...", reply_markup=reply_markup)
 
 
-@menu_router.callback_query(F.data.in_({"sell", "buy"}))
+@menu_router.callback_query(F.data == "not_clickable")
 async def configure_exchange_header_buttons(query: CallbackQuery):
     await query.answer()
