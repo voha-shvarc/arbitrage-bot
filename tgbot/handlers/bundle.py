@@ -166,6 +166,13 @@ async def withdraw_bundle_callback_query(query: CallbackQuery, callback_data: Wi
 @bundle_router.callback_query(CreateOrderCallbackData.filter())
 async def create_order_callback_query(query: CallbackQuery, callback_data: CreateOrderCallbackData):
     await query.answer()
+    if not callback_data.confirmed:
+        await query.message.edit_text(
+            query.message.html_text,
+            reply_markup=get_bundle_keyboard(callback_data.profit_bundle_id, buy_confirmed=True, buy_label="🔓"),
+            disable_web_page_preview=True,
+        )
+        return
 
     with Session() as session:
         bundle: ProfitBundle = (
@@ -202,33 +209,32 @@ async def create_order_callback_query(query: CallbackQuery, callback_data: Creat
         sell_price=pair_exchange_price[1],
         withdraw_cne=bundle.withdraw_coin_network_exchange,
     )
+    buy_label = "🛠️"
     try:
         price_analyzer.run()
     except Exception as e:
         logger.exception(e)
-        return
-
-    text = query.message.html_text
-    buy_label = "❌"
-    if price_analyzer.profit > BASE_USDT_PROFIT:
-        if pair_to_exchange.base_coin_precision is not None and pair_to_exchange.quote_coin_precision is not None:
-            try:
-                base_exchange.create_order(
-                    pair=bundle.pair,
-                    ccy_quantity=price_analyzer.user_based_coin_available_amount,
-                    ccy_precision=pair_to_exchange.base_coin_precision,
-                    price=price_analyzer.user_based_max_buy_price,
-                    price_precision=pair_to_exchange.quote_coin_precision,
-                )
-            except CreateOrderError:
-                pass
+    else:
+        if price_analyzer.profit > BASE_USDT_PROFIT:
+            if pair_to_exchange.base_coin_precision is not None and pair_to_exchange.quote_coin_precision is not None:
+                try:
+                    base_exchange.create_order(
+                        pair=bundle.pair,
+                        ccy_quantity=price_analyzer.user_based_coin_available_amount,
+                        ccy_precision=pair_to_exchange.base_coin_precision,
+                        price=price_analyzer.user_based_max_buy_price,
+                        price_precision=pair_to_exchange.quote_coin_precision,
+                    )
+                    buy_label = "✅"
+                except (CreateOrderError, Exception):
+                    pass
             else:
-                buy_label = "✅"
+                logger.error("Creating order. No precision info found")
         else:
-            logger.error("Creating order. No precision info found")
-
-    await query.message.edit_text(
-        text,
-        reply_markup=get_bundle_keyboard(callback_data.profit_bundle_id, buy_label=buy_label),
-        disable_web_page_preview=True,
-    )
+            buy_label = "💀"
+    finally:
+        await query.message.edit_text(
+            query.message.html_text,
+            reply_markup=get_bundle_keyboard(callback_data.profit_bundle_id, buy_label=buy_label),
+            disable_web_page_preview=True,
+        )
