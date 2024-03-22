@@ -148,6 +148,14 @@ class NetworkExchange:
 
         return cls(net_name, can_deposit, can_withdraw, withdraw_fee)
 
+    @classmethod
+    def from_digifinex(cls, data: dict):
+        net_name = data["chain"]
+        can_deposit = bool(data["deposit_status"])
+        can_withdraw = bool(data["withdraw_status"])
+        withdraw_fee = data["min_withdraw_fee"]
+
+        return cls(net_name, can_deposit, can_withdraw, withdraw_fee)
 
 @dataclass
 class CoinNetworkExchangeDC:
@@ -271,6 +279,12 @@ class CoinNetworkExchangeDC:
         networks = [NetworkExchange.from_xt(net_data) for net_data in data["supportChains"]]
 
         return cls(coin_name, "XT", networks, {})
+
+    @classmethod
+    def from_digifinex(cls, coin_name: str, chains_data: dict):
+        networks = [NetworkExchange.from_digifinex(net_data) for net_data in chains_data]
+
+        return cls(coin_name, "DigiFinex", networks, {})
 
 
 @dataclass

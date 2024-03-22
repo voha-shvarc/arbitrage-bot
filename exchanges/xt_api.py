@@ -133,7 +133,7 @@ class XTAPI(AbstractExchange):
 
     def get_coin_exchange_networks(self):
         for coin_data in self.public_request("GET", "/v4/public/wallet/support/currency").json():
-            yield CoinNetworkExchangeDC.from_mexc(coin_data)
+            yield CoinNetworkExchangeDC.from_xt(coin_data)
 
     def get_price(self, pair: Pair, limit=50) -> tuple[list[list[str]], list[list[str]]]:
         params = {"symbol": pair.underscored_name.lower(), "limit": limit}
@@ -258,11 +258,11 @@ class XTAPI(AbstractExchange):
     def get_deposit_address(self, cne: CoinNetworkExchange) -> DepositAddress:
         try:
             response = self.sign_request(
-                "POST",
+                "GET",
                 "/v4/deposit/address",
                 params={
                     "currency": cne.coin.name.lower(),
-                    "network": cne.network.name,
+                    "chain": cne.network.name,
                 },
             )
         except Exception as e:
