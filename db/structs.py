@@ -139,6 +139,15 @@ class NetworkExchange:
 
         return cls(net_name, can_deposit, can_withdraw, withdraw_fee, confirmations_needed, plain_name)
 
+    @classmethod
+    def from_orangex(cls, data: dict):
+        net_name = data["main_chain"]
+        can_deposit = data["deposit_status"]
+        can_withdraw = data["withdraw_status"]
+        withdraw_fee = float(data["withdraw_fee"])
+        confirmations_needed = data["token_confirmation"]
+
+        return cls(net_name, can_deposit, can_withdraw, withdraw_fee, confirmations_needed)
 
 @dataclass
 class CoinNetworkExchangeDC:
@@ -255,6 +264,13 @@ class CoinNetworkExchangeDC:
         networks = [NetworkExchange.from_poloniex(net_data) for net_data in data["networkList"]]
 
         return cls(coin_name, "Poloniex", networks, {})
+
+    @classmethod
+    def from_orangex(cls, data: dict):
+        coin_name = data["coin_type"]
+        networks = [NetworkExchange.from_orangex(net_data) for net_data in data["token_config_list"]]
+
+        return cls(coin_name, "OrangeX", networks, {})
 
 
 @dataclass
