@@ -117,7 +117,7 @@ def sync_coin_exchange_networks():
             )
         )
         session.query(CoinNetworkExchange).filter(CoinNetworkExchange.id.in_(subq)).update(
-            {"can_withdraw": False},
+            {"can_withdraw": False, "can_deposit": False},
             synchronize_session=False,
         )
 
