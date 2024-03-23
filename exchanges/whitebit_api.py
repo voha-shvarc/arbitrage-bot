@@ -4,6 +4,7 @@ from typing import List
 
 from whitebit import MainAccountClient
 from whitebit import TradeMarketClient
+from whitebit import TradeAccountClient
 from whitebit.client import _create_uri
 
 from abstract import AbstractExchange
@@ -30,6 +31,7 @@ class WhitebitAPI(AbstractExchange):
         api_key = config["WHITEBIT_API_KEY"]
         api_secret = config["WHITEBIT_API_SECRET"]
         self.account_client = MainAccountClient(api_key, api_secret)
+        self.trade_account_client = TradeAccountClient(api_key, api_secret)
         self.market_client = TradeMarketClient(api_key, api_secret)
 
     def get_trading_pairs(self) -> List[TradingPair]:
@@ -115,8 +117,9 @@ class WhitebitAPI(AbstractExchange):
         link = f"https://whitebit.com/withdraw?ticker={cne.coin.name}&network={cne.network.name}"
         return link
 
-    def get_balance(self) -> float:
-        return 0
+    def get_balance(self, coin_name: str = "USDT") -> float:
+        data = self.trade_account_client.get_balance(coin_name)
+        return float(data["available"])
 
     def get_deposit_address(self, cne: CoinNetworkExchange) -> DepositAddress:
         uri = "/api/v4/main-account/address"
