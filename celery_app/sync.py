@@ -98,7 +98,9 @@ def sync_coin_exchange_networks():
                     and_(Exchange.name == "Mexc", Coin.name == "GMT"),
                     and_(Exchange.name == "Mexc", Coin.name == "MAX"),
                     and_(Exchange.name == "Mexc", Coin.name == "PAW"),
+                    and_(Exchange.name == "Mexc", Coin.name == "VT"),
                     and_(Exchange.name == "Bitget", Coin.name == "PIT"),
+                    and_(Exchange.name == "Bitget", Coin.name == "PMPY"),  # takes additional 7% for smart c
                     and_(Exchange.name.in_(["Mexc", "KuCoin"]), Coin.name == "HERO"),
                     and_(Exchange.name == "Poloniex", Coin.name == "AC"),
                     and_(Exchange.name == "Poloniex", Coin.name == "BOBO"),
@@ -110,11 +112,12 @@ def sync_coin_exchange_networks():
                     and_(Exchange.name == "Poloniex", Coin.name == "GPU"),
                     and_(Exchange.name == "Poloniex", Coin.name == "KNOB"),
                     and_(Exchange.name == "Poloniex", Coin.name == "WSB"),
+                    and_(Exchange.name == "Poloniex", Coin.name == "NGL"),
                 ),
             )
         )
         session.query(CoinNetworkExchange).filter(CoinNetworkExchange.id.in_(subq)).update(
-            {"can_withdraw": False, "can_deposit": False},
+            {"can_withdraw": False},
             synchronize_session=False,
         )
 
