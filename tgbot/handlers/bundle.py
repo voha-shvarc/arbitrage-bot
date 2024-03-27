@@ -88,7 +88,7 @@ async def recalculate_bundle_callback_query(query: CallbackQuery, callback_data:
 
     bundle = bundle_item.profit_bundle
     try:
-        message = get_bundle_message(bundle, bundle_item, callback_data.show_more)
+        message = get_bundle_message(bundle, bundle_item)
         await query.message.edit_text(
             message,
             reply_markup=get_bundle_keyboard(bundle.id),

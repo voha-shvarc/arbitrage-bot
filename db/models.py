@@ -149,8 +149,8 @@ class ProfitBundle(Base):
     )
     buy_price_snapshot = Column(ARRAY(String(50)))
     network_speed = Column(Float)
-    base_exchange_chart_change = Column(Float)
-    pair_exchange_chart_change = Column(Float)
+    base_exchange_chart_change = Column(Float, default=0)
+    pair_exchange_chart_change = Column(Float, default=0)
 
     created_at = db_created()
     updated_at = db_updated()
