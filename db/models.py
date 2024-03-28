@@ -174,7 +174,7 @@ class ProfitBundleItem(Base):
     __tablename__ = "profit_bundles_items"
 
     id = Column(Integer, primary_key=True)
-    profit_bundle_id = Column(ForeignKey("profit_bundles.id"))
+    profit_bundle_id = Column(ForeignKey("profit_bundles.id"), index=True)
 
     is_exhausted = Column(Boolean, default=False, server_default="false")
 
