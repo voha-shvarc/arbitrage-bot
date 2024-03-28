@@ -17,7 +17,7 @@ class WithdrawBundleCallbackData(CallbackData, prefix="withdraw"):
 class CreateOrderCallbackData(CallbackData, prefix="create_order"):
     profit_bundle_id: int
     confirmed: bool = False
-    set_limit: bool = False
+    set_limit: str = "False"
 
 
 def get_bundle_keyboard(
@@ -49,7 +49,7 @@ def get_bundle_keyboard(
 
     keyboard.button(
         text=f"Buy 🧮 {buy_limit_label}",
-        callback_data=CreateOrderCallbackData(profit_bundle_id=profit_bundle_id, set_limit=True),
+        callback_data=CreateOrderCallbackData(profit_bundle_id=profit_bundle_id, set_limit="True"),
     )
 
     keyboard.adjust(2)

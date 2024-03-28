@@ -237,7 +237,7 @@ async def create_order(profit_bundle_id: int, limit=None) -> str:
         return buy_label
 
 
-@bundle_router.callback_query(CreateOrderCallbackData.filter(F.data.set_limit == False))
+@bundle_router.callback_query(CreateOrderCallbackData.filter(F.set_limit == "False"))
 async def create_order_callback_query(query: CallbackQuery, callback_data: CreateOrderCallbackData):
     await query.answer()
 
@@ -252,7 +252,7 @@ async def create_order_callback_query(query: CallbackQuery, callback_data: Creat
         )
 
 
-@bundle_router.callback_query(StateFilter(None), CreateOrderCallbackData.filter(F.data.set_limit == True))
+@bundle_router.callback_query(StateFilter(None), CreateOrderCallbackData.filter(F.set_limit == "True"))
 async def set_amount_limited_order_callback_query(
         query: CallbackQuery,
         callback_data: CreateOrderCallbackData,
