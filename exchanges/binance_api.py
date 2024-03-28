@@ -162,6 +162,8 @@ class BinanceAPI(AbstractExchange):
             "quantity": f"{ccy_quantity:.{ccy_precision}f}",
             "price": f"{price:.{price_precision}f}",
         }
+        self.logger.error(f"{body = }")
+        return "test"
         try:
             self.client.new_order(**body)
         except ClientError as e:

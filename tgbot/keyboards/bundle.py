@@ -16,10 +16,17 @@ class WithdrawBundleCallbackData(CallbackData, prefix="withdraw"):
 
 class CreateOrderCallbackData(CallbackData, prefix="create_order"):
     profit_bundle_id: int
-    confirmed: bool
+    confirmed: bool = False
+    set_limit: bool = False
 
 
-def get_bundle_keyboard(profit_bundle_id, buy_confirmed: bool = False, buy_label: str = "", withdraw_label: str = ""):
+def get_bundle_keyboard(
+        profit_bundle_id,
+        buy_confirmed: bool = False,
+        buy_label: str = "",
+        withdraw_label: str = "",
+        buy_limit_label: str = ""
+):
     keyboard = InlineKeyboardBuilder()
 
     keyboard.button(
@@ -38,6 +45,11 @@ def get_bundle_keyboard(profit_bundle_id, buy_confirmed: bool = False, buy_label
     keyboard.button(
         text=f"Withdraw {withdraw_label}",
         callback_data=WithdrawBundleCallbackData(profit_bundle_id=profit_bundle_id),
+    )
+
+    keyboard.button(
+        text=f"Buy 🧮 {buy_limit_label}",
+        callback_data=CreateOrderCallbackData(profit_bundle_id=profit_bundle_id, set_limit=True),
     )
 
     keyboard.adjust(2)

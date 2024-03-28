@@ -1,5 +1,11 @@
 import logging
+from aiogram.types import Message
+from aiogram import F
+from aiogram.filters import StateFilter
 
+from aiogram.fsm.state import State
+from aiogram.fsm.state import StatesGroup
+from aiogram.fsm.context import FSMContext
 from aiogram import Router
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.types import CallbackQuery
@@ -55,6 +61,10 @@ exchange_mapping = {
 }
 
 BASE_USDT_PROFIT = 4  # 4 USDT
+
+
+class SetLimitedOrder(StatesGroup):
+    set_amount = State()
 
 
 @bundle_router.callback_query(RefreshBundleCallbackData.filter())
@@ -163,17 +173,7 @@ async def withdraw_bundle_callback_query(query: CallbackQuery, callback_data: Wi
     )
 
 
-@bundle_router.callback_query(CreateOrderCallbackData.filter())
-async def create_order_callback_query(query: CallbackQuery, callback_data: CreateOrderCallbackData):
-    await query.answer()
-    if not callback_data.confirmed:
-        await query.message.edit_text(
-            query.message.html_text,
-            reply_markup=get_bundle_keyboard(callback_data.profit_bundle_id, buy_confirmed=True, buy_label="🔓"),
-            disable_web_page_preview=True,
-        )
-        return
-
+async def create_order(profit_bundle_id: int, limit=None) -> str:
     with Session() as session:
         bundle: ProfitBundle = (
             session.query(ProfitBundle)
@@ -187,7 +187,7 @@ async def create_order_callback_query(query: CallbackQuery, callback_data: Creat
                 joinedload(ProfitBundle.base_exchange),
                 joinedload(ProfitBundle.pair_exchange),
             )
-            .get(callback_data.profit_bundle_id)
+            .get(profit_bundle_id)
         )
         pair_to_exchange: PairExchange = (
             session.query(PairExchange)
@@ -208,6 +208,7 @@ async def create_order_callback_query(query: CallbackQuery, callback_data: Creat
         buy_price=base_exchange_price[0],
         sell_price=pair_exchange_price[1],
         withdraw_cne=bundle.withdraw_coin_network_exchange,
+        custom_liquid_limit=limit,
     )
     buy_label = "🛠️"
     try:
@@ -233,8 +234,55 @@ async def create_order_callback_query(query: CallbackQuery, callback_data: Creat
         else:
             buy_label = "💀"
     finally:
-        await query.message.edit_text(
-            query.message.html_text,
-            reply_markup=get_bundle_keyboard(callback_data.profit_bundle_id, buy_label=buy_label),
-            disable_web_page_preview=True,
+        return buy_label
+
+
+@bundle_router.callback_query(CreateOrderCallbackData.filter(F.set_limit is False))
+async def create_order_callback_query(query: CallbackQuery, callback_data: CreateOrderCallbackData):
+    await query.answer()
+
+    if not callback_data.confirmed:
+        await query.message.edit_reply_markup(
+            reply_markup=get_bundle_keyboard(callback_data.profit_bundle_id, buy_confirmed=True, buy_label="🔓"),
         )
+    else:
+        buy_label = await create_order(callback_data.profit_bundle_id)
+        await query.message.edit_reply_markup(
+            reply_markup=get_bundle_keyboard(callback_data.profit_bundle_id, buy_label=buy_label),
+        )
+
+
+@bundle_router.callback_query(StateFilter(None), CreateOrderCallbackData.filter(F.set_limit is True))
+async def set_amount_limited_order_callback_query(
+        query: CallbackQuery,
+        callback_data: CreateOrderCallbackData,
+        state: FSMContext,
+):
+    await query.answer()
+
+    await query.message.reply("Set your buy limit...")
+    await state.set_state(SetLimitedOrder.set_amount)
+    await state.set_data(
+        {
+            "profit_bundle_id": callback_data.profit_bundle_id,
+            "inline_message_id": query.inline_message_id,
+        }
+    )
+
+
+@bundle_router.message(StateFilter(SetLimitedOrder.set_amount))
+async def create_limited_order(message: Message, state: FSMContext):
+    limit = message.text
+    state_data = await state.get_data()
+
+    if not limit.isnumeric():
+        await message.reply("Please enter a whole number...")
+    else:
+        profit_bundle_id = state_data["profit_bundle_id"]
+        buy_label = await create_order(profit_bundle_id, float(limit))
+
+        await message.bot.edit_message_reply_markup(
+            inline_message_id=state_data["inline_message_id"],
+            reply_markup=get_bundle_keyboard(profit_bundle_id, buy_limit_label=buy_label),
+        )
+        await state.clear()

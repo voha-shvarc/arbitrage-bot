@@ -156,6 +156,8 @@ class HuobiAPI(AbstractExchange):
             "amount": f"{ccy_quantity:.{ccy_precision}f}",
             "price": f"{price:.{price_precision}f}",
         }
+        self.logger.error(f"{body = }")
+        return "test"
         try:
             self.trade_client.create_spot_order(**body)
         except HuobiApiException as e:

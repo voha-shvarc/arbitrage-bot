@@ -23,10 +23,11 @@ class PriceAnalyzer:
         sell_price,
         withdraw_cne: CoinNetworkExchange,
         deposit_cne: Union[CoinNetworkExchange, None] = None,
+        custom_liquid_limit: float = None,
     ):
         self.withdraw_cne = withdraw_cne
         self.deposit_cne = deposit_cne
-        self.MAX_LIQUID_AMOUNT = withdraw_cne.exchange.max_liquid_amount
+        self.MAX_LIQUID_AMOUNT = custom_liquid_limit or withdraw_cne.exchange.max_liquid_amount
 
         self.exchange_commission = self.EXCHANGE_BUY_COMMISSION + self.EXCHANGE_SELL_COMMISSION
         self.buy_prices = buy_price

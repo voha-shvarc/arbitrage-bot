@@ -199,6 +199,8 @@ class OkxAPI(AbstractExchange):
             "sz": f"{ccy_quantity:.{ccy_precision}f}",
             "px": f"{price:.{price_precision}f}",
         }
+        self.logger.error(f"{body = }")
+        return "test"
         res = self.trade_client.place_order(**body)
         if res["code"] != "0":
             self.logger.error(f"[okx] error creating order {res['data'][0]['sMsg']}. {body = }")

@@ -166,6 +166,8 @@ class PoloniexAPI(AbstractExchange):
             "quantity": f"{ccy_quantity:.{ccy_precision}f}",
             "price": f"{price:.{price_precision}f}",
         }
+        self.logger.error(f"{body = }")
+        return "test"
         response = self.orders_client.create(**body)
 
         try:
