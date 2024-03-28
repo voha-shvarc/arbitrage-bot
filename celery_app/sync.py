@@ -111,10 +111,10 @@ def sync_coin_exchange_networks():
                     and_(Exchange.name == "Mexc", Coin.name == "PAW"),
                     and_(Exchange.name == "Mexc", Coin.name == "VT"),
                     and_(Exchange.name == "Mexc", Coin.name == "SQUAD"),
+                    and_(Exchange.name == "Mexc", Coin.name == "PUMP"),
+                    and_(Exchange.name.in_(["Mexc", "KuCoin"]), Coin.name == "HERO"),
                     and_(Exchange.name == "Bitget", Coin.name == "PIT"),
                     and_(Exchange.name == "Bitget", Coin.name == "PMPY"),  # takes additional 7% for smart c
-                    and_(Exchange.name.in_(["Bitget", "Poloniex"]), Coin.name == "PUMP"),
-                    and_(Exchange.name.in_(["Mexc", "KuCoin"]), Coin.name == "HERO"),
                     and_(Exchange.name == "Poloniex", Coin.name == "AC"),
                     and_(Exchange.name == "Poloniex", Coin.name == "BOBO"),
                     and_(Exchange.name == "Poloniex", Coin.name == "CLOSEDAI"),
