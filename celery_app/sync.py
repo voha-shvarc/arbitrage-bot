@@ -43,13 +43,15 @@ def sync_coin_exchange_networks():
                 if cne_dataclass.coin_name in existing_coins_mapping:
                     coin_id = existing_coins_mapping[cne_dataclass.coin_name]
                 else:
-                    coin_id, _ = get_or_create(session, Coin, name=cne_dataclass.coin_name).id
+                    coin, _ = get_or_create(session, Coin, name=cne_dataclass.coin_name)
+                    coin_id = coin.id
 
                 for i, network_dataclass in enumerate(cne_dataclass.networks):
                     if network_dataclass.name in existing_networks_mapping:
                         network_id = existing_networks_mapping[network_dataclass.name]
                     else:
-                        network_id, _ = get_or_create(session, Network, name=network_dataclass.name).id
+                        network, _ = get_or_create(session, Network, name=network_dataclass.name)
+                        network_id = network.id
 
                     coin_network_exchange = (
                         session.query(CoinNetworkExchange.id)
