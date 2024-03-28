@@ -160,48 +160,27 @@ def send_tg_message(bundle_id):
             .order_by(ProfitBundleItem.created_at.desc())
             .first()
         )
-        if not bundle_item.user_based_profit >= BASE_USDT_PROFIT:
-            return
 
         bundle: ProfitBundle = bundle_item.profit_bundle
 
         message = get_bundle_message(bundle, bundle_item)
         config_tg = load_config(".env")
         bot = Bot(token=config_tg.tg_bot.token, parse_mode="HTML")
-        if bundle.base_exchange.active_buy and bundle.pair_exchange.active_sell:
-            send_message_tasks = [
-                send_message(
-                    bot,
-                    user_id,
-                    message,
-                    reply_markup=get_bundle_keyboard(bundle_id),
-                    disable_web_page_preview=True,
-                )
-                for user_id in config_tg.tg_bot.admin_ids
-            ]
-            if (
-                bundle_item.user_based_network_fee < bundle_item.user_based_profit
-                and bundle_item.user_based_percent_of_pair_trading_vol >= 0.007
-                and bundle_item.user_based_used_sell_orders >= 2
-            ):
-                bot_filtered = Bot(token=config_tg.tg_bot_filtered.token, parse_mode="HTML")
-                send_message_tasks.extend(
-                    [
-                        send_message(
-                            bot_filtered,
-                            user_id,
-                            message,
-                            reply_markup=get_bundle_keyboard(bundle_id),
-                            disable_web_page_preview=True,
-                        )
-                        for user_id in config_tg.tg_bot_filtered.admin_ids
-                    ],
-                )
+        send_message_tasks = [
+            send_message(
+                bot,
+                user_id,
+                message,
+                reply_markup=get_bundle_keyboard(bundle_id),
+                disable_web_page_preview=True,
+            )
+            for user_id in config_tg.tg_bot.admin_ids
+        ]
 
-            async def send_messages():
-                await asyncio.gather(*send_message_tasks)
+        async def send_messages():
+            await asyncio.gather(*send_message_tasks)
 
-            asyncio.run(send_messages())
+        asyncio.run(send_messages())
 
 
 @app.task
