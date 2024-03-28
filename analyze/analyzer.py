@@ -63,34 +63,42 @@ class ExchangePairAnalyzer:
             return
 
         if base_to_second_network_mapping and base_to_second_network_mapping[self.base_exchange.NAME].withdraw_fee:
-            buy_price_analyzer = PriceAnalyzer(
-                buy_price=base_exchange_price[0],
-                sell_price=pair_exchange_price[1],
-                withdraw_cne=base_to_second_network_mapping[self.base_exchange.NAME],
-                deposit_cne=base_to_second_network_mapping[self.pair_exchange.NAME],
-            )
-            try:
-                buy_price_analyzer.run()
-            except Exception as e:
-                error_log.exception(e)
+            withdraw_cne = base_to_second_network_mapping[self.base_exchange.NAME]
+            deposit_cne = base_to_second_network_mapping[self.pair_exchange.NAME]
 
-            if buy_price_analyzer.profit > self.BASE_USDT_PROFIT:
-                await self._start_monitoring(pair, buy_price_analyzer)
+            if withdraw_cne.exchange.active_buy and deposit_cne.exchange.active_sell:
+                buy_price_analyzer = PriceAnalyzer(
+                    buy_price=base_exchange_price[0],
+                    sell_price=pair_exchange_price[1],
+                    withdraw_cne=withdraw_cne,
+                    deposit_cne=deposit_cne
+                )
+                try:
+                    buy_price_analyzer.run()
+                except Exception as e:
+                    error_log.exception(e)
+
+                if buy_price_analyzer.user_based_profit > self.BASE_USDT_PROFIT:
+                    await self._start_monitoring(pair, buy_price_analyzer)
 
         if second_to_base_network_mapping and second_to_base_network_mapping[self.pair_exchange.NAME].withdraw_fee:
-            sell_price_analyzer = PriceAnalyzer(
-                buy_price=pair_exchange_price[0],
-                sell_price=base_exchange_price[1],
-                withdraw_cne=second_to_base_network_mapping[self.pair_exchange.NAME],
-                deposit_cne=second_to_base_network_mapping[self.base_exchange.NAME],
-            )
-            try:
-                sell_price_analyzer.run()
-            except Exception as e:
-                error_log.exception(e)
+            withdraw_cne = second_to_base_network_mapping[self.pair_exchange.NAME]
+            deposit_cne = second_to_base_network_mapping[self.base_exchange.NAME]
 
-            if sell_price_analyzer.profit > self.BASE_USDT_PROFIT:
-                await self._start_monitoring(pair, sell_price_analyzer, from_base=False)
+            if withdraw_cne.exchange.active_buy and deposit_cne.exchange.active_sell:
+                sell_price_analyzer = PriceAnalyzer(
+                    buy_price=pair_exchange_price[0],
+                    sell_price=base_exchange_price[1],
+                    withdraw_cne=withdraw_cne,
+                    deposit_cne=deposit_cne,
+                )
+                try:
+                    sell_price_analyzer.run()
+                except Exception as e:
+                    error_log.exception(e)
+
+                if sell_price_analyzer.user_based_profit > self.BASE_USDT_PROFIT:
+                    await self._start_monitoring(pair, sell_price_analyzer, from_base=False)
 
     async def run(self):
         """
@@ -192,35 +200,36 @@ class ExchangePairAnalyzer:
             and cne_mapping[self.base_exchange.NAME].can_deposit
         ]
 
-        if available_nets_to_transfer_from_base_to_second:
-            best_base_to_second_network = min(
-                available_nets_to_transfer_from_base_to_second,
-                key=lambda cne_mapping: (
-                    cne_mapping[self.base_exchange.NAME].confirmations_needed
-                    * cne_mapping[self.base_exchange.NAME].network.block_creation_time
-                )
-                if cne_mapping[self.base_exchange.NAME].confirmations_needed
-                and cne_mapping[self.base_exchange.NAME].network.block_creation_time
-                else cne_mapping[self.base_exchange.NAME].withdraw_fee,
-            )
-        else:
-            best_base_to_second_network = None
+        best_base_to_second_network = self._get_best_cne(
+            self.base_exchange.NAME,
+            available_nets_to_transfer_from_base_to_second
+        )
 
-        if available_nets_to_transfer_from_second_to_base:
-            best_second_to_base_network = min(
-                available_nets_to_transfer_from_second_to_base,
-                key=lambda cne_mapping: (
-                    cne_mapping[self.pair_exchange.NAME].confirmations_needed
-                    * cne_mapping[self.pair_exchange.NAME].network.block_creation_time
-                )
-                if cne_mapping[self.pair_exchange.NAME].confirmations_needed
-                and cne_mapping[self.pair_exchange.NAME].network.block_creation_time
-                else cne_mapping[self.pair_exchange.NAME].withdraw_fee,
-            )
-        else:
-            best_second_to_base_network = None
+        best_second_to_base_network = self._get_best_cne(
+            self.pair_exchange.NAME,
+            available_nets_to_transfer_from_second_to_base
+        )
 
         return best_base_to_second_network, best_second_to_base_network
+
+    @staticmethod
+    def _get_best_cne(
+        exchange_name: str,
+        available_cne_mapping: list[dict[str, CoinNetworkExchange]]
+    ) -> Union[dict[str, CoinNetworkExchange], None]:
+        if not available_cne_mapping:
+            return None
+
+        best_cne = min(
+            available_cne_mapping,
+            key=lambda cne_mapping: (
+                    cne_mapping[exchange_name].confirmations_needed
+                    * cne_mapping[exchange_name].network.block_creation_time
+            )
+            if cne_mapping[exchange_name].confirmations_needed and cne_mapping[exchange_name].network.block_creation_time
+            else cne_mapping[exchange_name].withdraw_fee,
+        )
+        return best_cne
 
     async def _start_monitoring(self, pair, price_analyzer: PriceAnalyzer, from_base=True):
         if from_base:
