@@ -80,7 +80,13 @@ def get_exchanges_api_from_redis(redis_client):
 
 async def main():
     config = dotenv_values(".env")
-    redis_client = Redis(host=config["REDIS_HOST"], port=config["REDIS_PORT"], decode_responses=True)
+    redis_client = Redis(
+        host=config["REDIS_HOST"],
+        port=config["REDIS_PORT"],
+        username="default",
+        password=config["REDIS_PASSWORD"],
+        decode_responses=True
+    )
 
     while True:
         start = time.time()
