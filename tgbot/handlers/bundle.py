@@ -265,7 +265,8 @@ async def set_amount_limited_order_callback_query(
     await state.set_data(
         {
             "profit_bundle_id": callback_data.profit_bundle_id,
-            "inline_message_id": query.inline_message_id,
+            "chat_id": query.message.chat.id,
+            "message_id": query.message.message_id,
         }
     )
 
@@ -282,7 +283,8 @@ async def create_limited_order(message: Message, state: FSMContext):
         buy_label = await create_order(profit_bundle_id, float(limit))
 
         await message.bot.edit_message_reply_markup(
-            inline_message_id=state_data["inline_message_id"],
+            chat_id=state_data["chat_id"],
+            message_id=state_data["message_id"],
             reply_markup=get_bundle_keyboard(profit_bundle_id, buy_limit_label=buy_label),
         )
         await state.clear()
