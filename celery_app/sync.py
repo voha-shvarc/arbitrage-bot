@@ -34,21 +34,32 @@ def sync_coin_exchange_networks():
         for exchange_api in EXCHANGES:
             print(f"Syncing {exchange_api.NAME}...")
             exchange_api = exchange_api(config, {})
-            exchange, created = get_or_create(session, Exchange, name=exchange_api.NAME)
-            for cen_dataclass in exchange_api.get_coin_exchange_networks():
-                coin, created = get_or_create(session, Coin, name=cen_dataclass.coin_name)
-                for i, network_dataclass in enumerate(cen_dataclass.networks):
-                    network, created = get_or_create(session, Network, name=network_dataclass.name)
+            exchange, _ = get_or_create(session, Exchange, name=exchange_api.NAME)
+
+            existing_coins_mapping = {coin.name: coin.id for coin in session.query(Coin)}
+            existing_networks_mapping = {network.name: network.id for network in session.query(Network)}
+
+            for cne_dataclass in exchange_api.get_coin_exchange_networks():
+                if cne_dataclass.coin_name in existing_coins_mapping:
+                    coin_id = existing_coins_mapping[cne_dataclass.coin_name]
+                else:
+                    coin_id, _ = get_or_create(session, Coin, name=cne_dataclass.coin_name).id
+
+                for i, network_dataclass in enumerate(cne_dataclass.networks):
+                    if network_dataclass.name in existing_networks_mapping:
+                        network_id = existing_networks_mapping[network_dataclass.name]
+                    else:
+                        network_id, _ = get_or_create(session, Network, name=network_dataclass.name).id
 
                     coin_network_exchange = (
                         session.query(CoinNetworkExchange.id)
                         .filter(CoinNetworkExchange.exchange_id == exchange.id)
-                        .filter(CoinNetworkExchange.coin_id == coin.id)
-                        .filter(CoinNetworkExchange.network_id == network.id)
-                        .one_or_none()
+                        .filter(CoinNetworkExchange.coin_id == coin_id)
+                        .filter(CoinNetworkExchange.network_id == network_id)
+                        .first()
                     )
 
-                    new = CoinNetworkExchange(**cen_dataclass.to_db(exchange, coin, network, i))
+                    new = CoinNetworkExchange(**cne_dataclass.to_db(exchange, coin_id, network_id, i))
                     if not coin_network_exchange:
                         session.add(new)
                     else:
@@ -102,7 +113,7 @@ def sync_coin_exchange_networks():
                     and_(Exchange.name == "Mexc", Coin.name == "SQUAD"),
                     and_(Exchange.name == "Bitget", Coin.name == "PIT"),
                     and_(Exchange.name == "Bitget", Coin.name == "PMPY"),  # takes additional 7% for smart c
-                    and_(Exchange.name == "Bitget", Coin.name == "PUMP"),
+                    and_(Exchange.name.in_(["Bitget", "Poloniex"]), Coin.name == "PUMP"),
                     and_(Exchange.name.in_(["Mexc", "KuCoin"]), Coin.name == "HERO"),
                     and_(Exchange.name == "Poloniex", Coin.name == "AC"),
                     and_(Exchange.name == "Poloniex", Coin.name == "BOBO"),
@@ -130,26 +141,32 @@ def sync_coin_exchange_networks():
 @app.task
 def sync_pairs():
     with Session() as session:
-        quote_coin, created = get_or_create(session, Coin, name="USDT")
+        quote_coin, _ = get_or_create(session, Coin, name="USDT")
         for exchange_api in EXCHANGES:
             print(f"Syncing {exchange_api.NAME}...")
             exchange_api = exchange_api(config, {})
+            exchange, _ = get_or_create(session, Exchange, name=exchange_api.NAME)
 
-            exchange, created = get_or_create(session, Exchange, name=exchange_api.NAME)
-            pairs = exchange_api.get_trading_pairs()
-            for pair_data in pairs:
-                base_coin, created = get_or_create(session, Coin, name=pair_data.base_coin)
+            existing_coins = session.query(Coin.name) \
+                .select_from(PairExchange) \
+                .join(PairExchange.pair) \
+                .join(Pair.base_coin) \
+                .filter(PairExchange.exchange_id == exchange.id)
+            existing_coins = [coin.name for coin in existing_coins]
+
+            for pair_data in exchange_api.get_trading_pairs():
+                if pair_data.base_coin in existing_coins:
+                    continue
+
+                base_coin, _ = get_or_create(session, Coin, name=pair_data.base_coin)
                 pair, _ = get_or_create(session, Pair, base_coin_id=base_coin.id, quote_coin_id=quote_coin.id)
-                pair_exchange, created = get_or_create(
+                pair_exchange, _ = get_or_create(
                     session,
                     PairExchange,
                     defaults=pair_data.to_db(),
                     pair_id=pair.id,
                     exchange_id=exchange.id,
                 )
-                if not created:
-                    pair_exchange.base_coin_precision = pair_data.base_coin_precision
-                    pair_exchange.quote_coin_precision = pair_data.quote_coin_precision
 
         session.commit()
 

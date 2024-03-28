@@ -147,13 +147,13 @@ class CoinNetworkExchangeDC:
     networks: List[NetworkExchange]
     extra_info: dict[str:Any]
 
-    def to_db(self, exchange, coin, network, network_id):
-        net = self.networks[network_id]
+    def to_db(self, exchange, coin_id: int, network_id: int, network_index: int) -> dict:
+        net = self.networks[network_index]
         data = {
             "exchange_id": exchange.id,
-            "coin_id": coin.id,
-            "network_id": network.id,
-            "base_network_id": network.id,
+            "coin_id": coin_id,
+            "network_id": network_id,
+            "base_network_id": network_id,
             "can_deposit": net.can_deposit,
             "can_withdraw": net.can_withdraw,
             "withdraw_fee": net.withdraw_fee,

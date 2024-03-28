@@ -23,7 +23,7 @@ class Coin(Base):
     __tablename__ = "coins"
 
     id = Column(Integer, primary_key=True)
-    name = Column(String(30), nullable=False)
+    name = Column(String(30), nullable=False, index=True)
     created_at = db_created()
     updated_at = db_updated()
 
