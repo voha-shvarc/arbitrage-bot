@@ -48,7 +48,7 @@ def get_bundle_keyboard(
     )
 
     keyboard.button(
-        text=f"Buy 🧮 {buy_limit_label}",
+        text=f"Limit Buy {buy_limit_label}",
         callback_data=CreateOrderCallbackData(profit_bundle_id=profit_bundle_id, set_limit="True"),
     )
 

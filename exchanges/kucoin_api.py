@@ -221,8 +221,6 @@ class KuCoinAPI(AbstractExchange):
             "price": f"{price:.{price_precision}f}",
             "timeInForce": "FOK",
         }
-        self.logger.error(f"{body = }")
-        return "test"
         try:
             self.trade_client.create_limit_order(**body)
         except Exception as e:

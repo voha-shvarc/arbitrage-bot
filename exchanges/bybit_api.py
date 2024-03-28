@@ -150,8 +150,6 @@ class BybitAPI(AbstractExchange):
             "price": f"{price:.{price_precision}f}",
             "timeInForce": "FOK",
         }
-        self.logger.error(f"{body = }")
-        return "test"
         try:
             self.session.place_order(**body)
         except InvalidRequestError as e:

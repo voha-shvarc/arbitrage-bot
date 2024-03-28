@@ -206,8 +206,6 @@ class BitgetAPI(AbstractExchange):
             "quantity": f"{ccy_quantity:.{ccy_precision}f}",
             "price": f"{price:.{price_precision}f}",
         }
-        self.logger.error(f"{body = }")
-        return "test"
         try:
             self.order_client.placeOrder(params=body)
         except BitgetAPIException as e:
