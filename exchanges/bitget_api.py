@@ -159,8 +159,12 @@ class BitgetAPI(AbstractExchange):
 
     @classmethod
     def withdraw_link(cls, cne: CoinNetworkExchange) -> str:
-        """Has static link"""
-        link = "https://www.bitget.com/asset/withdraw"
+        coin_id = cne.extra_info.get("coin_id")
+        if not coin_id:
+            link = "https://www.bitget.com/asset/withdraw?coinId=2"
+        else:
+            link = f"https://www.bitget.com/asset/withdraw?coinId={coin_id}"
+
         return link
 
     def get_pair_chart_change(self, pair: Pair) -> float:
