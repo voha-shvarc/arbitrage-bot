@@ -281,8 +281,8 @@ class TradingPair:
 
 @dataclass
 class Price:
-    price: float
     amount_available: float
+    price: float = None
     partial_exhausted: bool = False
 
 
@@ -298,3 +298,11 @@ class ExchangeLiquidity:
     name: str
     current_limit: float
     balance: float
+
+
+@dataclass
+class ProfitBookOrder:
+    spread: float
+    coin_amount: float
+    buy_price: float
+    sell_price: float
