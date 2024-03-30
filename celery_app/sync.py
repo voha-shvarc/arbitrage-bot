@@ -77,15 +77,18 @@ def sync_coin_exchange_networks():
             .join(CoinNetworkExchange.base_network)
             .filter(
                 or_(
-                    and_(Exchange.name == "GateIO", Coin.name == "GTC"),
                     and_(Exchange.name == "ByBit", Coin.name == "VPAD"),
                     and_(Exchange.name == "ByBit", Coin.name == "NGL"),  # different from other exchanges
+                    and_(Exchange.name == "ByBit", Coin.name == "GPT"),  # differs from okx and gateio
+                    and_(Exchange.name == "ByBit", Coin.name == "TOMS"),  # on bybit available only in corea
+                    and_(Exchange.name == "Bitget", Coin.name == "ALT"),  # differs from binance and gateio
+                    and_(Exchange.name == "Bitget", Coin.name == "PIT"),
+                    and_(Exchange.name == "Bitget", Coin.name == "PMPY"),  # takes additional 7% for smart c
+                    and_(Exchange.name == "Bingx", Coin.name == "TORN"),
                     and_(
                         Exchange.name.in_(["ByBit", "Binance", "OKX"]),
                         Network.name == "Chiliz",
                     ),  # different contract addresses for this chain
-                    and_(Exchange.name == "ByBit", Coin.name == "GPT"),  # differs from okx and gateio
-                    and_(Exchange.name == "Bitget", Coin.name == "ALT"),  # differs from binance and gateio
                     Coin.name == "BABYDOGE",  # a lot of additional commission
                     Coin.name == "LSD",  # different coins
                     Coin.name == "PEPE2",  # kucoin asks not to deposit it, has different contract addresses
@@ -95,6 +98,7 @@ def sync_coin_exchange_networks():
                     Coin.name == "PLT",  # different coins
                     Coin.name == "TABOO",  # takes additional 4% for smart c
                     Coin.name == "BRISE",  # takes additional 10% for smart c
+                    Coin.name == "10SET",  # additional 8% for smart c
                     # after mex and bingx integration
                     and_(Exchange.name == "Mexc", Coin.name == "KT"),
                     and_(Exchange.name == "Mexc", Coin.name == "STC"),
@@ -115,8 +119,6 @@ def sync_coin_exchange_networks():
                     and_(Exchange.name == "Mexc", Coin.name == "SQUAD"),
                     and_(Exchange.name == "Mexc", Coin.name == "PUMP"),
                     and_(Exchange.name.in_(["Mexc", "KuCoin"]), Coin.name == "HERO"),
-                    and_(Exchange.name == "Bitget", Coin.name == "PIT"),
-                    and_(Exchange.name == "Bitget", Coin.name == "PMPY"),  # takes additional 7% for smart c
                     and_(Exchange.name == "Poloniex", Coin.name == "AC"),
                     and_(Exchange.name == "Poloniex", Coin.name == "BOBO"),
                     and_(Exchange.name == "Poloniex", Coin.name == "CLOSEDAI"),
@@ -128,7 +130,6 @@ def sync_coin_exchange_networks():
                     and_(Exchange.name == "Poloniex", Coin.name == "KNOB"),
                     and_(Exchange.name == "Poloniex", Coin.name == "WSB"),
                     and_(Exchange.name == "Poloniex", Coin.name == "NGL"),
-                    and_(Exchange.name == "Bingx", Coin.name == "TORN"),
                 ),
             )
         )
@@ -149,11 +150,13 @@ def sync_pairs():
             exchange_api = exchange_api(config, {})
             exchange, _ = get_or_create(session, Exchange, name=exchange_api.NAME)
 
-            existing_coins = session.query(Coin.name) \
-                .select_from(PairExchange) \
-                .join(PairExchange.pair) \
-                .join(Pair.base_coin) \
+            existing_coins = (
+                session.query(Coin.name)
+                .select_from(PairExchange)
+                .join(PairExchange.pair)
+                .join(Pair.base_coin)
                 .filter(PairExchange.exchange_id == exchange.id)
+            )
             existing_coins = [coin.name for coin in existing_coins]
 
             for pair_data in exchange_api.get_trading_pairs():
@@ -192,7 +195,7 @@ def _run_networks_mapping(session: Session):
         ],
         "DYM": ["DYM", "DYMEVM"],
         "Manta": ["Manta", "MANTA"],
-        "Bitcoin": ["BTC", "Bitcoin", "BRC20"],
+        "Bitcoin": ["BTC", "Bitcoin", "BRC20", "ARC20"],
         "Bitcoin Cash": ["BCH", "BitcoinCash"],
         "Bitcoin SV": ["BSV", "Bitcoin SV"],
         "Cardano": ["ADA", "Cardano"],
@@ -207,7 +210,7 @@ def _run_networks_mapping(session: Session):
         "Stellar": ["XLM", "Stellar Lumens"],
         "Tron": ["TRX", "TRX1", "TRC20"],
         "Zcash": ["ZEC", "Zcash"],
-        "Arbitrum": ["ARB", "ARBI", "Arbitrum One", "ARBEVM", "ARBIETH", "ARBITRUM", "ARC20"],
+        "Arbitrum": ["ARB", "ARBI", "Arbitrum One", "ARBEVM", "ARBIETH", "ARBITRUM"],
         "ARBINOVA": ["ARBINOVA", "ARBNOVA"],
         "Optimism": ["OP", "Optimism", "OPETH", "OPTETH", "OPTIMISM", "Optimism (V2)"],
         "Fantom": ["FTM", "Fantom", "FANTOM"],
