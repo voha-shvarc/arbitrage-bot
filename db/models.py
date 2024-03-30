@@ -50,6 +50,19 @@ class Exchange(Base):
     updated_at = db_updated()
 
 
+class Whitelist(Base):
+    __tablename__ = "whitelist"
+
+    id = Column(Integer, primary_key=True)
+    withdraw_exchange_id = Column(ForeignKey("exchanges.id"), index=True)
+    deposit_exchange_id = Column(ForeignKey("exchanges.id"), index=True)
+    base_network_id = Column(ForeignKey("networks.id"), index=True)
+
+    base_network = relationship("Network", uselist=False, foreign_keys=[base_network_id])
+    withdraw_exchange = relationship("Exchange", uselist=False, foreign_keys=[withdraw_exchange_id])
+    deposit_exchange = relationship("Exchange", uselist=False, foreign_keys=[deposit_exchange_id])
+
+
 class CoinNetworkExchange(Base):
     __tablename__ = "coin_network_exchange"
 
@@ -151,6 +164,7 @@ class ProfitBundle(Base):
     network_speed = Column(Float)
     base_exchange_chart_change = Column(Float, default=0)
     pair_exchange_chart_change = Column(Float, default=0)
+    is_whitelisted = Column(Boolean, server_default="False")
 
     created_at = db_created()
     updated_at = db_updated()

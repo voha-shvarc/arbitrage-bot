@@ -10,8 +10,21 @@ from db.structs import DepositAddress
 from db.structs import TradingPair
 
 
+class WithdrawStatus:
+    enabled = ""
+    whitelist = "📝"
+    disabled = "🛠"
+
+
+class DepositStatus:
+    enabled = ""
+    disabled = "📪"
+
+
 class AbstractExchange(ABC):
     NAME = None
+    withdraw_status = WithdrawStatus.whitelist
+    deposit_status = DepositStatus.enabled
 
     @abstractmethod
     def get_trading_pairs(self) -> List[TradingPair]:

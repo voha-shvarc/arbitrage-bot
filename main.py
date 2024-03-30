@@ -10,16 +10,7 @@ from sqlalchemy import or_
 from analyze.analyzer import ExchangePairAnalyzer
 from db.base import Session
 from db.models import Exchange
-from exchanges import BinanceAPI
-from exchanges import BingxAPI
-from exchanges import BitgetAPI
-from exchanges import BybitAPI
-from exchanges import HuobiAPI
-from exchanges import KuCoinAPI
-from exchanges import MexcAPI
-from exchanges import OkxAPI
-from exchanges import PoloniexAPI
-from exchanges import WhitebitAPI
+from exchanges import EXCHANGES_MAPPING
 
 
 log_file = "error.log"
@@ -36,20 +27,6 @@ log.setLevel(logging.DEBUG)
 handler = logging.FileHandler(log_file)
 handler.setFormatter(formatt)
 log.addHandler(handler)
-
-
-EXCHANGES_MAPPING = {
-    PoloniexAPI.NAME: PoloniexAPI,
-    BinanceAPI.NAME: BinanceAPI,
-    BybitAPI.NAME: BybitAPI,
-    HuobiAPI.NAME: HuobiAPI,
-    KuCoinAPI.NAME: KuCoinAPI,
-    WhitebitAPI.NAME: WhitebitAPI,
-    BitgetAPI.NAME: BitgetAPI,
-    BingxAPI.NAME: BingxAPI,
-    OkxAPI.NAME: OkxAPI,
-    MexcAPI.NAME: MexcAPI,
-}
 
 
 def get_exchanges_combinations():
@@ -85,7 +62,7 @@ async def main():
         port=config["REDIS_PORT"],
         username="default",
         password=config["REDIS_PASSWORD"],
-        decode_responses=True
+        decode_responses=True,
     )
 
     while True:

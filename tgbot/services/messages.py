@@ -1,31 +1,11 @@
 from datetime import datetime
 
+from abstract.abstract import AbstractExchange
+from abstract.abstract import WithdrawStatus
 from db.models import BundleStatus
+from db.models import ProfitBundle
 from db.models import ProfitBundleItem
-from exchanges import BinanceAPI
-from exchanges import BingxAPI
-from exchanges import BitgetAPI
-from exchanges import BybitAPI
-from exchanges import HuobiAPI
-from exchanges import KuCoinAPI
-from exchanges import MexcAPI
-from exchanges import OkxAPI
-from exchanges import PoloniexAPI
-from exchanges import WhitebitAPI
-
-
-exchange_mapping = {
-    BinanceAPI.NAME: BinanceAPI,
-    BybitAPI.NAME: BybitAPI,
-    HuobiAPI.NAME: HuobiAPI,
-    OkxAPI.NAME: OkxAPI,
-    KuCoinAPI.NAME: KuCoinAPI,
-    BitgetAPI.NAME: BitgetAPI,
-    WhitebitAPI.NAME: WhitebitAPI,
-    BingxAPI.NAME: BingxAPI,
-    MexcAPI.NAME: MexcAPI,
-    PoloniexAPI.NAME: PoloniexAPI,
-}
+from exchanges import EXCHANGES_MAPPING
 
 
 def format_number(num):
@@ -37,14 +17,14 @@ def format_number(num):
     return f"{num:.2f}{suffixes[suffix_index]}"
 
 
-def get_bundle_message(bundle, bundle_item: ProfitBundleItem) -> str:
+def get_bundle_message(bundle: ProfitBundle, bundle_item: ProfitBundleItem) -> str:
     if bundle.status == BundleStatus.in_progress:
         time_live = datetime.utcnow() - bundle.created_at
     else:
         time_live = bundle.updated_at - bundle.created_at
 
-    base_exchange = exchange_mapping[bundle.base_exchange.name]
-    pair_exchange = exchange_mapping[bundle.pair_exchange.name]
+    base_exchange: AbstractExchange = EXCHANGES_MAPPING[bundle.base_exchange.name]
+    pair_exchange: AbstractExchange = EXCHANGES_MAPPING[bundle.pair_exchange.name]
 
     base_ex_spot_link = base_exchange.spot_link(bundle.pair)
     base_ex_withdraw_link = base_exchange.withdraw_link(bundle.withdraw_coin_network_exchange)
@@ -78,10 +58,17 @@ def get_bundle_message(bundle, bundle_item: ProfitBundleItem) -> str:
     status = (
         f"🟢 Status: {bundle.status}" if bundle.status == BundleStatus.in_progress else f"🔴 Status: {bundle.status}"
     )
+
+    if base_exchange.withdraw_status == WithdrawStatus.whitelist:
+        whitelist_status = "✅ Whitelisted" if bundle.is_whitelisted else "🚫 Not whitelisted"
+    else:
+        whitelist_status = ""
+
     message = (
         f"<b>{bundle.base_exchange.name} -> {bundle.pair_exchange.name} | <code>{bundle_item.user_based_to_use_usdt:.2f}</code>$ "
         f"{bundle_item.user_based_profit:+.2f}$ ({bundle_item.user_based_avg_spread * 100:.2f}%)</b>\n\n"
-        f"<code>{bundle.pair.base_coin.name}</code>-<b>{bundle.pair.quote_coin.name}</b> | <b>{bundle.withdraw_coin_network_exchange.base_network.name}</b>\n\n"
+        f"<code>{bundle.pair.base_coin.name}</code>-<b>{bundle.pair.quote_coin.name}</b> | "
+        f"<b>{bundle.withdraw_coin_network_exchange.base_network.name}</b> {whitelist_status}\n\n"
         f"{base_exchange_price_section}\n\n"
         f"{pair_exchange_price_section}\n\n"
         f"{fees_section}\n\n"

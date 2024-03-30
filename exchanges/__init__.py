@@ -1,7 +1,6 @@
 from .okx_api import OkxAPI
 from .bybit_api import BybitAPI
 from .binance_api import BinanceAPI
-from .gateio_api import GateIOAPI
 from .huobi_api import HuobiAPI
 from .kucoin_api import KuCoinAPI
 from .bitget_api import BitgetAPI
@@ -9,3 +8,17 @@ from .whitebit_api import WhitebitAPI
 from .bingx_api import BingxAPI
 from .mexc_api import MexcAPI
 from .poloniex_api import PoloniexAPI
+
+
+EXCHANGES_MAPPING = {
+    BinanceAPI.NAME: BinanceAPI,
+    BybitAPI.NAME: BybitAPI,
+    HuobiAPI.NAME: HuobiAPI,
+    KuCoinAPI.NAME: KuCoinAPI,
+    WhitebitAPI.NAME: WhitebitAPI,
+    BitgetAPI.NAME: BitgetAPI,
+    BingxAPI.NAME: BingxAPI,
+    OkxAPI.NAME: OkxAPI,
+    PoloniexAPI.NAME: PoloniexAPI,
+    MexcAPI.NAME: MexcAPI,
+}

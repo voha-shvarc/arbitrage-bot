@@ -9,6 +9,7 @@ from abstract import AbstractExchange
 from abstract import NoPriceFound
 from abstract.abstract import CreateOrderError
 from abstract.abstract import DepositAddressError
+from abstract.abstract import WithdrawStatus
 from db.models import CoinNetworkExchange
 from db.models import Pair
 from db.structs import CoinNetworkExchangeDC
@@ -25,6 +26,7 @@ class BinanceAPI(AbstractExchange):
     NAME = "Binance"
     NOT_ALLOWED_STATUS = "BREAK"
     base_url = "https://api.binance.com"
+    withdraw_status = WithdrawStatus.disabled
 
     def __init__(self, config, connection, logger=None):
         self.connection = connection

@@ -7,6 +7,7 @@ from abstract import AbstractExchange
 from abstract.abstract import CreateOrderError
 from abstract.abstract import NoPriceFound
 from abstract.abstract import WithdrawError
+from abstract.abstract import WithdrawStatus
 from db.models import CoinNetworkExchange
 from db.models import Pair
 from db.structs import CoinNetworkExchangeDC
@@ -27,6 +28,7 @@ class PoloniexAPI(AbstractExchange):
     NAME = "Poloniex"
     ACCOUNT_ID = 292397646520455168
     base_url = "https://api.poloniex.com"
+    withdraw_status = WithdrawStatus.enabled
 
     def __init__(self, config, connection, logger=None):
         self.connection = connection

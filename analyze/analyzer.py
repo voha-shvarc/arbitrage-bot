@@ -24,6 +24,7 @@ from db.models import Pair
 from db.models import PairExchange
 from db.models import ProfitBundle
 from db.models import ProfitBundleItem
+from db.models import Whitelist
 
 from .price_analyzer import PriceAnalyzer
 
@@ -71,7 +72,7 @@ class ExchangePairAnalyzer:
                     buy_price=base_exchange_price[0],
                     sell_price=pair_exchange_price[1],
                     withdraw_cne=withdraw_cne,
-                    deposit_cne=deposit_cne
+                    deposit_cne=deposit_cne,
                 )
                 try:
                     buy_price_analyzer.run()
@@ -202,12 +203,12 @@ class ExchangePairAnalyzer:
 
         best_base_to_second_network = self._get_best_cne(
             self.base_exchange.NAME,
-            available_nets_to_transfer_from_base_to_second
+            available_nets_to_transfer_from_base_to_second,
         )
 
         best_second_to_base_network = self._get_best_cne(
             self.pair_exchange.NAME,
-            available_nets_to_transfer_from_second_to_base
+            available_nets_to_transfer_from_second_to_base,
         )
 
         return best_base_to_second_network, best_second_to_base_network
@@ -215,7 +216,7 @@ class ExchangePairAnalyzer:
     @staticmethod
     def _get_best_cne(
         exchange_name: str,
-        available_cne_mapping: list[dict[str, CoinNetworkExchange]]
+        available_cne_mapping: list[dict[str, CoinNetworkExchange]],
     ) -> Union[dict[str, CoinNetworkExchange], None]:
         if not available_cne_mapping:
             return None
@@ -223,10 +224,10 @@ class ExchangePairAnalyzer:
         best_cne = min(
             available_cne_mapping,
             key=lambda cne_mapping: (
-                    cne_mapping[exchange_name].confirmations_needed
-                    * cne_mapping[exchange_name].network.block_creation_time
+                cne_mapping[exchange_name].confirmations_needed * cne_mapping[exchange_name].network.block_creation_time
             )
-            if cne_mapping[exchange_name].confirmations_needed and cne_mapping[exchange_name].network.block_creation_time
+            if cne_mapping[exchange_name].confirmations_needed
+            and cne_mapping[exchange_name].network.block_creation_time
             else cne_mapping[exchange_name].withdraw_fee,
         )
         return best_cne
@@ -275,6 +276,15 @@ class ExchangePairAnalyzer:
             bundle.base_exchange_id = from_exchange.get_db_id()
             bundle.pair_exchange_id = to_exchange.get_db_id()
             bundle.network_speed = network_speed
+            bundle.is_whitelisted = session.query(
+                exists().where(
+                    and_(
+                        bundle.base_exchange_id == Whitelist.withdraw_exchange_id,
+                        bundle.pair_exchange_id == Whitelist.deposit_exchange_id,
+                        price_analyzer.withdraw_cne.base_network_id == Whitelist.base_network_id,
+                    ),
+                ),
+            ).scalar()
 
             bundle_item = ProfitBundleItem(**price_analyzer.to_db())
             bundle.items.append(bundle_item)

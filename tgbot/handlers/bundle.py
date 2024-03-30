@@ -1,14 +1,14 @@
 import logging
-from aiogram.types import Message
-from aiogram import F
-from aiogram.filters import StateFilter
 
-from aiogram.fsm.state import State
-from aiogram.fsm.state import StatesGroup
-from aiogram.fsm.context import FSMContext
+from aiogram import F
 from aiogram import Router
 from aiogram.exceptions import TelegramBadRequest
+from aiogram.filters import StateFilter
+from aiogram.fsm.context import FSMContext
+from aiogram.fsm.state import State
+from aiogram.fsm.state import StatesGroup
 from aiogram.types import CallbackQuery
+from aiogram.types import Message
 from dotenv import dotenv_values
 from sqlalchemy.orm import joinedload
 
@@ -23,16 +23,7 @@ from db.models import Pair
 from db.models import PairExchange
 from db.models import ProfitBundle
 from db.models import ProfitBundleItem
-from exchanges import BinanceAPI
-from exchanges import BingxAPI
-from exchanges import BitgetAPI
-from exchanges import BybitAPI
-from exchanges import HuobiAPI
-from exchanges import KuCoinAPI
-from exchanges import MexcAPI
-from exchanges import OkxAPI
-from exchanges import PoloniexAPI
-from exchanges import WhitebitAPI
+from exchanges import EXCHANGES_MAPPING
 
 from ..keyboards.bundle import CreateOrderCallbackData
 from ..keyboards.bundle import ForceRefreshBundleCallbackData
@@ -46,19 +37,6 @@ logger = logging.getLogger(__name__)
 config = dotenv_values(".env")
 
 bundle_router = Router()
-
-exchange_mapping = {
-    BinanceAPI.NAME: BinanceAPI,
-    BybitAPI.NAME: BybitAPI,
-    HuobiAPI.NAME: HuobiAPI,
-    OkxAPI.NAME: OkxAPI,
-    KuCoinAPI.NAME: KuCoinAPI,
-    BitgetAPI.NAME: BitgetAPI,
-    WhitebitAPI.NAME: WhitebitAPI,
-    BingxAPI.NAME: BingxAPI,
-    MexcAPI.NAME: MexcAPI,
-    PoloniexAPI.NAME: PoloniexAPI,
-}
 
 BASE_USDT_PROFIT = 4  # 4 USDT
 
@@ -99,11 +77,7 @@ async def recalculate_bundle_callback_query(query: CallbackQuery, callback_data:
     bundle = bundle_item.profit_bundle
     try:
         message = get_bundle_message(bundle, bundle_item)
-        await query.message.edit_text(
-            message,
-            reply_markup=get_bundle_keyboard(bundle.id),
-            disable_web_page_preview=True,
-        )
+        await query.message.edit_text(message, disable_web_page_preview=True)
     except TelegramBadRequest:
         logger.warning(f"Bundle (id={bundle.id}) haven't changed...")
 
@@ -111,16 +85,13 @@ async def recalculate_bundle_callback_query(query: CallbackQuery, callback_data:
 @bundle_router.callback_query(ForceRefreshBundleCallbackData.filter())
 async def force_recalculate_bundle_callback_query(query: CallbackQuery, callback_data: ForceRefreshBundleCallbackData):
     await query.answer()
-    bundle_id = callback_data.profit_bundle_id
 
-    text = query.message.html_text
     await query.message.edit_text(
-        f"{text}\n\nUpdating...",
-        reply_markup=get_bundle_keyboard(bundle_id),
+        f"{query.message.html_text}\n\nUpdating...",
         disable_web_page_preview=True,
     )
 
-    monitor_bundle.apply_async(args=[bundle_id, True])
+    monitor_bundle.apply_async(args=[callback_data.profit_bundle_id, True])
 
 
 @bundle_router.callback_query(WithdrawBundleCallbackData.filter())
@@ -147,10 +118,9 @@ async def withdraw_bundle_callback_query(query: CallbackQuery, callback_data: Wi
             .get(bundle_id)
         )
 
-    base_exchange: AbstractExchange = exchange_mapping[bundle.base_exchange.name](config, {}, logger)
-    pair_exchange: AbstractExchange = exchange_mapping[bundle.pair_exchange.name](config, {}, logger)
+    base_exchange: AbstractExchange = EXCHANGES_MAPPING[bundle.base_exchange.name](config, {}, logger)
+    pair_exchange: AbstractExchange = EXCHANGES_MAPPING[bundle.pair_exchange.name](config, {}, logger)
 
-    text = query.message.html_text
     withdraw_label = "✅"
     try:
         deposit_address = pair_exchange.get_deposit_address(bundle.deposit_coin_network_exchange)
@@ -166,10 +136,13 @@ async def withdraw_bundle_callback_query(query: CallbackQuery, callback_data: Wi
             )
             withdraw_label = "❌"
 
-    await query.message.edit_text(
-        text,
-        reply_markup=get_bundle_keyboard(callback_data.profit_bundle_id, withdraw_label=withdraw_label),
-        disable_web_page_preview=True,
+    await query.message.edit_reply_markup(
+        reply_markup=get_bundle_keyboard(
+            callback_data.profit_bundle_id,
+            base_exchange.NAME,
+            pair_exchange.NAME,
+            withdraw_label=withdraw_label,
+        ),
     )
 
 
@@ -198,8 +171,8 @@ async def create_order(profit_bundle_id: int, limit=None) -> str:
             .first()
         )
 
-    base_exchange = exchange_mapping[bundle.base_exchange.name](config, {}, logger)
-    pair_exchange = exchange_mapping[bundle.pair_exchange.name](config, {}, logger)
+    base_exchange = EXCHANGES_MAPPING[bundle.base_exchange.name](config, {}, logger)
+    pair_exchange = EXCHANGES_MAPPING[bundle.pair_exchange.name](config, {}, logger)
 
     base_exchange_price = base_exchange.get_price(bundle.pair)
     pair_exchange_price = pair_exchange.get_price(bundle.pair)
@@ -233,8 +206,8 @@ async def create_order(profit_bundle_id: int, limit=None) -> str:
                 logger.error("Creating order. No precision info found")
         else:
             buy_label = "💀"
-    finally:
-        return buy_label
+
+    return buy_label
 
 
 @bundle_router.callback_query(CreateOrderCallbackData.filter(F.set_limit == "False"))
@@ -243,20 +216,31 @@ async def create_order_callback_query(query: CallbackQuery, callback_data: Creat
 
     if not callback_data.confirmed:
         await query.message.edit_reply_markup(
-            reply_markup=get_bundle_keyboard(callback_data.profit_bundle_id, buy_confirmed=True, buy_label="🔓"),
+            reply_markup=get_bundle_keyboard(
+                callback_data.profit_bundle_id,
+                callback_data.withdraw_exchange_name,
+                callback_data.deposit_exchange_name,
+                buy_confirmed=True,
+                buy_label="🔓",
+            ),
         )
     else:
         buy_label = await create_order(callback_data.profit_bundle_id)
         await query.message.edit_reply_markup(
-            reply_markup=get_bundle_keyboard(callback_data.profit_bundle_id, buy_label=buy_label),
+            reply_markup=get_bundle_keyboard(
+                callback_data.profit_bundle_id,
+                callback_data.withdraw_exchange_name,
+                callback_data.deposit_exchange_name,
+                buy_label=buy_label,
+            ),
         )
 
 
 @bundle_router.callback_query(StateFilter(None), CreateOrderCallbackData.filter(F.set_limit == "True"))
 async def set_amount_limited_order_callback_query(
-        query: CallbackQuery,
-        callback_data: CreateOrderCallbackData,
-        state: FSMContext,
+    query: CallbackQuery,
+    callback_data: CreateOrderCallbackData,
+    state: FSMContext,
 ):
     await query.answer()
 
@@ -265,9 +249,11 @@ async def set_amount_limited_order_callback_query(
     await state.set_data(
         {
             "profit_bundle_id": callback_data.profit_bundle_id,
+            "withdraw_exchange_name": callback_data.withdraw_exchange_name,
+            "deposit_exchange_name": callback_data.deposit_exchange_name,
             "chat_id": query.message.chat.id,
             "message_id": query.message.message_id,
-        }
+        },
     )
 
 
@@ -285,6 +271,11 @@ async def create_limited_order(message: Message, state: FSMContext):
         await message.bot.edit_message_reply_markup(
             chat_id=state_data["chat_id"],
             message_id=state_data["message_id"],
-            reply_markup=get_bundle_keyboard(profit_bundle_id, buy_limit_label=buy_label),
+            reply_markup=get_bundle_keyboard(
+                profit_bundle_id,
+                state_data["withdraw_exchange_name"],
+                state_data["deposit_exchange_name"],
+                buy_limit_label=buy_label,
+            ),
         )
         await state.clear()

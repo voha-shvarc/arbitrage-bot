@@ -14,6 +14,7 @@ from abstract import NoPriceFound
 from abstract.abstract import CreateOrderError
 from abstract.abstract import DepositAddressError
 from abstract.abstract import WithdrawError
+from abstract.abstract import WithdrawStatus
 from db.models import CoinNetworkExchange
 from db.models import Pair
 from db.structs import CoinNetworkExchangeDC
@@ -27,6 +28,7 @@ error_logger = getLogger("error")
 class MexcAPI(AbstractExchange):
     NAME = "Mexc"
     base_url = "https://api.mexc.com"
+    withdraw_status = WithdrawStatus.enabled
 
     def __init__(self, config, connection, logger=None):
         self.connection = connection

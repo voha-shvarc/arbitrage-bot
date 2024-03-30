@@ -10,6 +10,7 @@ from whitebit.client import _create_uri
 from abstract import AbstractExchange
 from abstract import NoPriceFound
 from abstract.abstract import DepositAddressError
+from abstract.abstract import WithdrawStatus
 from db.models import CoinNetworkExchange
 from db.models import Pair
 from db.structs import CoinNetworkExchangeDC
@@ -23,6 +24,7 @@ error_logger = getLogger("error")
 class WhitebitAPI(AbstractExchange):
     NAME = "Whitebit"
     base_url = "https://whitebit.com"
+    withdraw_status = WithdrawStatus.disabled
 
     def __init__(self, config, connection, logger=None):
         self.connection = connection

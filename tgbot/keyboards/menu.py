@@ -18,19 +18,20 @@ class SetExchangeLiquidityLimitCallbackData(CallbackData, prefix="set_liquidity_
     exchange_name: str
 
 
+class AddToWhitelistCallbackData(CallbackData, prefix="add_to_whitelist"):
+    withdraw_exchange_id: str
+    deposit_exchange_id: str
+
+
 def get_menu_keyboard():
     keyboard = ReplyKeyboardBuilder()
 
-    keyboard.button(
-        text="Balance💰",
-    )
-    keyboard.button(
-        text="Exchanges 🛒",
-    )
-    keyboard.button(
-        text="Limits 💸",
-    )
+    keyboard.button(text="Balance💰")
+    keyboard.button(text="Exchanges 🛒")
+    keyboard.button(text="Limits 💸")
+    keyboard.button(text="Whitelist 📝")
 
+    keyboard.adjust(2)
     return keyboard.as_markup(resize_keyboard=True)
 
 
@@ -96,4 +97,24 @@ def get_config_exchanges_liquidity_keyboard(exchanges_info: list[ExchangeLiquidi
         )
 
     keyboard.adjust(3)
+    return keyboard.as_markup()
+
+
+def get_whitelisting_exchanges_keyboard(exchanges: list[Exchange], withdraw_exchange_id: str = None):
+    keyboard = InlineKeyboardBuilder()
+
+    exchange_label = "Exchange 📕" if withdraw_exchange_id else "Exchange 📗"
+    keyboard.button(text=exchange_label, callback_data="not_clickable")
+
+    for exchange in exchanges:
+        callback_data = {
+            "withdraw_exchange_id": withdraw_exchange_id if withdraw_exchange_id else str(exchange.id),
+            "deposit_exchange_id": str(exchange.id) if withdraw_exchange_id else "",
+        }
+        keyboard.button(
+            text=exchange.name if str(exchange.id) != withdraw_exchange_id else f"{exchange.name } ✅",
+            callback_data=AddToWhitelistCallbackData(**callback_data),
+        )
+
+    keyboard.adjust(1)
     return keyboard.as_markup()

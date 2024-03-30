@@ -15,16 +15,7 @@ from db.models import CoinNetworkExchange
 from db.models import Pair
 from db.models import ProfitBundle
 from db.models import ProfitBundleItem
-from exchanges import BinanceAPI
-from exchanges import BingxAPI
-from exchanges import BitgetAPI
-from exchanges import BybitAPI
-from exchanges import HuobiAPI
-from exchanges import KuCoinAPI
-from exchanges import MexcAPI
-from exchanges import OkxAPI
-from exchanges import PoloniexAPI
-from exchanges import WhitebitAPI
+from exchanges import EXCHANGES_MAPPING
 from services.send_analytics_service import SendAnalyticsService
 from tgbot.config import load_config
 from tgbot.keyboards.bundle import get_bundle_keyboard
@@ -33,19 +24,6 @@ from tgbot.services.messages import get_bundle_message
 
 
 config = dotenv_values(".env")
-
-exchange_mapping = {
-    BinanceAPI.NAME: BinanceAPI,
-    BybitAPI.NAME: BybitAPI,
-    HuobiAPI.NAME: HuobiAPI,
-    OkxAPI.NAME: OkxAPI,
-    KuCoinAPI.NAME: KuCoinAPI,
-    BitgetAPI.NAME: BitgetAPI,
-    WhitebitAPI.NAME: WhitebitAPI,
-    BingxAPI.NAME: BingxAPI,
-    MexcAPI.NAME: MexcAPI,
-    PoloniexAPI.NAME: PoloniexAPI,
-}
 
 BASE_USDT_PROFIT = 4  # 4 USDT
 REFRESH_BASE_USDT_PROFIT = 2  # 2 USDT
@@ -71,8 +49,8 @@ def monitor_bundle(self: Task, bundle_id, force_refresh: bool = False):
             .get(bundle_id)
         )
 
-    base_exchange = exchange_mapping[bundle.base_exchange.name](config, {})
-    pair_exchange = exchange_mapping[bundle.pair_exchange.name](config, {})
+    base_exchange = EXCHANGES_MAPPING[bundle.base_exchange.name](config, {})
+    pair_exchange = EXCHANGES_MAPPING[bundle.pair_exchange.name](config, {})
 
     if bundle.buy_price_snapshot and not force_refresh:
         base_exchange_price = bundle.buy_price_snapshot, []
@@ -171,7 +149,7 @@ def send_tg_message(bundle_id):
                 bot,
                 user_id,
                 message,
-                reply_markup=get_bundle_keyboard(bundle_id),
+                reply_markup=get_bundle_keyboard(bundle_id, bundle.base_exchange.name, bundle.pair_exchange.name),
                 disable_web_page_preview=True,
             )
             for user_id in config_tg.tg_bot.admin_ids
@@ -198,8 +176,8 @@ def fill_up_bundle(bundle_id):
             .get(bundle_id)
         )
 
-        base_exchange = exchange_mapping[bundle.base_exchange.name](config, {})
-        pair_exchange = exchange_mapping[bundle.pair_exchange.name](config, {})
+        base_exchange = EXCHANGES_MAPPING[bundle.base_exchange.name](config, {})
+        pair_exchange = EXCHANGES_MAPPING[bundle.pair_exchange.name](config, {})
 
         bundle.base_exchange_trading_volume = base_exchange.get_pair_trading_volume(bundle.pair)
         bundle.pair_exchange_trading_volume = pair_exchange.get_pair_trading_volume(bundle.pair)
