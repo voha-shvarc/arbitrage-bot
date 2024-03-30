@@ -80,7 +80,7 @@ class PriceAnalyzer:
         profit = sum(
             [
                 profit_order.spread * profit_order.coin_amount * profit_order.sell_price
-                for profit_order in self.profit_orders
+                for profit_order in profit_orders
             ],
         )
         self.set_avg_values(profit_orders)
