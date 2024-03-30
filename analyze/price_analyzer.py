@@ -63,6 +63,7 @@ class PriceAnalyzer:
     def spot_fee(self):
         return self.coins_to_buy * self.exchange_commission
 
+    @property
     def profit(self):
         total_fee = self.withdraw_cne.withdraw_fee + self.spot_fee
         profit_orders = self.profit_orders.copy()
@@ -94,9 +95,9 @@ class PriceAnalyzer:
             sell_prices.add(profit_order.sell_price)
             spreads.add(profit_order.spread)
 
-        self.avg_buy_price = sum(buy_prices) / len(buy_prices)
-        self.avg_sell_price = sum(sell_prices) / len(sell_prices)
-        self.avg_spread = sum(spreads) / len(spreads)
+        self.avg_buy_price = sum(buy_prices) / len(buy_prices) if buy_prices else 0
+        self.avg_sell_price = sum(sell_prices) / len(sell_prices) if sell_prices else 0
+        self.avg_spread = sum(spreads) / len(spreads) if spreads else 0
 
     def set_user_based_data(self, buy_price: Price, sell_price: Price):
         self.user_based_profit = self.profit  # need to be calculated the first
