@@ -11,6 +11,8 @@ class RefreshBundleCallbackData(CallbackData, prefix="refresh"):
 
 class ForceRefreshBundleCallbackData(CallbackData, prefix="force_refresh"):
     profit_bundle_id: int
+    withdraw_exchange_name: str
+    deposit_exchange_name: str
 
 
 class WithdrawBundleCallbackData(CallbackData, prefix="withdraw"):

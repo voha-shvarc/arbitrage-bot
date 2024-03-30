@@ -77,7 +77,11 @@ async def recalculate_bundle_callback_query(query: CallbackQuery, callback_data:
     bundle = bundle_item.profit_bundle
     try:
         message = get_bundle_message(bundle, bundle_item)
-        await query.message.edit_text(message, disable_web_page_preview=True)
+        await query.message.edit_text(
+            message,
+            disable_web_page_preview=True,
+            reply_markup=get_bundle_keyboard(bundle.id, bundle.base_exchange.name, bundle.pair_exchange.name),
+        )
     except TelegramBadRequest:
         logger.warning(f"Bundle (id={bundle.id}) haven't changed...")
 
@@ -89,6 +93,11 @@ async def force_recalculate_bundle_callback_query(query: CallbackQuery, callback
     await query.message.edit_text(
         f"{query.message.html_text}\n\nUpdating...",
         disable_web_page_preview=True,
+        reply_markup=get_bundle_keyboard(
+            callback_data.profit_bundle_id,
+            callback_data.withdraw_exchange_name,
+            callback_data.deposit_exchange_name,
+        ),
     )
 
     monitor_bundle.apply_async(args=[callback_data.profit_bundle_id, True])
