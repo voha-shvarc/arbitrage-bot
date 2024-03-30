@@ -67,7 +67,11 @@ def get_bundle_keyboard(
 
     keyboard.button(
         text="Force Refresh",
-        callback_data=ForceRefreshBundleCallbackData(profit_bundle_id=profit_bundle_id),
+        callback_data=ForceRefreshBundleCallbackData(
+            profit_bundle_id=profit_bundle_id,
+            withdraw_exchange_name=withdraw_exchange_name,
+            deposit_exchange_name=deposit_exchange_name,
+        ),
     )
 
     withdraw_label = get_withdraw_status(withdraw_exchange_name, deposit_exchange_name, withdraw_label)
