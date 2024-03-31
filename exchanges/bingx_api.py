@@ -64,7 +64,7 @@ class BingxAPI(AbstractExchange):
 
     def get_price(self, pair: Pair, limit=30) -> tuple[list[list[str]], list[list[str]]]:
         response = self.client.depth(symbol=pair.dashed_name, limit=limit)
-        buy = response["asks"]
+        buy = response["asks"][::-1]
         sell = response["bids"]
         if not buy or not sell:
             raise NoPriceFound()
@@ -87,7 +87,7 @@ class BingxAPI(AbstractExchange):
             raise NoPriceFound()
 
         try:
-            buy = data["data"]["asks"]
+            buy = data["data"]["asks"][::-1]
             sell = data["data"]["bids"]
         except KeyError as e:
             self.logger.error(f"[bingx] {pair.default_name} - error parsing data {data =}\n{e}")

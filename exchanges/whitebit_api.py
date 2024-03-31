@@ -3,8 +3,8 @@ from logging import getLogger
 from typing import List
 
 from whitebit import MainAccountClient
-from whitebit import TradeMarketClient
 from whitebit import TradeAccountClient
+from whitebit import TradeMarketClient
 from whitebit.client import _create_uri
 
 from abstract import AbstractExchange
