@@ -67,8 +67,8 @@ def get_bundle_message(bundle: ProfitBundle, bundle_item: ProfitBundleItem) -> s
     exhausted_status = "🩸 Order Book is exhausted\n\n" if bundle_item.is_exhausted else ""
 
     message = (
-        f"<b>{bundle.base_exchange.name} -> {bundle.pair_exchange.name} | <code>{bundle_item.user_based_to_use_usdt:.2f}</code>$ "
-        f"{bundle_item.user_based_profit:+.2f}$ ({bundle_item.user_based_avg_spread * 100:.2f}%)</b>\n\n"
+        f"<b>{bundle.base_exchange.name} -> {bundle.pair_exchange.name} | "
+        f"<code>{bundle_item.user_based_to_use_usdt:.2f}</code>$ {bundle_item.user_based_profit:+.2f}$</b>\n\n"
         f"<code>{bundle.pair.base_coin.name}</code>-<b>{bundle.pair.quote_coin.name}</b> | "
         f"<b>{bundle.withdraw_coin_network_exchange.base_network.name}</b> {whitelist_status}\n\n"
         f"{exhausted_status}"

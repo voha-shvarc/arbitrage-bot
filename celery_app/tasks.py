@@ -69,7 +69,7 @@ def monitor_bundle(self: Task, bundle_id, force_refresh: bool = False):
         error_log.exception(e)
         return
 
-    if price_analyzer.profit > REFRESH_BASE_USDT_PROFIT and price_analyzer.avg_spread >= 0.005:
+    if price_analyzer.user_based_profit > REFRESH_BASE_USDT_PROFIT:
         with Session() as session:
             bundle_item = ProfitBundleItem(**price_analyzer.to_db())
             bundle_item.profit_bundle_id = bundle.id

@@ -24,14 +24,11 @@ class PriceAnalyzer:
         self.exchange_commission = self.EXCHANGE_BUY_COMMISSION + self.EXCHANGE_SELL_COMMISSION
         self.buy_prices = buy_price
         self.sell_prices = sell_price
-        self.avg_buy_price = 0
-        self.avg_sell_price = 0
         self.profit_orders: list[ProfitBookOrder] = []
 
         # general info
         self.to_use_usdt = 0
         self.coins_to_buy = 0
-        self.avg_spread = 0
 
         self.min_buy_price = 0
         self.max_buy_price = 0
@@ -46,7 +43,6 @@ class PriceAnalyzer:
 
         self.user_based_to_use_usdt = 0
         self.user_based_coin_available_amount = 0
-        self.user_based_avg_spread = 0
         self.user_based_spot_fee = 0
         self.user_based_network_fee = 0
         self.user_based_profit = 0
@@ -64,48 +60,37 @@ class PriceAnalyzer:
         return self.coins_to_buy * self.exchange_commission
 
     @property
+    def avg_buy_price(self) -> float:
+        return (self.max_buy_price + self.min_buy_price) / 2
+
+    @property
+    def avg_sell_price(self) -> float:
+        return (self.max_sell_price + self.min_sell_price) / 2
+
+    @property
     def profit(self):
         total_fee = self.withdraw_cne.withdraw_fee + self.spot_fee
         profit_orders = self.profit_orders.copy()
+        left_coins = self.coins_to_buy - total_fee
 
-        while profit_orders:
-            profit_book_order = profit_orders.pop()
-            if total_fee > profit_book_order.coin_amount:
-                total_fee -= profit_book_order.coin_amount
-            else:
-                profit_book_order.coin_amount -= total_fee
-                profit_orders.append(profit_book_order)
+        usdt_to_get = 0
+        while left_coins > 0:
+            profit_order = profit_orders.pop(0)
+            if profit_order.coin_amount > left_coins:
+                usdt_to_get += left_coins * profit_order.sell_price
                 break
 
-        profit = sum(
-            [
-                profit_order.spread * profit_order.coin_amount * profit_order.sell_price
-                for profit_order in profit_orders
-            ],
-        )
-        self.set_avg_values(profit_orders)
-        return profit
+            usdt_to_get += profit_order.coin_amount * profit_order.sell_price
+            left_coins -= profit_order.coin_amount
 
-    def set_avg_values(self, profit_orders):
-        buy_prices = set()
-        sell_prices = set()
-        spreads = set()
-        for profit_order in profit_orders:
-            buy_prices.add(profit_order.buy_price)
-            sell_prices.add(profit_order.sell_price)
-            spreads.add(profit_order.spread)
-
-        self.avg_buy_price = sum(buy_prices) / len(buy_prices) if buy_prices else 0
-        self.avg_sell_price = sum(sell_prices) / len(sell_prices) if sell_prices else 0
-        self.avg_spread = sum(spreads) / len(spreads) if spreads else 0
+        return usdt_to_get - self.to_use_usdt
 
     def set_user_based_data(self, buy_price: Price, sell_price: Price):
-        self.user_based_profit = self.profit  # need to be calculated the first
         self.user_based_coin_available_amount = self.coins_to_buy
         self.user_based_to_use_usdt = self.to_use_usdt
-        self.user_based_avg_spread = self.avg_spread
         self.user_based_spot_fee = self.spot_fee * self.avg_sell_price
         self.user_based_network_fee = self.withdraw_cne.withdraw_fee * self.avg_buy_price
+        self.user_based_profit = self.profit
 
         self.user_based_min_buy_price = self.min_buy_price
         self.user_based_max_buy_price = self.max_buy_price
@@ -211,10 +196,9 @@ class PriceAnalyzer:
             # general info
             "to_use_usdt": self.to_use_usdt,
             "to_use_base_ccy": self.coins_to_buy,
-            "profit": self.profit,
-            "avg_spread": self.avg_spread,
             "spot_fee": self.spot_fee * self.avg_sell_price,
             "network_fee": self.withdraw_cne.withdraw_fee * self.avg_buy_price,
+            "profit": self.profit,
             "base_exchange_max_price": self.max_buy_price,
             "base_exchange_min_price": self.min_buy_price,
             "pair_exchange_max_price": self.max_sell_price,
@@ -224,7 +208,6 @@ class PriceAnalyzer:
             # user based info
             "user_based_to_use_usdt": self.user_based_to_use_usdt,
             "user_based_to_use_base_ccy": self.user_based_coin_available_amount,
-            "user_based_avg_spread": self.user_based_avg_spread,
             "user_based_spot_fee": self.user_based_spot_fee,
             "user_based_network_fee": self.user_based_network_fee,
             "user_based_profit": self.user_based_profit,
