@@ -201,6 +201,11 @@ async def create_order(profit_bundle_id: int, limit=None) -> str:
         if price_analyzer.profit > BASE_USDT_PROFIT:
             if pair_to_exchange.base_coin_precision is not None and pair_to_exchange.quote_coin_precision is not None:
                 try:
+                    logger.info(
+                        f"Create order with {bundle.pair.default_name = };\n "
+                        f"{price_analyzer.user_based_coin_available_amount = }; {pair_to_exchange.base_coin_precision};\n"
+                        f"{price_analyzer.user_based_max_buy_price = }; {pair_to_exchange.quote_coin_precision}"
+                    )
                     base_exchange.create_order(
                         pair=bundle.pair,
                         ccy_quantity=price_analyzer.user_based_coin_available_amount,
@@ -209,7 +214,8 @@ async def create_order(profit_bundle_id: int, limit=None) -> str:
                         price_precision=pair_to_exchange.quote_coin_precision,
                     )
                     buy_label = "✅"
-                except (CreateOrderError, Exception):
+                except (CreateOrderError, Exception) as e:
+                    logger.error(e)
                     pass
             else:
                 logger.error("Creating order. No precision info found")
