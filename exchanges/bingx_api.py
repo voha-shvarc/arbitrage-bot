@@ -173,7 +173,7 @@ class BingxAPI(AbstractExchange):
             "network": cne.network.name,
             "address": deposit_address.address,
             "amount": amount,
-            "walletType": "1",
+            "walletType": 1,
         }
         if deposit_address.memo:
             body["addressTag"] = deposit_address.memo
