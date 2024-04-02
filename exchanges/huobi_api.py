@@ -53,6 +53,8 @@ class HuobiAPI(AbstractExchange):
                 exchange=self.NAME,
                 base_coin_precision=pair_info.amount_precision,
                 quote_coin_precision=pair_info.price_precision,
+                taker_fee=0.002,  # 0.2%
+                maker_fee=0.002,  # 0.2%
             )
             for pair_info in pairs_info
             if pair_info.state == "online"

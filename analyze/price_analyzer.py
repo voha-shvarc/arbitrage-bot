@@ -5,13 +5,13 @@ from db.structs import ProfitBookOrder
 
 class PriceAnalyzer:
     BASE_SPREAD = 0.004  # 0.4%
-    EXCHANGE_BUY_COMMISSION = 0.001  # 0.1%
-    EXCHANGE_SELL_COMMISSION = 0.001  # 0.1%
 
     def __init__(
         self,
         buy_price,
         sell_price,
+        spot_buy_fee: float,
+        spot_sell_fee: float,
         withdraw_cne: CoinNetworkExchange,
         deposit_cne: CoinNetworkExchange = None,
         custom_liquid_limit: float = None,
@@ -21,7 +21,8 @@ class PriceAnalyzer:
         self.MAX_LIQUID_AMOUNT = custom_liquid_limit or withdraw_cne.exchange.max_liquid_amount
 
         self.is_exhausted = False
-        self.exchange_commission = self.EXCHANGE_BUY_COMMISSION + self.EXCHANGE_SELL_COMMISSION
+        self.spot_buy_fee = spot_buy_fee
+        self.spot_sell_fee = spot_sell_fee
         self.buy_prices = buy_price
         self.sell_prices = sell_price
         self.profit_orders: list[ProfitBookOrder] = []
@@ -57,7 +58,7 @@ class PriceAnalyzer:
 
     @property
     def spot_fee(self):
-        return self.coins_to_buy * self.exchange_commission
+        return self.coins_to_buy * (self.spot_buy_fee + self.spot_sell_fee)
 
     @property
     def avg_buy_price(self) -> float:

@@ -138,9 +138,14 @@ async def withdraw_bundle_callback_query(query: CallbackQuery, callback_data: Wi
         withdraw_label = "❌"
     else:
         try:
-            base_exchange.withdraw(bundle.withdraw_coin_network_exchange, deposit_address)
+            if bundle.bought_ccy_quantity:
+                ccy_quantity_to_withdraw = bundle.bought_ccy_quantity
+            else:
+                ccy_quantity_to_withdraw = base_exchange.get_balance()
+
+            base_exchange.withdraw(bundle.withdraw_coin_network_exchange, ccy_quantity_to_withdraw, deposit_address)
         except Exception as e:
-            await query.message.reply(
+            logger.error(
                 f"Error proceeding withdraw. {e}. {deposit_address.address = }, {deposit_address.memo = }",
             )
             withdraw_label = "❌"
@@ -189,6 +194,8 @@ async def create_order(profit_bundle_id: int, limit=None) -> str:
     price_analyzer = PriceAnalyzer(
         buy_price=base_exchange_price[0],
         sell_price=pair_exchange_price[1],
+        spot_buy_fee=bundle.spot_buy_fee,
+        spot_sell_fee=bundle.spot_sell_fee,
         withdraw_cne=bundle.withdraw_coin_network_exchange,
         custom_liquid_limit=limit,
     )
@@ -204,7 +211,7 @@ async def create_order(profit_bundle_id: int, limit=None) -> str:
                     logger.info(
                         f"Create order with {bundle.pair.default_name = };\n "
                         f"{price_analyzer.user_based_coin_available_amount = }; {pair_to_exchange.base_coin_precision};\n"
-                        f"{price_analyzer.user_based_max_buy_price = }; {pair_to_exchange.quote_coin_precision}"
+                        f"{price_analyzer.user_based_max_buy_price = }; {pair_to_exchange.quote_coin_precision}",
                     )
                     base_exchange.create_order(
                         pair=bundle.pair,
@@ -217,6 +224,20 @@ async def create_order(profit_bundle_id: int, limit=None) -> str:
                 except (CreateOrderError, Exception) as e:
                     logger.error(e)
                     pass
+                finally:
+                    ccy_quantity_to_withdraw = (
+                        price_analyzer.user_based_coin_available_amount
+                        - price_analyzer.user_based_coin_available_amount * bundle.spot_buy_fee
+                    )
+                    with Session() as session:
+                        (
+                            session.query(ProfitBundle)
+                            .filter(ProfitBundle.id == profit_bundle_id)
+                            .update(
+                                {"bought_ccy_quantity": ccy_quantity_to_withdraw},
+                            )
+                        )
+                        session.commit()
             else:
                 logger.error("Creating order. No precision info found")
         else:

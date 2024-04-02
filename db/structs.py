@@ -3,7 +3,6 @@ from typing import Any
 from typing import List
 from typing import Union
 
-from gate_api.models.currency import Currency
 from huobi.constant import ChainDepositStatus
 from huobi.constant import ChainWithdrawStatus
 from huobi.model.generic import Chain
@@ -15,9 +14,13 @@ class NetworkExchange:
     name: str
     can_deposit: bool
     can_withdraw: bool
+    withdraw_min: float
     withdraw_fee: float
-    confirmations_needed: Union[int, float, None] = None
-    plain_name: Union[str, None] = None
+    withdraw_max: float = None
+    deposit_min: float = None
+    withdraw_precision: int = None
+    confirmations_needed: int = None
+    plain_name: str = None
 
     @classmethod
     def from_binance(cls, data):
@@ -26,8 +29,20 @@ class NetworkExchange:
         can_withdraw = data["withdrawEnable"]
         withdraw_fee = data["withdrawFee"]
         confirmations_needed = data["minConfirm"]
+        withdraw_min = float(data["withdrawMin"])
+        withdraw_max = float(data["withdrawMax"])
+        withdraw_precision = len(data["withdrawIntegerMultiple"]) - 2 if data["withdrawIntegerMultiple"] != "1" else 1
 
-        return cls(name, can_deposit, can_withdraw, withdraw_fee, confirmations_needed)
+        return cls(
+            name=name,
+            can_deposit=can_deposit,
+            can_withdraw=can_withdraw,
+            withdraw_fee=withdraw_fee,
+            withdraw_min=withdraw_min,
+            withdraw_max=withdraw_max,
+            withdraw_precision=withdraw_precision,
+            confirmations_needed=confirmations_needed,
+        )
 
     @classmethod
     def from_bybit(cls, data):
@@ -44,7 +59,18 @@ class NetworkExchange:
         except ValueError:
             confirmations_needed = 0
 
-        return cls(name, can_deposit, can_withdraw, withdraw_fee, confirmations_needed)
+        withdraw_min = float(data["withdrawMin"]) if data["withdrawMin"] else None
+        withdraw_precision = int(data["minAccuracy"])
+
+        return cls(
+            name=name,
+            can_deposit=can_deposit,
+            can_withdraw=can_withdraw,
+            withdraw_fee=withdraw_fee,
+            withdraw_min=withdraw_min,
+            withdraw_precision=withdraw_precision,
+            confirmations_needed=confirmations_needed,
+        )
 
     @classmethod
     def from_okx(cls, data):
@@ -53,16 +79,31 @@ class NetworkExchange:
         can_withdraw = data["canWd"]
         withdraw_fee = float(data["minFee"])
         confirmations_needed = int(data["minDepArrivalConfirm"])
+        withdraw_max = float(data["maxWd"])
+        withdraw_min = float(data["minWd"])
+        deposit_min = float(data["minDep"])
+        withdraw_precision = int(data["wdTickSz"])
 
-        return cls(name, can_deposit, can_withdraw, withdraw_fee, confirmations_needed, plain_name=data["chain"])
+        return cls(
+            name=name,
+            can_deposit=can_deposit,
+            can_withdraw=can_withdraw,
+            withdraw_fee=withdraw_fee,
+            withdraw_min=withdraw_min,
+            withdraw_max=withdraw_max,
+            deposit_min=deposit_min,
+            withdraw_precision=withdraw_precision,
+            confirmations_needed=confirmations_needed,
+            plain_name=data["chain"],
+        )
 
-    @classmethod
-    def from_gateio(cls, data: Currency):
-        name = data.chain
-        can_deposit = not data.deposit_disabled
-        can_withdraw = not data.withdraw_disabled
-
-        return cls(name, can_deposit, can_withdraw, 0)
+    # @classmethod
+    # def from_gateio(cls, data: Currency):
+    #     name = data.chain
+    #     can_deposit = not data.deposit_disabled
+    #     can_withdraw = not data.withdraw_disabled
+    #
+    #     return cls(name, can_deposit, can_withdraw, 0)
 
     @classmethod
     def from_huobi(cls, network: Chain):
@@ -71,26 +112,46 @@ class NetworkExchange:
         can_withdraw = network.withdrawStatus == ChainWithdrawStatus.ALLOWED
         withdraw_fee = network.transactFeeWithdraw
         confirmations_needed = network.numOfFastConfirmations
+        withdraw_max = network.maxWithdrawAmt
+        withdraw_min = network.minWithdrawAmt
+        deposit_min = network.minDepositAmt
+        withdraw_precision = network.withdrawPrecision
 
         return cls(
-            name.upper(),
-            can_deposit,
-            can_withdraw,
-            withdraw_fee,
-            confirmations_needed,
+            name=name.upper(),
+            can_deposit=can_deposit,
+            can_withdraw=can_withdraw,
+            withdraw_fee=withdraw_fee,
+            withdraw_min=withdraw_min,
+            withdraw_max=withdraw_max,
+            deposit_min=deposit_min,
+            withdraw_precision=withdraw_precision,
+            confirmations_needed=confirmations_needed,
             plain_name=network.chain,
         )
 
     @classmethod
-    def from_kucoin(cls, data):
+    def from_kucoin(cls, withdraw_precision: int, data: dict):
         net_name = data["chainName"]
         plain_name = data["chainId"]
         can_deposit = data["isDepositEnabled"]
         can_withdraw = data["isWithdrawEnabled"]
         withdraw_fee = data["withdrawalMinFee"]
         confirmations_needed = data["preConfirms"]
+        withdraw_min = float(data["withdrawalMinSize"])
+        deposit_min = float(data["depositMinSize"]) if data["depositMinSize"] else None
 
-        return cls(net_name, can_deposit, can_withdraw, withdraw_fee, confirmations_needed, plain_name)
+        return cls(
+            name=net_name,
+            can_deposit=can_deposit,
+            can_withdraw=can_withdraw,
+            withdraw_fee=withdraw_fee,
+            withdraw_min=withdraw_min,
+            deposit_min=deposit_min,
+            withdraw_precision=withdraw_precision,
+            confirmations_needed=confirmations_needed,
+            plain_name=plain_name,
+        )
 
     @classmethod
     def from_bitget(cls, data):
@@ -99,8 +160,18 @@ class NetworkExchange:
         can_withdraw = True if data["withdrawable"] == "true" else False
         withdraw_fee = float(data["withdrawFee"])
         confirmations_needed = int(data["depositConfirm"])
+        withdraw_min = float(data["minWithdrawAmount"])
+        deposit_min = float(data["minDepositAmount"])
 
-        return cls(net_name, can_deposit, can_withdraw, withdraw_fee, confirmations_needed)
+        return cls(
+            name=net_name,
+            can_deposit=can_deposit,
+            can_withdraw=can_withdraw,
+            withdraw_fee=withdraw_fee,
+            withdraw_min=withdraw_min,
+            deposit_min=deposit_min,
+            confirmations_needed=confirmations_needed,
+        )
 
     @classmethod
     def from_bingx(cls, data: dict):
@@ -109,8 +180,20 @@ class NetworkExchange:
         can_withdraw = data["withdrawEnable"]
         withdraw_fee = float(data["withdrawFee"])
         confirmations_needed = data["minConfirm"]
+        withdraw_min = float(data["withdrawMin"])
+        withdraw_max = float(data["withdrawMax"])
+        deposit_min = float(data["depositMin"])
 
-        return cls(net_name, can_deposit, can_withdraw, withdraw_fee, confirmations_needed)
+        return cls(
+            name=net_name,
+            can_deposit=can_deposit,
+            can_withdraw=can_withdraw,
+            withdraw_fee=withdraw_fee,
+            withdraw_min=withdraw_min,
+            withdraw_max=withdraw_max,
+            deposit_min=deposit_min,
+            confirmations_needed=confirmations_needed,
+        )
 
     @classmethod
     def from_mexc(cls, data: dict):
@@ -125,8 +208,19 @@ class NetworkExchange:
         can_withdraw = data["withdrawEnable"]
         withdraw_fee = float(data["withdrawFee"])
         confirmations_needed = data["minConfirm"]
+        withdraw_min = float(data["withdrawMin"])
+        withdraw_max = float(data["withdrawMax"])
 
-        return cls(net_name, can_deposit, can_withdraw, withdraw_fee, confirmations_needed, plain_name)
+        return cls(
+            name=net_name,
+            can_deposit=can_deposit,
+            can_withdraw=can_withdraw,
+            withdraw_fee=withdraw_fee,
+            withdraw_min=withdraw_min,
+            withdraw_max=withdraw_max,
+            confirmations_needed=confirmations_needed,
+            plain_name=plain_name,
+        )
 
     @classmethod
     def from_poloniex(cls, data: dict):
@@ -136,8 +230,19 @@ class NetworkExchange:
         can_withdraw = data["withdrawalEnable"]
         withdraw_fee = float(data["withdrawFee"])
         confirmations_needed = data["minConfirm"]
+        withdraw_min = float(data["withdrawMin"])
+        withdraw_precision = int(data["decimals"])
 
-        return cls(net_name, can_deposit, can_withdraw, withdraw_fee, confirmations_needed, plain_name)
+        return cls(
+            name=net_name,
+            can_deposit=can_deposit,
+            can_withdraw=can_withdraw,
+            withdraw_fee=withdraw_fee,
+            withdraw_min=withdraw_min,
+            withdraw_precision=withdraw_precision,
+            confirmations_needed=confirmations_needed,
+            plain_name=plain_name,
+        )
 
 
 @dataclass
@@ -156,11 +261,17 @@ class CoinNetworkExchangeDC:
             "base_network_id": network_id,
             "can_deposit": net.can_deposit,
             "can_withdraw": net.can_withdraw,
-            "withdraw_fee": net.withdraw_fee,
             "extra_info": self.extra_info,
             "confirmations_needed": net.confirmations_needed,
             "plain_network_name": net.plain_name,
+            "withdraw_min": net.withdraw_min,
+            "withdraw_max": net.withdraw_max,
+            "deposit_min": net.deposit_min,
+            "withdraw_precision": net.withdraw_precision,
         }
+        if net.withdraw_fee:
+            data["withdraw_fee"] = net.withdraw_fee
+
         return data
 
     @classmethod
@@ -184,14 +295,14 @@ class CoinNetworkExchangeDC:
 
         return cls(coin_name, "OKX", networks, {})
 
-    @classmethod
-    def from_gateio(cls, data: Currency):
-        coin_name = data.currency.split("_")[0]
-        networks = []
-        if data.chain:
-            networks.append(NetworkExchange.from_gateio(data))
-
-        return cls(coin_name, "GateIO", networks, {})
+    # @classmethod
+    # def from_gateio(cls, data: Currency):
+    #     coin_name = data.currency.split("_")[0]
+    #     networks = []
+    #     if data.chain:
+    #         networks.append(NetworkExchange.from_gateio(data))
+    #
+    #     return cls(coin_name, "GateIO", networks, {})
 
     @classmethod
     def from_huobi(cls, data: ReferenceCurrency):
@@ -206,7 +317,7 @@ class CoinNetworkExchangeDC:
     def from_kucoin(cls, data):
         coin_name = data["currency"]
         if data["chains"]:
-            networks = [NetworkExchange.from_kucoin(chain_data) for chain_data in data["chains"]]
+            networks = [NetworkExchange.from_kucoin(data["precision"], chain_data) for chain_data in data["chains"]]
         else:
             networks = []
 
@@ -227,8 +338,12 @@ class CoinNetworkExchangeDC:
                 net_name,
                 can_deposit=net_name in data["networks"].get("deposits", []),
                 can_withdraw=net_name in data["networks"].get("withdraws", []),
-                withdraw_fee=0,
                 confirmations_needed=confirmations,
+                withdraw_max=float(data["max_withdraw"]) if data["max_withdraw"] != "0" else None,
+                withdraw_min=float(data["min_withdraw"]) if data["min_withdraw"] != "0" else None,
+                deposit_min=float(data["min_deposit"]) if data["min_deposit"] != "0" else None,
+                withdraw_precision=data["currency_precision"],
+                withdraw_fee=0,
             )
             for net_name, confirmations in data["confirmations"].items()
         ]
@@ -264,6 +379,8 @@ class TradingPair:
     base_coin_precision: int
     quote_coin_precision: int
     exchange: str
+    taker_fee: float = 0.001  # 0.1%
+    maker_fee: float = 0.001  # 0.1%
 
     def to_standard(self):
         return f"{self.base_coin}{self.quote_coin}"
@@ -275,6 +392,8 @@ class TradingPair:
         data = {
             "base_coin_precision": self.base_coin_precision,
             "quote_coin_precision": self.quote_coin_precision,
+            "taker_fee": self.taker_fee,
+            "maker_fee": self.maker_fee,
         }
         return data
 

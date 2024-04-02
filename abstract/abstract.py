@@ -28,19 +28,23 @@ class AbstractExchange(ABC):
 
     @abstractmethod
     def get_trading_pairs(self) -> List[TradingPair]:
-        pass
+        raise NotImplementedError()
 
     @abstractmethod
     def get_coin_exchange_networks(self):
-        pass
+        raise NotImplementedError()
 
     @abstractmethod
-    async def get_price(self, pair: Pair, limit=10) -> tuple[list[list[str]], list[list[str]]]:
-        pass
+    def get_price(self, pair: Pair, limit=30) -> tuple[list[list[str]], list[list[str]]]:
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def async_get_price(self, pair: Pair, limit=10) -> tuple[list[list[str]], list[list[str]]]:
+        raise NotImplementedError()
 
     @abstractmethod
     def get_pair_trading_volume(self, pair: Pair) -> float:
-        pass
+        raise NotImplementedError()
 
     @classmethod
     def get_db_id(cls) -> int:
@@ -70,7 +74,7 @@ class AbstractExchange(ABC):
     def get_deposit_address(self, cne: CoinNetworkExchange) -> DepositAddress:
         raise NotImplementedError()
 
-    def withdraw(self, cne: CoinNetworkExchange, deposit_address: DepositAddress) -> bool:
+    def withdraw(self, cne: CoinNetworkExchange, ccy_quantity: float, deposit_address: DepositAddress) -> bool:
         raise NotImplementedError()
 
     def create_order(self, pair: Pair, ccy_quantity: float, ccy_precision: int, price: float, price_precision: int):

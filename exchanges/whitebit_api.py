@@ -45,9 +45,11 @@ class WhitebitAPI(AbstractExchange):
                 exchange=self.NAME,
                 base_coin_precision=int(pair["stockPrec"]),
                 quote_coin_precision=int(pair["moneyPrec"]),
+                taker_fee=float(pair["takerFee"]),
+                maker_fee=float(pair["makerFee"]),
             )
             for pair in pairs_info["result"]
-            if pair["money"] == "USDT"
+            if pair["money"] == "USDT" and pair["tradesEnabled"]
         ]
         return trading_pairs
 

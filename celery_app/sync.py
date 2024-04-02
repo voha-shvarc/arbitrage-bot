@@ -1,6 +1,7 @@
 from dotenv import dotenv_values
 from sqlalchemy import and_
 from sqlalchemy import or_
+from sqlalchemy.orm import joinedload
 
 from celery_app.conf import app
 from db.base import Session
@@ -11,30 +12,22 @@ from db.models import Network
 from db.models import Pair
 from db.models import PairExchange
 from db.utils import get_or_create
-from exchanges import BinanceAPI
-from exchanges import BingxAPI
-from exchanges import BitgetAPI
-from exchanges import BybitAPI
-from exchanges import HuobiAPI
+from exchanges import EXCHANGES_MAPPING
 from exchanges import KuCoinAPI
-from exchanges import MexcAPI
-from exchanges import OkxAPI
-from exchanges import PoloniexAPI
 from exchanges import WhitebitAPI
+from utils import grouper
 
 
 config = dotenv_values(".env")
-
-EXCHANGES = {BinanceAPI, BybitAPI, OkxAPI, HuobiAPI, KuCoinAPI, BitgetAPI, WhitebitAPI, BingxAPI, MexcAPI, PoloniexAPI}
 
 
 @app.task
 def sync_coin_exchange_networks():
     with Session() as session:
-        for exchange_api in EXCHANGES:
-            print(f"Syncing {exchange_api.NAME}...")
+        for exchange_name, exchange_api in EXCHANGES_MAPPING.items():
+            print(f"Syncing {exchange_name}...")
             exchange_api = exchange_api(config, {})
-            exchange, _ = get_or_create(session, Exchange, name=exchange_api.NAME)
+            exchange, _ = get_or_create(session, Exchange, name=exchange_name)
 
             existing_coins_mapping = {coin.name: coin.id for coin in session.query(Coin)}
             existing_networks_mapping = {network.name: network.id for network in session.query(Network)}
@@ -137,41 +130,6 @@ def sync_coin_exchange_networks():
             {"can_withdraw": False, "can_deposit": False},
             synchronize_session=False,
         )
-
-        session.commit()
-
-
-@app.task
-def sync_pairs():
-    with Session() as session:
-        quote_coin, _ = get_or_create(session, Coin, name="USDT")
-        for exchange_api in EXCHANGES:
-            print(f"Syncing {exchange_api.NAME}...")
-            exchange_api = exchange_api(config, {})
-            exchange, _ = get_or_create(session, Exchange, name=exchange_api.NAME)
-
-            existing_coins = (
-                session.query(Coin.name)
-                .select_from(PairExchange)
-                .join(PairExchange.pair)
-                .join(Pair.base_coin)
-                .filter(PairExchange.exchange_id == exchange.id)
-            )
-            existing_coins = [coin.name for coin in existing_coins]
-
-            for pair_data in exchange_api.get_trading_pairs():
-                if pair_data.base_coin in existing_coins:
-                    continue
-
-                base_coin, _ = get_or_create(session, Coin, name=pair_data.base_coin)
-                pair, _ = get_or_create(session, Pair, base_coin_id=base_coin.id, quote_coin_id=quote_coin.id)
-                pair_exchange, _ = get_or_create(
-                    session,
-                    PairExchange,
-                    defaults=pair_data.to_db(),
-                    pair_id=pair.id,
-                    exchange_id=exchange.id,
-                )
 
         session.commit()
 
@@ -312,3 +270,112 @@ def _run_networks_mapping(session: Session):
             {"base_network_id": base_net.id},
             synchronize_session=False,
         )
+
+
+@app.task
+def sync_pairs():
+    with Session() as session:
+        quote_coin, _ = get_or_create(session, Coin, name="USDT")
+        for exchange_name, exchange_api in EXCHANGES_MAPPING.items():
+            print(f"Syncing {exchange_name}...")
+            exchange_api = exchange_api(config, {})
+            exchange, _ = get_or_create(session, Exchange, name=exchange_name)
+
+            existing_coins = (
+                session.query(Coin.name)
+                .select_from(PairExchange)
+                .join(PairExchange.pair)
+                .join(Pair.base_coin)
+                .filter(PairExchange.exchange_id == exchange.id)
+            )
+            existing_coins = [coin.name for coin in existing_coins]
+
+            for pair_data in exchange_api.get_trading_pairs():
+                if pair_data.base_coin in existing_coins:
+                    continue
+
+                base_coin, _ = get_or_create(session, Coin, name=pair_data.base_coin)
+                pair, _ = get_or_create(session, Pair, base_coin_id=base_coin.id, quote_coin_id=quote_coin.id)
+                pair_exchange, _ = get_or_create(
+                    session,
+                    PairExchange,
+                    defaults=pair_data.to_db(),
+                    pair_id=pair.id,
+                    exchange_id=exchange.id,
+                )
+
+        session.commit()
+
+
+@app.task
+def sync_spot__withdraw_fees():
+    """Sync kucoin spot fees and whitebit withdraw fees"""
+    mapping = {}
+    kucoin_api = KuCoinAPI(config, {})
+    print(f"Syncing {kucoin_api.NAME}...")
+    with Session() as session:
+        pairs = (
+            session.query(PairExchange)
+            .join(PairExchange.exchange)
+            .filter(Exchange.name == KuCoinAPI.NAME)
+            .options(
+                joinedload(PairExchange.pair),
+                joinedload(PairExchange.pair).joinedload(Pair.base_coin),
+                joinedload(PairExchange.pair).joinedload(Pair.quote_coin),
+            )
+            .all()
+        )
+        for group in grouper(10, pairs):
+            symbols = ",".join([pair_exchange.pair.dashed_name for pair_exchange in group if pair_exchange is not None])
+            data = kucoin_api.account_client.get_actual_fee(symbols=symbols)
+            mapping.update(
+                {
+                    symbol["symbol"]: {
+                        "maker_fee": float(symbol["makerFeeRate"]),
+                        "taker_fee": float(symbol["takerFeeRate"]),
+                    }
+                    for symbol in data
+                },
+            )
+
+        update_mapping = [
+            {
+                "id": pair_exchange.id,
+                "taker_fee": mapping[pair_exchange.pair.dashed_name]["taker_fee"],
+                "maker_fee": mapping[pair_exchange.pair.dashed_name]["maker_fee"],
+            }
+            for pair_exchange in pairs
+        ]
+
+        session.bulk_update_mappings(PairExchange, update_mapping)
+        session.flush()
+        session.commit()
+
+    mapping = {}
+    whitebit_api = WhitebitAPI(config, {})
+    print(f"Syncing {whitebit_api.NAME}...")
+    with Session() as session:
+        data = whitebit_api.account_client.get_fee()
+        for ccy_info in data:
+            withdraw_fee = ccy_info["withdraw"]["fixed"]
+            mapping[ccy_info["ticker"]] = float(withdraw_fee)
+
+        coins = (
+            session.query(Coin.name, CoinNetworkExchange.id)
+            .select_from(Coin)
+            .join(CoinNetworkExchange)
+            .join(CoinNetworkExchange.exchange)
+            .filter(Exchange.name == WhitebitAPI.NAME)
+        )
+        update_mapping = [
+            {
+                "id": cne_id,
+                "withdraw_fee": mapping[coin_name],
+            }
+            for coin_name, cne_id in coins
+            if mapping.get(coin_name)
+        ]
+
+        session.bulk_update_mappings(CoinNetworkExchange, update_mapping)
+        session.flush()
+        session.commit()

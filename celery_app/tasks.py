@@ -34,7 +34,7 @@ error_log = logging.getLogger("error")
 @app.task(bind=True, max_retries=100)  # it takes 40 minutes to use all the retires
 def monitor_bundle(self: Task, bundle_id, force_refresh: bool = False):
     with Session() as session:
-        bundle = (
+        bundle: ProfitBundle = (
             session.query(ProfitBundle)
             .options(
                 joinedload(ProfitBundle.withdraw_coin_network_exchange),
@@ -61,6 +61,8 @@ def monitor_bundle(self: Task, bundle_id, force_refresh: bool = False):
     price_analyzer = PriceAnalyzer(
         buy_price=base_exchange_price[0],
         sell_price=pair_exchange_price[1],
+        spot_buy_fee=bundle.spot_buy_fee,
+        spot_sell_fee=bundle.spot_sell_fee,
         withdraw_cne=bundle.withdraw_coin_network_exchange,
     )
     try:

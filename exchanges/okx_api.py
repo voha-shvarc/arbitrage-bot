@@ -60,6 +60,7 @@ class OkxAPI(AbstractExchange):
                 exchange=self.NAME,
                 base_coin_precision=len(pair["lotSz"]) - 2 if pair["lotSz"] != "1" else 1,
                 quote_coin_precision=len(pair["tickSz"]) - 2 if pair["tickSz"] != "1" else 1,
+                maker_fee=0.0008,  # 0.08%
             )
             for pair in pairs_info["data"]
             if pair["quoteCcy"] == "USDT"
@@ -67,9 +68,6 @@ class OkxAPI(AbstractExchange):
         return trading_pairs
 
     def get_coin_exchange_networks(self):
-        # todo: there's option to speed up transaction by setting more fee amount
-        # todo: also minimal withdraw amount should also be considered as well as max withdraw amount
-        # todo: also minimal and max deposits
         for coin_data in self.funding_client.get_currencies()["data"]:
             yield CoinNetworkExchangeDC.from_okx(coin_data)
 

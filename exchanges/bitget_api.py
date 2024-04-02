@@ -62,6 +62,8 @@ class BitgetAPI(AbstractExchange):
                 exchange=self.NAME,
                 base_coin_precision=int(pair["quantityScale"]),
                 quote_coin_precision=int(pair["priceScale"]),
+                taker_fee=float(pair["takerFeeRate"]),
+                maker_fee=float(pair["makerFeeRate"]),
             )
             for pair in pairs_info["data"]
             if self._is_valid_pair(pair)
@@ -107,8 +109,8 @@ class BitgetAPI(AbstractExchange):
         try:
             buy = data["data"]["asks"]
             sell = data["data"]["bids"]
-        except KeyError as e:
-            self.logger.error(f"[bitget] {pair.default_name} - error parsing data {data = }\n{e}")
+        except (KeyError, TypeError) as e:
+            self.logger.error(f"[bitget] {pair.default_name} - error parsing data {data = }; {response.text}\n{e}")
             raise NoPriceFound()
 
         if not buy or not sell:

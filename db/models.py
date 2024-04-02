@@ -78,6 +78,10 @@ class CoinNetworkExchange(Base):
     extra_info = Column(JSONB, server_default="{}", nullable=False)
     confirmations_needed = Column(Integer)
     plain_network_name = Column(String(50))
+    withdraw_min = Column(Float)
+    withdraw_max = Column(Float)
+    deposit_min = Column(Float)
+    withdraw_precision = Column(Float)
 
     created_at = db_created()
     updated_at = db_updated()
@@ -134,6 +138,8 @@ class PairExchange(Base):
 
     base_coin_precision = Column(Integer)
     quote_coin_precision = Column(Integer)
+    maker_fee = Column(Float, server_default="0.001")
+    taker_fee = Column(Float, server_default="0.001")
     created_at = db_created()
     updated_at = db_updated()
 
@@ -165,6 +171,9 @@ class ProfitBundle(Base):
     base_exchange_chart_change = Column(Float, default=0)
     pair_exchange_chart_change = Column(Float, default=0)
     is_whitelisted = Column(Boolean, server_default="False")
+    bought_ccy_quantity = Column(Float, server_default="0")
+    spot_buy_fee = Column(Float, server_default="0.001")
+    spot_sell_fee = Column(Float, server_default="0.001")
 
     created_at = db_created()
     updated_at = db_updated()

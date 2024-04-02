@@ -76,6 +76,8 @@ class MexcAPI(AbstractExchange):
                 base_coin_precision=pair["baseAssetPrecision"],
                 quote_coin_precision=pair["quoteAssetPrecision"],
                 exchange=self.NAME,
+                taker_fee=float(pair["takerCommission"]),
+                maker_fee=float(pair["makerCommission"]),
             )
             for pair in data["symbols"]
             if pair["quoteAsset"] == "USDT" and pair["status"] == "ENABLED" and pair["isSpotTradingAllowed"]
@@ -190,13 +192,22 @@ class MexcAPI(AbstractExchange):
         else:
             return address
 
-    def withdraw(self, cne: CoinNetworkExchange, deposit_address: DepositAddress) -> None:
-        amount = self.get_balance(cne.coin.name)
+    def withdraw(
+        self,
+        cne: CoinNetworkExchange,
+        ccy_quantity_to_withdraw: float,
+        deposit_address: DepositAddress,
+    ) -> None:
+        if cne.withdraw_precision:
+            amount = f"{ccy_quantity_to_withdraw:.{cne.withdraw_precision}}"
+        else:
+            amount = str(ccy_quantity_to_withdraw)
+
         body = {
             "coin": cne.coin.name,
             "network": cne.plain_network_name,
             "address": deposit_address.address,
-            "amount": str(amount),
+            "amount": amount,
         }
         if deposit_address.memo:
             body["memo"] = deposit_address.memo

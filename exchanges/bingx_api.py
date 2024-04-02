@@ -46,7 +46,7 @@ class BingxAPI(AbstractExchange):
                 quote_coin_precision=self.__step_to_precision(pair["tickSize"]),
             )
             for pair in pairs_info["symbols"]
-            if pair["symbol"].split("-")[1] == "USDT"
+            if pair["symbol"].split("-")[1] == "USDT" and pair["status"]
         ]
         return trading_pairs
 
@@ -59,7 +59,8 @@ class BingxAPI(AbstractExchange):
             return len(precision) - 2
 
     def get_coin_exchange_networks(self):
-        for coin_data in self.client.get("/openApi/wallets/v1/capital/config/getall")["data"]:
+        response = self.client.get("/openApi/wallets/v1/capital/config/getall")
+        for coin_data in response["data"]:
             yield CoinNetworkExchangeDC.from_bingx(coin_data)
 
     def get_price(self, pair: Pair, limit=30) -> tuple[list[list[str]], list[list[str]]]:
@@ -156,8 +157,17 @@ class BingxAPI(AbstractExchange):
             self.logger.error(f"[bingx] empty deposit address data - {data}")
             raise DepositAddressError(f"empty deposit address data - {data}")
 
-    def withdraw(self, cne: CoinNetworkExchange, deposit_address: DepositAddress) -> None:
-        amount = self.get_balance(cne.coin.name)
+    def withdraw(
+        self,
+        cne: CoinNetworkExchange,
+        ccy_quantity_to_withdraw: float,
+        deposit_address: DepositAddress,
+    ) -> None:
+        if cne.withdraw_precision:
+            amount = f"{ccy_quantity_to_withdraw:.{cne.withdraw_precision}}"
+        else:
+            amount = str(ccy_quantity_to_withdraw)
+
         body = {
             "coin": cne.coin.name,
             "network": cne.network.name,
@@ -172,11 +182,11 @@ class BingxAPI(AbstractExchange):
             data = self.api_client.post("/openApi/wallets/v1/capital/withdraw/apply", params=body)
         except Exception as e:
             self.logger.exception(e)
-            raise WithdrawError(f"[bingx] unknown exception {e}") from e
+            raise WithdrawError(f"unknown exception {e}") from e
 
         if data["code"] != 0:
             msg = data["msg"]
-            self.logger.error(f"[bingx] error creating order - {data['msg']}")
+            self.logger.error(f"[bingx] error withdrawing - {data['msg']}")
             raise WithdrawError(msg)
 
     def create_order(self, pair: Pair, ccy_quantity: float, ccy_precision: int, price: float, price_precision: int):

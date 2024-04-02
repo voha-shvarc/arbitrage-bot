@@ -52,6 +52,8 @@ class PoloniexAPI(AbstractExchange):
                 base_coin_precision=int(pair_info["symbolTradeLimit"]["amountScale"]),
                 quote_coin_precision=int(pair_info["symbolTradeLimit"]["priceScale"]),
                 exchange=self.NAME,
+                taker_fee=0.002,  # 0.2%
+                maker_fee=0.002,  # 0.2%
             )
             for pair_info in response
             if pair_info["state"] == "NORMAL"
@@ -145,8 +147,17 @@ class PoloniexAPI(AbstractExchange):
         response = self.wallet_client.create_address(cne.plain_network_name)
         return DepositAddress(response["address"])
 
-    def withdraw(self, cne: CoinNetworkExchange, deposit_address: DepositAddress) -> bool:
-        amount = self.get_balance(cne.coin.name)
+    def withdraw(
+        self,
+        cne: CoinNetworkExchange,
+        ccy_quantity_to_withdraw: float,
+        deposit_address: DepositAddress,
+    ) -> None:
+        if cne.withdraw_precision:
+            amount = f"{ccy_quantity_to_withdraw:.{cne.withdraw_precision}}"
+        else:
+            amount = str(ccy_quantity_to_withdraw)
+
         body = {
             "currency": cne.coin.name,
             "network": cne.network.name,  # blockchain name

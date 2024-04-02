@@ -195,9 +195,18 @@ class KuCoinAPI(AbstractExchange):
         else:
             return address
 
-    def withdraw(self, cne: CoinNetworkExchange, deposit_address: DepositAddress) -> None:
-        amount = self.get_balance(cne.coin.name)
-        self.transfer(cne.coin.name, str(amount))
+    def withdraw(
+        self,
+        cne: CoinNetworkExchange,
+        ccy_quantity_to_withdraw: float,
+        deposit_address: DepositAddress,
+    ) -> None:
+        if cne.withdraw_precision:
+            amount = f"{ccy_quantity_to_withdraw:.{cne.withdraw_precision}}"
+        else:
+            amount = str(ccy_quantity_to_withdraw)
+        self.transfer(cne.coin.name, amount)
+
         body = {
             "currency": cne.coin.name,
             "chain": cne.plain_network_name,
