@@ -9,7 +9,7 @@ from db.models import CoinNetworkExchange
 @app.task
 def uncheck_outdated_cne():
     with Session() as session:
-        checked_lifetime = timedelta(days=3)
+        checked_lifetime = timedelta(days=7)
         (
             session.query(CoinNetworkExchange)
             .filter(
