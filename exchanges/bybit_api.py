@@ -38,8 +38,12 @@ class BybitAPI(AbstractExchange):
                 base_coin=pair["baseCoin"],
                 quote_coin=pair["quoteCoin"],
                 exchange=self.NAME,
-                base_coin_precision=len(pair["lotSizeFilter"]["basePrecision"]) - 2,
-                quote_coin_precision=len(pair["priceFilter"]["tickSize"]) - 2,
+                base_coin_precision=len(pair["lotSizeFilter"]["basePrecision"]) - 2
+                if pair["lotSizeFilter"]["basePrecision"] != "1"
+                else 0,
+                quote_coin_precision=len(pair["priceFilter"]["tickSize"]) - 2
+                if pair["priceFilter"]["tickSize"] != "1"
+                else 0,
             )
             for pair in pairs_info["result"]["list"]
             if pair["quoteCoin"] == "USDT"

@@ -49,8 +49,8 @@ class KuCoinAPI(AbstractExchange):
                 base_coin=pair["baseCurrency"],
                 quote_coin=pair["quoteCurrency"],
                 exchange=self.NAME,
-                base_coin_precision=len(pair["baseIncrement"]) - 2,
-                quote_coin_precision=len(pair["priceIncrement"]) - 2,
+                base_coin_precision=len(pair["baseIncrement"]) - 2 if pair["baseIncrement"] != "1" else 0,
+                quote_coin_precision=len(pair["priceIncrement"]) - 2 if pair["priceIncrement"] != "1" else 0,
             )
             for pair in pairs_info
             if self._is_valid_pair(pair)

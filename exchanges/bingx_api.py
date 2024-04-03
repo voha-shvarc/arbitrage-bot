@@ -52,6 +52,9 @@ class BingxAPI(AbstractExchange):
 
     @staticmethod
     def __step_to_precision(step: float) -> int:
+        if step == 1:
+            return 0
+
         precision = str(step)
         if "1e-" in precision:
             return int(precision[-2:])
