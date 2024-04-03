@@ -334,6 +334,7 @@ class ExchangePairAnalyzer:
             bundle.spot_buy_fee = price_analyzer.spot_buy_fee
             bundle.spot_sell_fee = price_analyzer.spot_sell_fee
             bundle.back_way_network_fee = price_analyzer.back_way_network_fee
+            bundle.is_checked = price_analyzer.withdraw_cne.is_checked and price_analyzer.deposit_cne.is_checked
             bundle.is_whitelisted = session.query(
                 exists().where(
                     and_(

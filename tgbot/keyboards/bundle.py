@@ -27,7 +27,13 @@ class CreateOrderCallbackData(CallbackData, prefix="create_order"):
     set_limit: str = "False"
 
 
-def get_withdraw_status(
+class CheckedBundleCallbackData(CallbackData, prefix="checked"):
+    profit_bundle_id: int
+    withdraw_exchange_name: str
+    deposit_exchange_name: str
+
+
+def _get_withdraw_status(
     withdraw_exchange_name: str,
     deposit_exchange_name: str,
     withdraw_label: str,
@@ -48,6 +54,8 @@ def get_bundle_keyboard(
     buy_label: str = "",
     withdraw_label: str = "",
     buy_limit_label: str = "",
+    force_refresh_label: str = "",
+    checked_label: str = "",
 ):
     keyboard = InlineKeyboardBuilder()
 
@@ -66,20 +74,27 @@ def get_bundle_keyboard(
     )
 
     keyboard.button(
-        text="Force Refresh",
+        text=f"Force Refresh {force_refresh_label}",
         callback_data=ForceRefreshBundleCallbackData(
             profit_bundle_id=profit_bundle_id,
             withdraw_exchange_name=withdraw_exchange_name,
             deposit_exchange_name=deposit_exchange_name,
         ),
     )
-
-    withdraw_label = get_withdraw_status(withdraw_exchange_name, deposit_exchange_name, withdraw_label)
+    withdraw_label = _get_withdraw_status(withdraw_exchange_name, deposit_exchange_name, withdraw_label)
     keyboard.button(
         text=f"Withdraw {withdraw_label}",
         callback_data=WithdrawBundleCallbackData(profit_bundle_id=profit_bundle_id),
     )
 
+    keyboard.button(
+        text=f"Checked {checked_label}",
+        callback_data=CheckedBundleCallbackData(
+            profit_bundle_id=profit_bundle_id,
+            withdraw_exchange_name=withdraw_exchange_name,
+            deposit_exchange_name=deposit_exchange_name,
+        ),
+    )
     keyboard.button(
         text=f"Limit Buy {buy_limit_label}",
         callback_data=CreateOrderCallbackData(

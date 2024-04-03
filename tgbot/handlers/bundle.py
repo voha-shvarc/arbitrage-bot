@@ -1,4 +1,5 @@
 import logging
+from datetime import date
 
 from aiogram import F
 from aiogram import Router
@@ -10,6 +11,7 @@ from aiogram.fsm.state import StatesGroup
 from aiogram.types import CallbackQuery
 from aiogram.types import Message
 from dotenv import dotenv_values
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import joinedload
 
 from abstract.abstract import AbstractExchange
@@ -25,6 +27,7 @@ from db.models import ProfitBundle
 from db.models import ProfitBundleItem
 from exchanges import EXCHANGES_MAPPING
 
+from ..keyboards.bundle import CheckedBundleCallbackData
 from ..keyboards.bundle import CreateOrderCallbackData
 from ..keyboards.bundle import ForceRefreshBundleCallbackData
 from ..keyboards.bundle import get_bundle_keyboard
@@ -90,17 +93,16 @@ async def recalculate_bundle_callback_query(query: CallbackQuery, callback_data:
 async def force_recalculate_bundle_callback_query(query: CallbackQuery, callback_data: ForceRefreshBundleCallbackData):
     await query.answer()
 
-    await query.message.edit_text(
-        f"{query.message.html_text}\n\nUpdating...",
-        disable_web_page_preview=True,
+    monitor_bundle.apply_async(args=[callback_data.profit_bundle_id, True])
+
+    await query.message.edit_reply_markup(
         reply_markup=get_bundle_keyboard(
             callback_data.profit_bundle_id,
             callback_data.withdraw_exchange_name,
             callback_data.deposit_exchange_name,
+            force_refresh_label="✅",
         ),
     )
-
-    monitor_bundle.apply_async(args=[callback_data.profit_bundle_id, True])
 
 
 @bundle_router.callback_query(WithdrawBundleCallbackData.filter())
@@ -315,3 +317,37 @@ async def create_limited_order(message: Message, state: FSMContext):
             ),
         )
         await state.clear()
+
+
+@bundle_router.callback_query(CheckedBundleCallbackData.filter())
+async def checked_bundle_callback_query(query: CallbackQuery, callback_data: CheckedBundleCallbackData):
+    await query.answer()
+    with Session() as session:
+        withdraw_cne_id, deposit_cne_id = (
+            session.query(ProfitBundle.withdraw_coin_network_exchange_id, ProfitBundle.deposit_coin_network_exchange_id)
+            .filter(ProfitBundle.id == callback_data.profit_bundle_id)
+            .first()
+        )
+
+        (
+            session.query(CoinNetworkExchange)
+            .filter(CoinNetworkExchange.id.in_([withdraw_cne_id, deposit_cne_id]))
+            .update(
+                {"is_checked": True, "checked_at": date.today()},
+            )
+        )
+        try:
+            session.commit()
+            checked_label = "✅"
+        except SQLAlchemyError as e:
+            logger.error(f"Error checking bundle {e}")
+            checked_label = "❌"
+
+        await query.message.edit_reply_markup(
+            reply_markup=get_bundle_keyboard(
+                callback_data.profit_bundle_id,
+                callback_data.withdraw_exchange_name,
+                callback_data.deposit_exchange_name,
+                checked_label=checked_label,
+            ),
+        )

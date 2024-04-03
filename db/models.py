@@ -1,6 +1,7 @@
 from sqlalchemy import ARRAY
 from sqlalchemy import Boolean
 from sqlalchemy import Column
+from sqlalchemy import Date
 from sqlalchemy import Float
 from sqlalchemy import ForeignKey
 from sqlalchemy import Integer
@@ -82,6 +83,8 @@ class CoinNetworkExchange(Base):
     withdraw_max = Column(Float)
     deposit_min = Column(Float)
     withdraw_precision = Column(Float)
+    is_checked = Column(Boolean, server_default="false", index=True)
+    checked_at = Column(Date, index=True)
 
     created_at = db_created()
     updated_at = db_updated()
@@ -175,6 +178,7 @@ class ProfitBundle(Base):
     spot_buy_fee = Column(Float, server_default="0.001")
     spot_sell_fee = Column(Float, server_default="0.001")
     back_way_network_fee = Column(Float)
+    is_checked = Column(Boolean, server_default="false")
 
     created_at = db_created()
     updated_at = db_updated()
