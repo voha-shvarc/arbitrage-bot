@@ -86,6 +86,10 @@ class PriceAnalyzer:
 
         return usdt_to_get - self.to_use_usdt
 
+    @property
+    def back_way_network_fee(self) -> float:
+        return self.avg_buy_price * self.deposit_cne.withdraw_fee
+
     def set_user_based_data(self, buy_price: Price, sell_price: Price):
         self.user_based_coin_available_amount = self.coins_to_buy
         self.user_based_to_use_usdt = self.to_use_usdt

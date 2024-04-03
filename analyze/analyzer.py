@@ -333,6 +333,7 @@ class ExchangePairAnalyzer:
             bundle.network_speed = network_speed
             bundle.spot_buy_fee = price_analyzer.spot_buy_fee
             bundle.spot_sell_fee = price_analyzer.spot_sell_fee
+            bundle.back_way_network_fee = price_analyzer.back_way_network_fee
             bundle.is_whitelisted = session.query(
                 exists().where(
                     and_(

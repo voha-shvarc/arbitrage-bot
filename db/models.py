@@ -174,6 +174,7 @@ class ProfitBundle(Base):
     bought_ccy_quantity = Column(Float, server_default="0")
     spot_buy_fee = Column(Float, server_default="0.001")
     spot_sell_fee = Column(Float, server_default="0.001")
+    back_way_network_fee = Column(Float)
 
     created_at = db_created()
     updated_at = db_updated()
