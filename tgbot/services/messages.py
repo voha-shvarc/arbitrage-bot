@@ -53,7 +53,7 @@ def get_bundle_message(bundle: ProfitBundle, bundle_item: ProfitBundleItem) -> s
 
     fees_section = f"‼️️ Spot Fee: <b>{bundle_item.user_based_spot_fee:.2f}$</b> | Network Fee: <b>{bundle_item.user_based_network_fee:.2f}$</b>"
     if bundle.back_way_network_fee is not None:
-        fees_section += f"\n‼️ Back Way Network Fee: <b>{bundle.back_way_network_fee:.2f}$</b>"
+        fees_section += f" | <b>{bundle.back_way_network_fee:.2f}$</b>"
     if bundle.network_speed is not None:
         fees_section += f"\n🚀 Network Speed: {bundle.network_speed:.1f} - {bundle.network_speed + 2:.1f} minutes"
 
