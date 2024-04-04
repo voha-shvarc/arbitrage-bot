@@ -78,6 +78,7 @@ def sync_coin_exchange_networks():
                     and_(Exchange.name == "Bitget", Coin.name == "PIT"),
                     and_(Exchange.name == "Bitget", Coin.name == "PMPY"),  # takes additional 7% for smart c
                     and_(Exchange.name == "Bingx", Coin.name == "TORN"),
+                    and_(Exchange.name == "Bingx", Coin.name == "NGL"),
                     and_(
                         Exchange.name.in_(["ByBit", "Binance", "OKX"]),
                         Network.name == "Chiliz",
@@ -92,6 +93,7 @@ def sync_coin_exchange_networks():
                     Coin.name == "TABOO",  # takes additional 4% for smart c
                     Coin.name == "BRISE",  # takes additional 10% for smart c
                     Coin.name == "10SET",  # additional 8% for smart c
+                    Coin.name == "TRUMP",  # additional 1% fee
                     # after mex and bingx integration
                     and_(Exchange.name == "Mexc", Coin.name == "KT"),
                     and_(Exchange.name == "Mexc", Coin.name == "STC"),
