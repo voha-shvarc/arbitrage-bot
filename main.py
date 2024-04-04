@@ -45,14 +45,19 @@ def get_exchanges_combinations():
                 yield f"{base_exchange.name},{pair_exchange.name}"
 
 
-def get_exchanges_api_from_redis(redis_client):
+def get_exchanges_api_from_redis(redis_client, last_exchanges: set[str]):
     if not redis_client.exists("exchange_pairs"):
         redis_client.lpush("exchange_pairs", *get_exchanges_combinations())
 
     pair = redis_client.brpop(["exchange_pairs"])[1]
     base_exchange_name, pair_exchange_name = pair.split(",")
-
-    return EXCHANGES_MAPPING[base_exchange_name], EXCHANGES_MAPPING[pair_exchange_name]
+    if {base_exchange_name, pair_exchange_name}.intersection(last_exchanges):
+        redis_client.rpush("exchange_pairs", pair)
+        log.info("Sleeping for 1 sec. Wait for correct exchange...")
+        time.sleep(1)
+        get_exchanges_api_from_redis(redis_client, last_exchanges)
+    else:
+        return EXCHANGES_MAPPING[base_exchange_name], EXCHANGES_MAPPING[pair_exchange_name]
 
 
 async def main():
@@ -65,10 +70,13 @@ async def main():
         decode_responses=True,
     )
 
+    last_exchanges = set()
     while True:
         start = time.time()
         connection = httpx.AsyncClient(timeout=httpx.Timeout(20.0))
-        base_exchange, pair_exchange = get_exchanges_api_from_redis(redis_client)
+        base_exchange, pair_exchange = get_exchanges_api_from_redis(redis_client, last_exchanges)
+        last_exchanges = {base_exchange.NAME, pair_exchange.NAME}
+
         log.info(f"Analyze {base_exchange.NAME}, {pair_exchange.NAME}")
         try:
             await ExchangePairAnalyzer(base_exchange(config, connection), pair_exchange(config, connection)).run()
