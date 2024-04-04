@@ -1,3 +1,4 @@
+import time
 from json import JSONDecodeError
 from logging import getLogger
 from typing import List
@@ -9,6 +10,7 @@ from abstract import AbstractExchange
 from abstract import NoPriceFound
 from abstract.abstract import CreateOrderError
 from abstract.abstract import DepositAddressError
+from abstract.abstract import WithdrawError
 from db.models import CoinNetworkExchange
 from db.models import Pair
 from db.structs import CoinNetworkExchangeDC
@@ -159,3 +161,30 @@ class BybitAPI(AbstractExchange):
         except InvalidRequestError as e:
             self.logger.exception(f"[bybit] create order error - {e}. {body = }")
             raise CreateOrderError(str(e)) from e
+
+    def withdraw(
+        self,
+        cne: CoinNetworkExchange,
+        ccy_quantity_to_withdraw: float,
+        deposit_address: DepositAddress,
+    ) -> None:
+        if cne.withdraw_precision:
+            amount = f"{ccy_quantity_to_withdraw:.{cne.withdraw_precision}}"
+        else:
+            amount = str(ccy_quantity_to_withdraw)
+
+        body = {
+            "coin": cne.coin.name,
+            "network": cne.network.name,
+            "address": deposit_address.address,
+            "tag": deposit_address.memo or "",
+            "amount": amount,
+            "timestamp": int(time.time() * 1000),
+            "feeType": 1,
+            "forceChain": 1,
+        }
+        try:
+            self.session.withdraw(**body)
+        except InvalidRequestError as e:
+            self.logger.error(f"[bybit] {e.message = }, {body = }")
+            raise WithdrawError(e.message) from e

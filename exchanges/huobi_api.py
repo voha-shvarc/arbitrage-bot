@@ -16,6 +16,7 @@ from abstract import AbstractExchange
 from abstract import NoPriceFound
 from abstract.abstract import CreateOrderError
 from abstract.abstract import DepositAddressError
+from abstract.abstract import WithdrawError
 from db.models import CoinNetworkExchange
 from db.models import Pair
 from db.structs import CoinNetworkExchangeDC
@@ -163,3 +164,28 @@ class HuobiAPI(AbstractExchange):
         except HuobiApiException as e:
             self.logger.exception(f"[huobi] create order error - {e}. {body = }")
             raise CreateOrderError(str(e)) from e
+
+    def withdraw(
+        self,
+        cne: CoinNetworkExchange,
+        ccy_quantity_to_withdraw: float,
+        deposit_address: DepositAddress,
+    ) -> None:
+        if cne.withdraw_precision:
+            amount = f"{ccy_quantity_to_withdraw:.{cne.withdraw_precision}}"
+        else:
+            amount = str(ccy_quantity_to_withdraw)
+
+        body = {
+            "currency": cne.coin.name.lower(),
+            "chain": cne.plain_network_name,
+            "address": deposit_address.address,
+            "address_tag": deposit_address.memo or "",
+            "amount": amount,
+            "fee": cne.withdraw_fee,
+        }
+        try:
+            self.wallet_client.post_create_withdraw(**body)
+        except HuobiApiException as e:
+            self.logger.error(f"[huobi] {e.error_message = }, {body = }")
+            raise WithdrawError(e.error_message) from e

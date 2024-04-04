@@ -9,6 +9,7 @@ from abstract import AbstractExchange
 from abstract import NoPriceFound
 from abstract.abstract import CreateOrderError
 from abstract.abstract import DepositAddressError
+from abstract.abstract import WithdrawError
 from abstract.abstract import WithdrawStatus
 from db.models import CoinNetworkExchange
 from db.models import Pair
@@ -26,7 +27,7 @@ class BinanceAPI(AbstractExchange):
     NAME = "Binance"
     NOT_ALLOWED_STATUS = "BREAK"
     base_url = "https://api.binance.com"
-    withdraw_status = WithdrawStatus.disabled
+    withdraw_status = WithdrawStatus.enabled
 
     def __init__(self, config, connection, logger=None):
         self.connection = connection
@@ -169,3 +170,28 @@ class BinanceAPI(AbstractExchange):
         except ClientError as e:
             self.logger.exception(f"[binance] create order error - {e}. {body = }")
             raise CreateOrderError(str(e)) from e
+
+    def withdraw(
+        self,
+        cne: CoinNetworkExchange,
+        ccy_quantity_to_withdraw: float,
+        deposit_address: DepositAddress,
+    ) -> None:
+        if cne.withdraw_precision:
+            amount = f"{ccy_quantity_to_withdraw:.{cne.withdraw_precision}}"
+        else:
+            amount = str(ccy_quantity_to_withdraw)
+
+        body = {
+            "coin": cne.coin.name,
+            "network": cne.network.name,
+            "address": deposit_address.address,
+            "addressTag": deposit_address.memo or "",
+            "amount": amount,
+            "walletType": 0,
+        }
+        try:
+            self.client.withdraw(**body)
+        except ClientError as e:
+            self.logger.error(f"[binance] {e.error_message = }, {body = }")
+            raise WithdrawError(e.error_message) from e

@@ -1,15 +1,18 @@
 from json import JSONDecodeError
 from logging import getLogger
 from typing import List
+from uuid import uuid4
 
 from whitebit import MainAccountClient
 from whitebit import TradeAccountClient
 from whitebit import TradeMarketClient
 from whitebit.client import _create_uri
+from whitebit.client import Whitebit
 
 from abstract import AbstractExchange
 from abstract import NoPriceFound
 from abstract.abstract import DepositAddressError
+from abstract.abstract import WithdrawError
 from abstract.abstract import WithdrawStatus
 from db.models import CoinNetworkExchange
 from db.models import Pair
@@ -24,7 +27,7 @@ error_logger = getLogger("error")
 class WhitebitAPI(AbstractExchange):
     NAME = "Whitebit"
     base_url = "https://whitebit.com"
-    withdraw_status = WithdrawStatus.disabled
+    withdraw_status = WithdrawStatus.enabled
 
     def __init__(self, config, connection, logger=None):
         self.connection = connection
@@ -35,6 +38,7 @@ class WhitebitAPI(AbstractExchange):
         self.account_client = MainAccountClient(api_key, api_secret)
         self.trade_account_client = TradeAccountClient(api_key, api_secret)
         self.market_client = TradeMarketClient(api_key, api_secret)
+        self.base_client = Whitebit(api_key, api_secret)
 
     def get_trading_pairs(self) -> List[TradingPair]:
         pairs_info = self.market_client.get_markets_info()
@@ -140,3 +144,28 @@ class WhitebitAPI(AbstractExchange):
             raise DepositAddressError() from e
         else:
             return address
+
+    def withdraw(
+        self,
+        cne: CoinNetworkExchange,
+        ccy_quantity_to_withdraw: float,
+        deposit_address: DepositAddress,
+    ) -> None:
+        if cne.withdraw_precision:
+            amount = f"{ccy_quantity_to_withdraw:.{cne.withdraw_precision}}"
+        else:
+            amount = str(ccy_quantity_to_withdraw)
+
+        body = {
+            "ticker": cne.coin.name,
+            "network": cne.network.name,
+            "address": deposit_address.address,
+            "memo": deposit_address.memo or "",
+            "amount": amount,
+            "uniqueId": str(uuid4()),
+        }
+        try:
+            self.base_client._request("POST", "/api/v4/main-account/withdraw", params=body, auth=True)
+        except Exception as e:
+            self.logger.error(f"[whitebit] {e = }, {body = }")
+            raise WithdrawError(e) from e

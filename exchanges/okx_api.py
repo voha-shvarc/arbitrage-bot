@@ -15,6 +15,7 @@ from abstract import AbstractExchange
 from abstract import NoPriceFound
 from abstract.abstract import CreateOrderError
 from abstract.abstract import DepositAddressError
+from abstract.abstract import WithdrawError
 from db.models import CoinNetworkExchange
 from db.models import Pair
 from db.structs import CoinNetworkExchangeDC
@@ -201,3 +202,34 @@ class OkxAPI(AbstractExchange):
         if res["code"] != "0":
             self.logger.error(f"[okx] error creating order {res['data'][0]['sMsg']}. {body = }")
             raise CreateOrderError(res["data"][0]["sMsg"])
+
+    def withdraw(
+        self,
+        cne: CoinNetworkExchange,
+        ccy_quantity_to_withdraw: float,
+        deposit_address: DepositAddress,
+    ) -> None:
+        ccy_quantity_to_withdraw -= cne.withdraw_fee
+        if cne.withdraw_precision:
+            amount = f"{ccy_quantity_to_withdraw:.{cne.withdraw_precision}}"
+        else:
+            amount = str(ccy_quantity_to_withdraw)
+
+        if deposit_address.memo:
+            address = f"{deposit_address.address}:{deposit_address.memo}"
+        else:
+            address = deposit_address.address
+
+        body = {
+            "ccy": cne.coin.name,
+            "chain": cne.plain_network_name,
+            "amt": amount,  # doesn't include fee
+            "dest": "4",  # on-chain withdraw
+            "toAddr": address,  # includes address and tag if present
+            "fee": cne.withdraw_fee,
+        }
+        response = self.funding_client.withdrawal(**body)
+        if response["code"] != "0":
+            msg = response["msg"]
+            self.logger.error(f"[okx] {msg = }; {body =}")
+            raise WithdrawError(msg)

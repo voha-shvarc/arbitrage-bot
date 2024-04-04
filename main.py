@@ -55,7 +55,7 @@ def get_exchanges_api_from_redis(redis_client, last_exchanges: set[str]):
         redis_client.rpush("exchange_pairs", pair)
         log.info("Sleeping for 1 sec. Wait for correct exchange...")
         time.sleep(1)
-        get_exchanges_api_from_redis(redis_client, last_exchanges)
+        return get_exchanges_api_from_redis(redis_client, last_exchanges)
     else:
         return EXCHANGES_MAPPING[base_exchange_name], EXCHANGES_MAPPING[pair_exchange_name]
 
