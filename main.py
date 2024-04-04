@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import random
 import time
 
 import httpx
@@ -29,7 +30,8 @@ handler.setFormatter(formatt)
 log.addHandler(handler)
 
 
-def get_exchanges_combinations():
+def get_exchanges_combinations() -> list[str]:
+    combinations = []
     with Session() as session:
         circle_exchanges: list[Exchange] = list(
             session.query(Exchange).filter(or_(Exchange.active_buy, Exchange.active_sell)).all(),
@@ -42,7 +44,10 @@ def get_exchanges_combinations():
             if (base_exchange.active_buy and pair_exchange.active_sell) or (
                 base_exchange.active_sell and pair_exchange.active_buy
             ):
-                yield f"{base_exchange.name},{pair_exchange.name}"
+                combinations.append(f"{base_exchange.name},{pair_exchange.name}")
+
+    random.shuffle(combinations)
+    return combinations
 
 
 def get_exchanges_api_from_redis(redis_client, last_exchanges: set[str]):
