@@ -58,7 +58,10 @@ class ExchangePairAnalyzer:
         for pair in common_pairs:
             task = loop.create_task(self.manage_pair(pair))
             if self.base_exchange.NAME in ["Mexc"] or self.pair_exchange.NAME in ["Mexc"]:
-                await asyncio.sleep(0.064)
+                if self.base_exchange.NAME in ["Bitget"] or self.pair_exchange.NAME in ["Bitget"]:
+                    await asyncio.sleep(0.075)
+                else:
+                    await asyncio.sleep(0.064)
             elif self.base_exchange.NAME in ["Bitget", "OKX"] or self.pair_exchange.NAME in ["Bitget", "OKX"]:
                 await asyncio.sleep(0.05)
             elif self.base_exchange.NAME in ["Huobi"] or self.pair_exchange.NAME in ["Huobi"]:
