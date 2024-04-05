@@ -7,9 +7,10 @@ import httpx
 from dotenv import dotenv_values
 from redis import Redis
 from sqlalchemy import or_
+from sqlalchemy import select
 
 from analyze.analyzer import ExchangePairAnalyzer
-from db.base import Session
+from db.base import AsyncSession
 from db.models import Exchange
 from exchanges import EXCHANGES_MAPPING
 
@@ -30,11 +31,11 @@ handler.setFormatter(formatt)
 log.addHandler(handler)
 
 
-def get_exchanges_combinations() -> list[str]:
+async def get_exchanges_combinations() -> list[str]:
     combinations = []
-    with Session() as session:
-        circle_exchanges: list[Exchange] = list(
-            session.query(Exchange).filter(or_(Exchange.active_buy, Exchange.active_sell)).all(),
+    async with AsyncSession() as session:
+        circle_exchanges: list[Exchange] = await session.scalars(
+            select(Exchange).where(or_(Exchange.active_buy, Exchange.active_sell)),
         )
 
     while len(circle_exchanges) > 1:
@@ -50,9 +51,9 @@ def get_exchanges_combinations() -> list[str]:
     return combinations
 
 
-def get_exchanges_api_from_redis(redis_client, last_exchanges: set[str]):
+async def get_exchanges_api_from_redis(redis_client, last_exchanges: set[str]):
     if not redis_client.exists("exchange_pairs"):
-        redis_client.lpush("exchange_pairs", *get_exchanges_combinations())
+        redis_client.lpush("exchange_pairs", *await get_exchanges_combinations())
 
     pair = redis_client.brpop(["exchange_pairs"])[1]
     base_exchange_name, pair_exchange_name = pair.split(",")
@@ -60,7 +61,7 @@ def get_exchanges_api_from_redis(redis_client, last_exchanges: set[str]):
         redis_client.rpush("exchange_pairs", pair)
         log.info("Sleeping for 1 sec. Wait for correct exchange...")
         time.sleep(1)
-        return get_exchanges_api_from_redis(redis_client, last_exchanges)
+        return await get_exchanges_api_from_redis(redis_client, last_exchanges)
     else:
         return EXCHANGES_MAPPING[base_exchange_name], EXCHANGES_MAPPING[pair_exchange_name]
 
@@ -79,7 +80,7 @@ async def main():
     while True:
         start = time.time()
         connection = httpx.AsyncClient(timeout=httpx.Timeout(20.0))
-        base_exchange, pair_exchange = get_exchanges_api_from_redis(redis_client, last_exchanges)
+        base_exchange, pair_exchange = await get_exchanges_api_from_redis(redis_client, last_exchanges)
         last_exchanges = {base_exchange.NAME, pair_exchange.NAME}
 
         log.info(f"Analyze {base_exchange.NAME}, {pair_exchange.NAME}")

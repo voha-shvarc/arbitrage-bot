@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import time
+from collections import defaultdict
 from typing import Generator
 from typing import Tuple
 from typing import Union
@@ -10,18 +11,20 @@ from httpx import PoolTimeout
 from sqlalchemy import and_
 from sqlalchemy import exists
 from sqlalchemy import func
+from sqlalchemy import select
+from sqlalchemy.orm import contains_eager
 from sqlalchemy.orm import joinedload
 
 from abstract import NoPriceFound
 from abstract.abstract import AbstractExchange
 from celery_app.tasks import fill_up_bundle
 from celery_app.tasks import monitor_bundle
+from db.base import AsyncSession
 from db.base import Session
 from db.models import BundleStatus
 from db.models import Coin
 from db.models import CoinNetworkExchange
 from db.models import Exchange
-from db.models import Network
 from db.models import Pair
 from db.models import PairExchange
 from db.models import ProfitBundle
@@ -33,6 +36,7 @@ from .price_analyzer import PriceAnalyzer
 
 log = logging.getLogger("output")
 error_log = logging.getLogger("error")
+best_cne_T = Union[dict[str, CoinNetworkExchange], None]
 
 
 class ExchangePairAnalyzer:
@@ -41,100 +45,6 @@ class ExchangePairAnalyzer:
     def __init__(self, base_exchange, pair_exchange):
         self.base_exchange: AbstractExchange = base_exchange
         self.pair_exchange: AbstractExchange = pair_exchange
-
-    async def manage_pair(self, pair_data: dict[str, Union[Pair, dict[str, float]]]):
-        pair = pair_data["pair"]
-        base_to_second_network_mapping, second_to_base_network_mapping = self._get_best_networks(pair.base_coin)
-        if not base_to_second_network_mapping and not second_to_base_network_mapping:
-            log.info(f"no network found - {pair.default_name}")
-            return
-
-        try:
-            base_exchange_price = await self.base_exchange.async_get_price(pair)
-            pair_exchange_price = await self.pair_exchange.async_get_price(pair)
-        except NoPriceFound:
-            log.info(f"no price found - {pair.default_name}")
-            return
-        except (PoolTimeout, ConnectError):
-            error_log.error(
-                f"[{self.base_exchange.NAME};{self.pair_exchange.NAME}] connection error - {pair.default_name}",
-            )
-            return
-        except Exception as e:
-            error_log.error(
-                f"[{self.base_exchange.NAME};{self.pair_exchange.NAME}]unknown error getting price - {e} - {pair.default_name}",
-            )
-            return
-
-        if base_to_second_network_mapping and base_to_second_network_mapping[self.base_exchange.NAME].withdraw_fee:
-            withdraw_cne = base_to_second_network_mapping[self.base_exchange.NAME]
-            deposit_cne = base_to_second_network_mapping[self.pair_exchange.NAME]
-
-            if withdraw_cne.exchange.active_buy and deposit_cne.exchange.active_sell:
-                buy_price_analyzer = PriceAnalyzer(
-                    buy_price=base_exchange_price[0],
-                    sell_price=pair_exchange_price[1],
-                    spot_buy_fee=pair_data["taker_fees"][self.base_exchange.NAME],
-                    spot_sell_fee=pair_data["taker_fees"][self.pair_exchange.NAME],
-                    withdraw_cne=withdraw_cne,
-                    deposit_cne=deposit_cne,
-                )
-                try:
-                    buy_price_analyzer.run()
-                except Exception as e:
-                    error_log.exception(e)
-
-                is_withdrawable = self._check_withdraw_limits(
-                    ccy_quantity_to_withdraw=buy_price_analyzer.user_based_coin_available_amount,
-                    withdraw_cne=withdraw_cne,
-                    deposit_cne=deposit_cne,
-                )
-
-                if buy_price_analyzer.user_based_profit > self.BASE_USDT_PROFIT and is_withdrawable:
-                    await self._start_monitoring(pair, buy_price_analyzer)
-
-        if second_to_base_network_mapping and second_to_base_network_mapping[self.pair_exchange.NAME].withdraw_fee:
-            withdraw_cne = second_to_base_network_mapping[self.pair_exchange.NAME]
-            deposit_cne = second_to_base_network_mapping[self.base_exchange.NAME]
-
-            if withdraw_cne.exchange.active_buy and deposit_cne.exchange.active_sell:
-                sell_price_analyzer = PriceAnalyzer(
-                    buy_price=pair_exchange_price[0],
-                    sell_price=base_exchange_price[1],
-                    spot_buy_fee=pair_data["taker_fees"][self.pair_exchange.NAME],
-                    spot_sell_fee=pair_data["taker_fees"][self.base_exchange.NAME],
-                    withdraw_cne=withdraw_cne,
-                    deposit_cne=deposit_cne,
-                )
-                try:
-                    sell_price_analyzer.run()
-                except Exception as e:
-                    error_log.exception(e)
-
-                is_withdrawable = self._check_withdraw_limits(
-                    ccy_quantity_to_withdraw=sell_price_analyzer.user_based_coin_available_amount,
-                    withdraw_cne=withdraw_cne,
-                    deposit_cne=deposit_cne,
-                )
-
-                if sell_price_analyzer.user_based_profit > self.BASE_USDT_PROFIT and is_withdrawable:
-                    await self._start_monitoring(pair, sell_price_analyzer, from_base=False)
-
-    @staticmethod
-    def _check_withdraw_limits(
-        ccy_quantity_to_withdraw: float,
-        withdraw_cne: CoinNetworkExchange,
-        deposit_cne: CoinNetworkExchange,
-    ) -> bool:
-        if withdraw_cne.withdraw_max:
-            can_withdraw = withdraw_cne.withdraw_min < ccy_quantity_to_withdraw < withdraw_cne.withdraw_max
-        else:
-            can_withdraw = withdraw_cne.withdraw_min < ccy_quantity_to_withdraw
-
-        if deposit_cne.deposit_min:
-            can_withdraw = can_withdraw and ccy_quantity_to_withdraw > deposit_cne.deposit_min
-
-        return can_withdraw
 
     async def run(self):
         """
@@ -168,6 +78,100 @@ class ExchangePairAnalyzer:
             done, pending = await asyncio.wait(running_tasks, timeout=0.5)
             running_tasks.difference_update(done)
 
+    async def manage_pair(self, pair_data: dict[str, Union[Pair, dict[str, float]]]):
+        pair = pair_data["pair"]
+        from_base_net_mapping, from_second_net_mapping = await self._get_best_networks(pair.base_coin)
+        if not from_base_net_mapping and not from_second_net_mapping:
+            log.info(f"no network found - {pair.default_name}")
+            return
+
+        try:
+            base_exchange_price = await self.base_exchange.async_get_price(pair)
+            pair_exchange_price = await self.pair_exchange.async_get_price(pair)
+        except NoPriceFound:
+            log.info(f"no price found - {pair.default_name}")
+            return
+        except (PoolTimeout, ConnectError):
+            error_log.error(
+                f"[{self.base_exchange.NAME};{self.pair_exchange.NAME}] connection error - {pair.default_name}",
+            )
+            return
+        except Exception as e:
+            error_log.error(
+                f"[{self.base_exchange.NAME};{self.pair_exchange.NAME}]unknown error getting price - {e} - {pair.default_name}",
+            )
+            return
+
+        if from_base_net_mapping and from_base_net_mapping[self.base_exchange.NAME].withdraw_fee:
+            withdraw_cne = from_base_net_mapping[self.base_exchange.NAME]
+            deposit_cne = from_base_net_mapping[self.pair_exchange.NAME]
+
+            if withdraw_cne.exchange.active_buy and deposit_cne.exchange.active_sell:
+                buy_price_analyzer = PriceAnalyzer(
+                    buy_price=base_exchange_price[0],
+                    sell_price=pair_exchange_price[1],
+                    spot_buy_fee=pair_data["taker_fees"][self.base_exchange.NAME],
+                    spot_sell_fee=pair_data["taker_fees"][self.pair_exchange.NAME],
+                    withdraw_cne=withdraw_cne,
+                    deposit_cne=deposit_cne,
+                )
+                try:
+                    buy_price_analyzer.run()
+                except Exception as e:
+                    error_log.exception(e)
+
+                is_withdrawable = self._check_withdraw_limits(
+                    ccy_quantity_to_withdraw=buy_price_analyzer.user_based_coin_available_amount,
+                    withdraw_cne=withdraw_cne,
+                    deposit_cne=deposit_cne,
+                )
+
+                if buy_price_analyzer.user_based_profit > self.BASE_USDT_PROFIT and is_withdrawable:
+                    await self._start_monitoring(pair, buy_price_analyzer)
+
+        if from_second_net_mapping and from_second_net_mapping[self.pair_exchange.NAME].withdraw_fee:
+            withdraw_cne = from_second_net_mapping[self.pair_exchange.NAME]
+            deposit_cne = from_second_net_mapping[self.base_exchange.NAME]
+
+            if withdraw_cne.exchange.active_buy and deposit_cne.exchange.active_sell:
+                sell_price_analyzer = PriceAnalyzer(
+                    buy_price=pair_exchange_price[0],
+                    sell_price=base_exchange_price[1],
+                    spot_buy_fee=pair_data["taker_fees"][self.pair_exchange.NAME],
+                    spot_sell_fee=pair_data["taker_fees"][self.base_exchange.NAME],
+                    withdraw_cne=withdraw_cne,
+                    deposit_cne=deposit_cne,
+                )
+                try:
+                    sell_price_analyzer.run()
+                except Exception as e:
+                    error_log.exception(e)
+
+                is_withdrawable = self._check_withdraw_limits(
+                    ccy_quantity_to_withdraw=sell_price_analyzer.user_based_coin_available_amount,
+                    withdraw_cne=withdraw_cne,
+                    deposit_cne=deposit_cne,
+                )
+
+                if sell_price_analyzer.user_based_profit > self.BASE_USDT_PROFIT and is_withdrawable:
+                    await self._start_monitoring(pair, sell_price_analyzer)
+
+    @staticmethod
+    def _check_withdraw_limits(
+        ccy_quantity_to_withdraw: float,
+        withdraw_cne: CoinNetworkExchange,
+        deposit_cne: CoinNetworkExchange,
+    ) -> bool:
+        if withdraw_cne.withdraw_max:
+            can_withdraw = withdraw_cne.withdraw_min < ccy_quantity_to_withdraw < withdraw_cne.withdraw_max
+        else:
+            can_withdraw = withdraw_cne.withdraw_min < ccy_quantity_to_withdraw
+
+        if deposit_cne.deposit_min:
+            can_withdraw = can_withdraw and ccy_quantity_to_withdraw > deposit_cne.deposit_min
+
+        return can_withdraw
+
     def _get_common_pairs(self) -> Generator[dict[str, Union[Pair, dict[str, float]]], None, None]:
         with Session() as session:
             subq = (
@@ -200,40 +204,33 @@ class ExchangePairAnalyzer:
                 },
             }
 
-    def _get_best_networks(
-        self,
-        coin: Coin,
-    ) -> Tuple[Union[dict[str, CoinNetworkExchange], None], Union[dict[str, CoinNetworkExchange], None]]:
-        with Session() as session:
-            query = (
-                session.query(CoinNetworkExchange.base_network_id, func.array_agg(CoinNetworkExchange.id))
+    async def _get_best_networks(self, coin: Coin) -> Tuple[best_cne_T, best_cne_T]:
+        async with AsyncSession() as session:
+            subq = (
+                select(CoinNetworkExchange.base_network_id)
                 .join(Exchange)
-                .join(Coin)
-                .filter(
-                    Exchange.id.in_([self.pair_exchange.get_db_id(), self.base_exchange.get_db_id()]),
-                    Coin.name == coin.name,
-                )
+                .where(CoinNetworkExchange.coin_id == coin.id)
+                .where(Exchange.name.in_([self.base_exchange.NAME, self.pair_exchange.NAME]))
                 .group_by(CoinNetworkExchange.base_network_id)
                 .having(func.count(CoinNetworkExchange.id) == 2)
             )
+            coin_network_exchange_qs = await session.scalars(
+                select(CoinNetworkExchange)
+                .join(CoinNetworkExchange.exchange)
+                .where(CoinNetworkExchange.base_network_id.in_(subq))
+                .where(CoinNetworkExchange.coin_id == coin.id)
+                .where(Exchange.name.in_([self.base_exchange.NAME, self.pair_exchange.NAME]))
+                .options(
+                    contains_eager(CoinNetworkExchange.exchange),
+                    joinedload(CoinNetworkExchange.network),
+                    joinedload(CoinNetworkExchange.base_network),
+                    joinedload(CoinNetworkExchange.coin),
+                ),
+            )
 
-            nets_mapping = {}
-            for network_id, coin_network_exchange_ids in query:
-                network: Network = session.query(Network).get(network_id)
-                coin_network_exchange_qs = (
-                    session.query(CoinNetworkExchange)
-                    .filter(CoinNetworkExchange.id.in_(coin_network_exchange_ids))
-                    .options(
-                        joinedload(CoinNetworkExchange.exchange),
-                        joinedload(CoinNetworkExchange.network),
-                        joinedload(CoinNetworkExchange.base_network),
-                        joinedload(CoinNetworkExchange.coin),
-                    )
-                )
-                nets_mapping[network.name] = {
-                    coin_network_exchange.exchange.name: coin_network_exchange
-                    for coin_network_exchange in coin_network_exchange_qs
-                }
+        nets_mapping = defaultdict(dict)
+        for cne in coin_network_exchange_qs:
+            nets_mapping[cne.network.name][cne.exchange.name] = cne
 
         available_nets_to_transfer_from_base_to_second = [
             cne_mapping
@@ -263,10 +260,7 @@ class ExchangePairAnalyzer:
         return best_base_to_second_network, best_second_to_base_network
 
     @staticmethod
-    def _get_best_cne(
-        exchange_name: str,
-        available_cne_mapping: list[dict[str, CoinNetworkExchange]],
-    ) -> Union[dict[str, CoinNetworkExchange], None]:
+    def _get_best_cne(exchange_name: str, available_cne_mapping: list[dict[str, CoinNetworkExchange]]) -> best_cne_T:
         if not available_cne_mapping:
             return None
 
@@ -275,30 +269,26 @@ class ExchangePairAnalyzer:
             key=lambda cne_mapping: (
                 cne_mapping[exchange_name].confirmations_needed * cne_mapping[exchange_name].network.block_creation_time
             )
-            if cne_mapping[exchange_name].confirmations_needed
-            and cne_mapping[exchange_name].network.block_creation_time
+            if cne_mapping[exchange_name].confirmations_needed and cne_mapping[exchange_name].network.block_creation_time
             else cne_mapping[exchange_name].withdraw_fee,
         )
         return best_cne
 
-    async def _start_monitoring(self, pair, price_analyzer: PriceAnalyzer, from_base=True):
-        if from_base:
-            from_exchange, to_exchange = self.base_exchange, self.pair_exchange
-        else:
-            from_exchange, to_exchange = self.pair_exchange, self.base_exchange
-
-        with Session() as session:
-            same_processing_bundle = session.query(
-                exists().where(
-                    and_(
-                        ProfitBundle.status == BundleStatus.in_progress,
-                        ProfitBundle.withdraw_coin_network_exchange_id == price_analyzer.withdraw_cne.id,
-                        ProfitBundle.pair_id == pair.id,
-                        ProfitBundle.base_exchange_id == from_exchange.get_db_id(),
-                        ProfitBundle.pair_exchange_id == to_exchange.get_db_id(),
+    @staticmethod
+    async def _start_monitoring(pair: Pair, price_analyzer: PriceAnalyzer):
+        async with AsyncSession() as session:
+            same_processing_bundle = await session.scalar(
+                select(
+                    exists().where(
+                        and_(
+                            ProfitBundle.status == BundleStatus.in_progress,
+                            ProfitBundle.withdraw_coin_network_exchange_id == price_analyzer.withdraw_cne.id,
+                            ProfitBundle.deposit_coin_network_exchange_id == price_analyzer.deposit_cne.id,
+                            ProfitBundle.pair_id == pair.id,
+                        ),
                     ),
                 ),
-            ).scalar()
+            )
             if same_processing_bundle:
                 return False
 
@@ -322,31 +312,33 @@ class ExchangePairAnalyzer:
             bundle.pair_id = pair.id
             bundle.withdraw_coin_network_exchange_id = price_analyzer.withdraw_cne.id
             bundle.deposit_coin_network_exchange_id = price_analyzer.deposit_cne.id
-            bundle.base_exchange_id = from_exchange.get_db_id()
-            bundle.pair_exchange_id = to_exchange.get_db_id()
+            bundle.base_exchange_id = price_analyzer.withdraw_cne.exchange_id
+            bundle.pair_exchange_id = price_analyzer.deposit_cne.exchange_id
             bundle.network_speed = network_speed
             bundle.spot_buy_fee = price_analyzer.spot_buy_fee
             bundle.spot_sell_fee = price_analyzer.spot_sell_fee
             bundle.back_way_network_fee = price_analyzer.back_way_network_fee
             bundle.is_checked = price_analyzer.withdraw_cne.is_checked and price_analyzer.deposit_cne.is_checked
-            bundle.is_whitelisted = session.query(
-                exists().where(
-                    and_(
-                        bundle.base_exchange_id == Whitelist.withdraw_exchange_id,
-                        bundle.pair_exchange_id == Whitelist.deposit_exchange_id,
-                        price_analyzer.withdraw_cne.base_network_id == Whitelist.base_network_id,
+            bundle.is_whitelisted = await session.scalar(
+                select(
+                    exists().where(
+                        and_(
+                            bundle.base_exchange_id == Whitelist.withdraw_exchange_id,
+                            bundle.pair_exchange_id == Whitelist.deposit_exchange_id,
+                            price_analyzer.withdraw_cne.base_network_id == Whitelist.base_network_id,
+                        ),
                     ),
                 ),
-            ).scalar()
+            )
 
             bundle_item = ProfitBundleItem(**price_analyzer.to_db())
             bundle.items.append(bundle_item)
 
             session.add_all([bundle_item, bundle])
-            session.flush()
+            await session.flush()
 
             bundle_id = bundle.id
-            session.commit()
+            await session.commit()
 
             fill_up_bundle.apply_async(args=[bundle_id], countdown=5)
             monitor_bundle.apply_async(args=[bundle_id], countdown=10)

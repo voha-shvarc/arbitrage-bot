@@ -43,7 +43,7 @@ class Exchange(Base):
     __tablename__ = "exchanges"
 
     id = Column(Integer, primary_key=True)
-    name = Column(String(50), nullable=False)
+    name = Column(String(50), nullable=False, index=True)
     active_buy = Column(Boolean, server_default="true")
     active_sell = Column(Boolean, server_default="true")
     max_liquid_amount = Column(Integer, server_default="800")

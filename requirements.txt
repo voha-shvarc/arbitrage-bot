@@ -9,7 +9,7 @@ python-whitebit-sdk
 bingx-connector
 
 retry
-SQLAlchemy==2.0
+sqlalchemy[asyncio]
 psycopg2-binary
 alembic
 celery[redis]

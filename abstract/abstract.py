@@ -2,9 +2,7 @@ from abc import ABC
 from abc import abstractmethod
 from typing import List
 
-from db.base import Session
 from db.models import CoinNetworkExchange
-from db.models import Exchange
 from db.models import Pair
 from db.structs import DepositAddress
 from db.structs import TradingPair
@@ -45,12 +43,6 @@ class AbstractExchange(ABC):
     @abstractmethod
     def get_pair_trading_volume(self, pair: Pair) -> float:
         raise NotImplementedError()
-
-    @classmethod
-    def get_db_id(cls) -> int:
-        with Session() as session:
-            exchange_id = session.query(Exchange.id).filter(Exchange.name == cls.NAME).scalar()
-        return exchange_id
 
     @classmethod
     def spot_link(cls, pair: Pair) -> str:
