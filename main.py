@@ -34,8 +34,10 @@ log.addHandler(handler)
 async def get_exchanges_combinations() -> list[str]:
     combinations = []
     async with AsyncSession() as session:
-        circle_exchanges: list[Exchange] = await session.scalars(
-            select(Exchange).where(or_(Exchange.active_buy, Exchange.active_sell)),
+        circle_exchanges: list[Exchange] = list(
+            await session.scalars(
+                select(Exchange).where(or_(Exchange.active_buy, Exchange.active_sell)),
+            )
         )
 
     while len(circle_exchanges) > 1:
