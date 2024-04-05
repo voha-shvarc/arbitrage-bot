@@ -10,6 +10,7 @@ bingx-connector
 
 retry
 sqlalchemy[asyncio]
+asyncpg
 psycopg2-binary
 alembic
 celery[redis]
