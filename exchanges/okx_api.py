@@ -31,7 +31,7 @@ class OkxAPI(AbstractExchange):
     NAME = "OKX"
     flag = "0"  # Production trading: 0, Demo trading: 1
     base_url = "https://www.okx.com"
-    async_limiter = AsyncLimiter(3.5, 0.2)  # 17.5r/1s  max 20r/1s
+    async_limiter = AsyncLimiter(3.2, 0.2)  # 16r/1s  max 20r/1s
 
     def __init__(self, config, connection, logger=None):
         self.connection = connection

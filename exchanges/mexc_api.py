@@ -30,7 +30,7 @@ class MexcAPI(AbstractExchange):
     NAME = "Mexc"
     base_url = "https://api.mexc.com"
     withdraw_status = WithdrawStatus.enabled
-    async_limiter = AsyncLimiter(3.5, 0.37)  # 10r/1s  max? 20r/1s
+    async_limiter = AsyncLimiter(3.5, 0.4)  # 9r/1s  max? 20r/1s
 
     def __init__(self, config, connection, logger=None):
         self.connection = connection

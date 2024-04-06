@@ -6,6 +6,7 @@ from json import JSONDecodeError
 from logging import getLogger
 from typing import List
 
+from aiolimiter import AsyncLimiter
 from kucoin.client import MarketData
 from kucoin.client import TradeData
 from kucoin.client import UserData
@@ -30,6 +31,7 @@ class KuCoinAPI(AbstractExchange):
     NAME = "KuCoin"
     base_url = "https://api.kucoin.com"
     withdraw_status = WithdrawStatus.enabled
+    async_limiter = AsyncLimiter(5, 0.2)
 
     def __init__(self, config, connection, logger=None):
         self.connection = connection
@@ -65,7 +67,7 @@ class KuCoinAPI(AbstractExchange):
         # the sdk depth is 100. but need only 20
         order_book = self.client._request(
             "GET",
-            "/api/v3/market/orderbook/level2_20",
+            "/api/v3/market/orderbook/level2_100",
             params={"symbol": pair.dashed_name},
         )
         buy = order_book["asks"]
