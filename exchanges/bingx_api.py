@@ -2,6 +2,7 @@ from json import JSONDecodeError
 from logging import getLogger
 from typing import List
 
+from aiolimiter import AsyncLimiter
 from bingX.api import API
 from bingX.error import ClientError
 from bingX.spot import Spot
@@ -25,6 +26,7 @@ error_logger = getLogger("error")
 class BingxAPI(AbstractExchange):
     NAME = "Bingx"
     withdraw_status = WithdrawStatus.enabled
+    async_limiter = AsyncLimiter(10, 0.2)  # 50r/1s
 
     def __init__(self, config, connection, logger=None):
         self.connection = connection

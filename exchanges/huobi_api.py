@@ -32,7 +32,7 @@ class HuobiAPI(AbstractExchange):
     NAME = "Huobi"
     ACCOUNT_ID = 58372812
     base_url = "https://api.huobi.pro"
-    async_limiter = AsyncLimiter(10, 0.2)  # 50r/1s
+    async_limiter = AsyncLimiter(9.5, 0.2)  # 47.5r/1s
 
     def __init__(self, config, connection, logger=None):
         self.connection = connection
