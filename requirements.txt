@@ -16,13 +16,12 @@ alembic
 celery[redis]
 flower
 python-dotenv
+aiolimiter
 
-telebot
-
-# google api sdk
-google-api-python-client
-google-auth-httplib2
-google-auth-oauthlib
+# google api sdk [syncing with google sheets is not needed now]
+# google-api-python-client
+# google-auth-httplib2
+# google-auth-oauthlib
 
 httpx[http2]
 aiodns

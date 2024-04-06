@@ -1,13 +1,15 @@
-from .okx_api import OkxAPI
-from .bybit_api import BybitAPI
+from aiolimiter import AsyncLimiter
+
 from .binance_api import BinanceAPI
+from .bingx_api import BingxAPI
+from .bitget_api import BitgetAPI
+from .bybit_api import BybitAPI
 from .huobi_api import HuobiAPI
 from .kucoin_api import KuCoinAPI
-from .bitget_api import BitgetAPI
-from .whitebit_api import WhitebitAPI
-from .bingx_api import BingxAPI
 from .mexc_api import MexcAPI
+from .okx_api import OkxAPI
 from .poloniex_api import PoloniexAPI
+from .whitebit_api import WhitebitAPI
 
 
 EXCHANGES_MAPPING = {

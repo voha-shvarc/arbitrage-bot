@@ -2,6 +2,7 @@ from json import JSONDecodeError
 from logging import getLogger
 from typing import List
 
+from aiolimiter import AsyncLimiter
 from huobi.client.account import AccountClient
 from huobi.client.generic import GenericClient
 from huobi.client.market import MarketClient
@@ -31,6 +32,7 @@ class HuobiAPI(AbstractExchange):
     NAME = "Huobi"
     ACCOUNT_ID = 58372812
     base_url = "https://api.huobi.pro"
+    async_limiter = AsyncLimiter(10, 0.2)  # 50r/1s
 
     def __init__(self, config, connection, logger=None):
         self.connection = connection

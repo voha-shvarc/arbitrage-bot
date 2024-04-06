@@ -47,33 +47,16 @@ class ExchangePairAnalyzer:
         self.pair_exchange: AbstractExchange = pair_exchange
 
     async def run(self):
-        """
-        Limits - Bitget (20r/1s, 1r/0.05s); OKX (20r/1s)
-        """
         running_tasks = set()
         loop = asyncio.get_event_loop()
         common_pairs = self._get_common_pairs()
-        pairs_amount = 0
 
         for pair in common_pairs:
             task = loop.create_task(self.manage_pair(pair))
-            if self.base_exchange.NAME in ["Mexc"] or self.pair_exchange.NAME in ["Mexc"]:
-                if self.base_exchange.NAME in ["Bitget"] or self.pair_exchange.NAME in ["Bitget"]:
-                    await asyncio.sleep(0.075)
-                else:
-                    await asyncio.sleep(0.064)
-            elif self.base_exchange.NAME in ["Bitget", "OKX"] or self.pair_exchange.NAME in ["Bitget", "OKX"]:
-                await asyncio.sleep(0.05)
-            elif self.base_exchange.NAME in ["Huobi"] or self.pair_exchange.NAME in ["Huobi"]:
-                await asyncio.sleep(0.02)
-            else:
-                await asyncio.sleep(0.01)
-
             running_tasks.add(task)
-            pairs_amount += 1
 
-        log.info(f"Found {pairs_amount} common pairs")
-        if pairs_amount == 0:
+        log.info(f"Found {len(running_tasks)} common pairs")
+        if len(running_tasks) == 0:
             log.info("Sleeping for 5 seconds, waiting for sync scripts to run")
             time.sleep(5)
 
@@ -89,8 +72,12 @@ class ExchangePairAnalyzer:
             return
 
         try:
-            base_exchange_price = await self.base_exchange.async_get_price(pair)
-            pair_exchange_price = await self.pair_exchange.async_get_price(pair)
+            async with self.base_exchange.async_limiter:
+                base_exchange_price = await self.base_exchange.async_get_price(pair)
+
+            async with self.pair_exchange.async_limiter:
+                pair_exchange_price = await self.pair_exchange.async_get_price(pair)
+
         except NoPriceFound:
             log.info(f"no price found - {pair.default_name}")
             return
@@ -101,11 +88,11 @@ class ExchangePairAnalyzer:
             return
         except Exception as e:
             error_log.error(
-                f"[{self.base_exchange.NAME};{self.pair_exchange.NAME}]unknown error getting price - {e} - {pair.default_name}",
+                f"[{self.base_exchange.NAME};{self.pair_exchange.NAME}] unknown error getting price - {e} - {pair.default_name}",
             )
             return
 
-        if from_base_net_mapping and from_base_net_mapping[self.base_exchange.NAME].withdraw_fee:
+        if from_base_net_mapping:
             withdraw_cne = from_base_net_mapping[self.base_exchange.NAME]
             deposit_cne = from_base_net_mapping[self.pair_exchange.NAME]
 
@@ -132,7 +119,7 @@ class ExchangePairAnalyzer:
                 if buy_price_analyzer.user_based_profit > self.BASE_USDT_PROFIT and is_withdrawable:
                     await self._start_monitoring(pair, buy_price_analyzer)
 
-        if from_second_net_mapping and from_second_net_mapping[self.pair_exchange.NAME].withdraw_fee:
+        if from_second_net_mapping:
             withdraw_cne = from_second_net_mapping[self.pair_exchange.NAME]
             deposit_cne = from_second_net_mapping[self.base_exchange.NAME]
 
@@ -233,47 +220,53 @@ class ExchangePairAnalyzer:
 
         nets_mapping = defaultdict(dict)
         for cne in coin_network_exchange_qs:
-            nets_mapping[cne.network.name][cne.exchange.name] = cne
-
-        available_nets_to_transfer_from_base_to_second = [
-            cne_mapping
-            for net_name, cne_mapping in nets_mapping.items()
-            if len(cne_mapping) == 2
-            and cne_mapping[self.base_exchange.NAME].can_withdraw
-            and cne_mapping[self.pair_exchange.NAME].can_deposit
-        ]
-        available_nets_to_transfer_from_second_to_base = [
-            cne_mapping
-            for net_name, cne_mapping in nets_mapping.items()
-            if len(cne_mapping) == 2
-            and cne_mapping[self.pair_exchange.NAME].can_withdraw
-            and cne_mapping[self.base_exchange.NAME].can_deposit
-        ]
+            nets_mapping[cne.base_network.name][cne.exchange.name] = cne
 
         best_base_to_second_network = self._get_best_cne(
             self.base_exchange.NAME,
-            available_nets_to_transfer_from_base_to_second,
+            self.pair_exchange.NAME,
+            nets_mapping,
         )
-
         best_second_to_base_network = self._get_best_cne(
             self.pair_exchange.NAME,
-            available_nets_to_transfer_from_second_to_base,
+            self.base_exchange.NAME,
+            nets_mapping,
         )
 
         return best_base_to_second_network, best_second_to_base_network
 
     @staticmethod
-    def _get_best_cne(exchange_name: str, available_cne_mapping: list[dict[str, CoinNetworkExchange]]) -> best_cne_T:
+    def _get_best_cne(
+        withdraw_exchange_name: str,
+        deposit_exchange_name: str,
+        cnes_mapping: dict[str, [dict[str, CoinNetworkExchange]]],
+    ) -> best_cne_T:
+        available_cne_mapping = []
+        for _, cne_mapping in cnes_mapping.items():
+            if (
+                cne_mapping[withdraw_exchange_name].can_withdraw
+                and cne_mapping[withdraw_exchange_name].withdraw_fee
+                and cne_mapping[deposit_exchange_name].can_deposit
+            ):
+                available_cne_mapping.append(cne_mapping)
+            # else:
+            #     log.info(
+            #         f"{cne_mapping[withdraw_exchange_name].coin.name} "
+            #         f"- {cne_mapping[withdraw_exchange_name].base_network.name} is closed",
+            #     )
+
         if not available_cne_mapping:
             return None
 
         best_cne = min(
             available_cne_mapping,
-            key=lambda cne_mapping: (
-                cne_mapping[exchange_name].confirmations_needed * cne_mapping[exchange_name].network.block_creation_time
+            key=lambda cne_map: (
+                cne_map[deposit_exchange_name].confirmations_needed
+                * cne_map[deposit_exchange_name].network.block_creation_time
             )
-            if cne_mapping[exchange_name].confirmations_needed and cne_mapping[exchange_name].network.block_creation_time
-            else cne_mapping[exchange_name].withdraw_fee,
+            if cne_map[deposit_exchange_name].confirmations_needed
+            and cne_map[deposit_exchange_name].network.block_creation_time
+            else cne_map[withdraw_exchange_name].withdraw_fee,
         )
         return best_cne
 

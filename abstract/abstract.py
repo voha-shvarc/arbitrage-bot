@@ -2,6 +2,8 @@ from abc import ABC
 from abc import abstractmethod
 from typing import List
 
+from aiolimiter import AsyncLimiter
+
 from db.models import CoinNetworkExchange
 from db.models import Pair
 from db.structs import DepositAddress
@@ -21,6 +23,7 @@ class DepositStatus:
 
 class AbstractExchange(ABC):
     NAME = None
+    async_limiter = AsyncLimiter(20, 0.2)  # 100r/1s
     withdraw_status = WithdrawStatus.whitelist
     deposit_status = DepositStatus.enabled
 

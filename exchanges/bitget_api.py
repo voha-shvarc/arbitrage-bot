@@ -5,6 +5,8 @@ from json import JSONDecodeError
 from logging import getLogger
 from typing import List
 
+from aiolimiter import AsyncLimiter
+
 from abstract import AbstractExchange
 from abstract import NoPriceFound
 from abstract.abstract import CreateOrderError
@@ -29,6 +31,7 @@ class BitgetAPI(AbstractExchange):
     NAME = "Bitget"
     ALLOWED_STATUS = "online"
     base_url = "https://api.bitget.com"
+    async_limiter = AsyncLimiter(3.5, 0.2)  # 17.5r/1s max 20r/1s
 
     def __init__(self, config, connection, logger=None):
         self.connection = connection

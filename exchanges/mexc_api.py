@@ -8,6 +8,7 @@ from urllib.parse import quote
 from urllib.parse import urlencode
 
 import requests
+from aiolimiter import AsyncLimiter
 
 from abstract import AbstractExchange
 from abstract import NoPriceFound
@@ -29,6 +30,7 @@ class MexcAPI(AbstractExchange):
     NAME = "Mexc"
     base_url = "https://api.mexc.com"
     withdraw_status = WithdrawStatus.enabled
+    async_limiter = AsyncLimiter(3.5, 0.37)  # 10r/1s  max? 20r/1s
 
     def __init__(self, config, connection, logger=None):
         self.connection = connection
