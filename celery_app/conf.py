@@ -30,8 +30,4 @@ app.conf.beat_schedule = {
         "task": "celery_app.scripts.uncheck_outdated_cne",
         "schedule": 60 * 60 * 24,  # every 24 hours
     },
-    # "send_analytics": {
-    #     "task": "celery_app.tasks.send_analytics",
-    #     "schedule": 60 * 10,  # every 10 minutes
-    # },
 }

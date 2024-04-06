@@ -16,7 +16,6 @@ from db.models import Pair
 from db.models import ProfitBundle
 from db.models import ProfitBundleItem
 from exchanges import EXCHANGES_MAPPING
-from services.send_analytics_service import SendAnalyticsService
 from tgbot.config import load_config
 from tgbot.keyboards.bundle import get_bundle_keyboard
 from tgbot.services.broadcaster import send_message
@@ -190,9 +189,3 @@ def fill_up_bundle(bundle_id):
         session.commit()
 
     send_tg_message.apply_async(args=[bundle_id], countdown=1)
-
-
-@app.task
-def send_analytics():
-    service = SendAnalyticsService(config)
-    service.send_to_spreadsheet()
