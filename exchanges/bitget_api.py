@@ -31,7 +31,7 @@ class BitgetAPI(AbstractExchange):
     NAME = "Bitget"
     ALLOWED_STATUS = "online"
     base_url = "https://api.bitget.com"
-    async_limiter = AsyncLimiter(3, 0.2)  # 15r/1s max 20r/1s
+    async_limiter = AsyncLimiter(2.8, 0.2)  # 14r/1s max 20r/1s
 
     def __init__(self, config, connection, logger=None):
         self.connection = connection
