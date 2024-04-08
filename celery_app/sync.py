@@ -127,6 +127,9 @@ def sync_coin_exchange_networks():
                     and_(Exchange.name == "Poloniex", Coin.name == "WSB"),
                     and_(Exchange.name == "Poloniex", Coin.name == "NGL"),
                     and_(Exchange.name == "Poloniex", Coin.name == "DMT"),
+                    and_(Exchange.name == "Poloniex", Coin.name == "APU"),
+                    and_(Exchange.name == "XT", Coin.name == "AC"),
+                    and_(Exchange.name == "XT", Coin.name == "TITAN"),
                 ),
             )
         )
