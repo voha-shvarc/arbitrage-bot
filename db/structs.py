@@ -244,6 +244,16 @@ class NetworkExchange:
             plain_name=plain_name,
         )
 
+    @classmethod
+    def from_xt(cls, data: dict):
+        net_name = data["chain"]
+        can_deposit = data["depositEnabled"]
+        can_withdraw = data["withdrawEnabled"]
+        withdraw_fee = data["withdrawFeeAmount"]
+        withdraw_min = data["withdrawMinAmount"]
+
+        return cls(net_name, can_deposit, can_withdraw, withdraw_min, withdraw_fee)
+
 
 @dataclass
 class CoinNetworkExchangeDC:
@@ -307,9 +317,7 @@ class CoinNetworkExchangeDC:
     @classmethod
     def from_huobi(cls, data: ReferenceCurrency):
         coin_name = data.currency
-        networks = [
-            NetworkExchange.from_huobi(network) for network in data.chains if network.withdrawFeeType == "fixed"
-        ]
+        networks = [NetworkExchange.from_huobi(network) for network in data.chains if network.withdrawFeeType == "fixed"]
 
         return cls(coin_name.upper(), "Huobi", networks, {})
 
@@ -370,6 +378,13 @@ class CoinNetworkExchangeDC:
         networks = [NetworkExchange.from_poloniex(net_data) for net_data in data["networkList"]]
 
         return cls(coin_name, "Poloniex", networks, {})
+
+    @classmethod
+    def from_xt(cls, data: dict):
+        coin_name = data["currency"].upper()
+        networks = [NetworkExchange.from_xt(net_data) for net_data in data["supportChains"]]
+
+        return cls(coin_name, "XT", networks, {})
 
 
 @dataclass

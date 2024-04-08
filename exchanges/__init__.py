@@ -1,5 +1,3 @@
-from aiolimiter import AsyncLimiter
-
 from .binance_api import BinanceAPI
 from .bingx_api import BingxAPI
 from .bitget_api import BitgetAPI
@@ -10,6 +8,7 @@ from .mexc_api import MexcAPI
 from .okx_api import OkxAPI
 from .poloniex_api import PoloniexAPI
 from .whitebit_api import WhitebitAPI
+from .xt_api import XTAPI
 
 
 EXCHANGES_MAPPING = {
@@ -23,4 +22,5 @@ EXCHANGES_MAPPING = {
     OkxAPI.NAME: OkxAPI,
     PoloniexAPI.NAME: PoloniexAPI,
     MexcAPI.NAME: MexcAPI,
+    XTAPI.NAME: XTAPI,
 }
