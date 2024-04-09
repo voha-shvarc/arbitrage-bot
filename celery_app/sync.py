@@ -94,6 +94,7 @@ def sync_coin_exchange_networks():
                     Coin.name == "BRISE",  # takes additional 10% for smart c
                     Coin.name == "10SET",  # additional 8% for smart c
                     Coin.name == "TRUMP",  # additional 1% fee
+                    Coin.name == "LOOP",  # additional 10% fee
                     # after mex and bingx integration
                     and_(Exchange.name == "Mexc", Coin.name == "KT"),
                     and_(Exchange.name == "Mexc", Coin.name == "STC"),
