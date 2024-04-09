@@ -325,11 +325,9 @@ class XTAPI(AbstractExchange):
 
         try:
             data = response.json()
-            if data is None:
-                error_response = json.loads(response.text)
-                msg = ERROR_MAPPING[error_response.get("mc")]
-                self.logger.error(f"[xt] {msg}")
-                raise WithdrawError(f"{msg}")
+            if data["rc"] != 0:
+                self.logger.error(f"[xt] {data['mc']}")
+                raise WithdrawError(data["mc"])
 
         except JSONDecodeError as e:
             self.logger.exception(e)
@@ -357,11 +355,9 @@ class XTAPI(AbstractExchange):
 
         try:
             data = response.json()
-            if data is None:
-                error_response = json.loads(response.text)
-                msg = ERROR_MAPPING[error_response.get("mc")]
-                self.logger.error(f"[xt] {msg}")
-                raise CreateOrderError(f"[xt] {msg}")
+            if data["rc"] != 0:
+                self.logger.error(f"[xt] {data['mc']}")
+                raise CreateOrderError(f"{data['mc']}")
 
         except JSONDecodeError as e:
             self.logger.error(f"[xt] couldn't parse response. {response.text}. {body = }")
