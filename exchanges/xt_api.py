@@ -91,6 +91,8 @@ class XTAPI(AbstractExchange):
         if params:
             ps = [f"{key}={value}" for key, value in dict(sorted(params.items())).items()]
             signature_message += f"#{'&'.join(ps)}"
+        if body:
+            signature_message += f"#{json.dumps(body)}"
 
         signature = hmac.new(self.api_secret.encode("utf-8"), signature_message.encode("utf-8"), hashlib.sha256).hexdigest()
         return signature
@@ -104,7 +106,7 @@ class XTAPI(AbstractExchange):
             "validate-appkey": self.api_key,
             "validate-recvwindow": "60000",
             "validate-timestamp": timestamp,
-            "validate-signature": self.create_signature(method, path, params, body),
+            "validate-signature": self.create_signature(method, path, timestamp, params, body),
         }
         return requests.request(method, self.base_url + path, params=params, json=body, headers=headers)
 
