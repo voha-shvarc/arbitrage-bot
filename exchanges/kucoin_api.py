@@ -225,7 +225,15 @@ class KuCoinAPI(AbstractExchange):
         except Exception as e:
             raise WithdrawError(f"[kucoin] error submitting withdrawal {e}") from e
 
-    def create_order(self, pair: Pair, ccy_quantity: float, ccy_precision: int, price: float, price_precision: int):
+    def create_order(
+        self,
+        pair: Pair,
+        ccy_quantity: float,
+        ccy_precision: int,
+        price: float,
+        price_precision: int,
+        spot_fee: float,
+    ):
         body = {
             "symbol": pair.dashed_name,
             "side": "buy",

@@ -235,7 +235,16 @@ class MexcAPI(AbstractExchange):
         if data.get("code"):
             raise WithdrawError(f"{data['msg'] = }\n{json.dumps(body)}")
 
-    def create_order(self, pair: Pair, ccy_quantity: float, ccy_precision: int, price: float, price_precision: int):
+    def create_order(
+        self,
+        pair: Pair,
+        ccy_quantity: float,
+        ccy_precision: int,
+        price: float,
+        price_precision: int,
+        spot_fee: float,
+    ):
+        ccy_quantity -= spot_fee
         body = {
             "symbol": pair.default_name,
             "side": "BUY",

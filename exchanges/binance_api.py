@@ -156,7 +156,15 @@ class BinanceAPI(AbstractExchange):
         else:
             return address
 
-    def create_order(self, pair: Pair, ccy_quantity: float, ccy_precision: int, price: float, price_precision: int):
+    def create_order(
+        self,
+        pair: Pair,
+        ccy_quantity: float,
+        ccy_precision: int,
+        price: float,
+        price_precision: int,
+        spot_fee: float,
+    ):
         body = {
             "symbol": pair.default_name,
             "side": "BUY",

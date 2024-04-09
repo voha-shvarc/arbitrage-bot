@@ -335,7 +335,15 @@ class XTAPI(AbstractExchange):
             self.logger.exception(e)
             raise WithdrawError(f"Couldn't parse response, {response.text}") from e
 
-    def create_order(self, pair: Pair, ccy_quantity: float, ccy_precision: int, price: float, price_precision: int):
+    def create_order(
+        self,
+        pair: Pair,
+        ccy_quantity: float,
+        ccy_precision: int,
+        price: float,
+        price_precision: int,
+        spot_fee: float,
+    ):
         body = {
             "symbol": pair.underscored_name.lower(),
             "side": "BUY",

@@ -217,12 +217,14 @@ async def create_order(profit_bundle_id: int, limit=None) -> str:
                         f"{price_analyzer.user_based_coin_available_amount = }; {pair_to_exchange.base_coin_precision};\n"
                         f"{price_analyzer.user_based_max_buy_price = }; {pair_to_exchange.quote_coin_precision}",
                     )
+                    spot_fee = price_analyzer.user_based_coin_available_amount * pair_to_exchange.taker_fee
                     base_exchange.create_order(
                         pair=bundle.pair,
                         ccy_quantity=price_analyzer.user_based_coin_available_amount,
                         ccy_precision=pair_to_exchange.base_coin_precision,
                         price=price_analyzer.user_based_max_buy_price,
                         price_precision=pair_to_exchange.quote_coin_precision,
+                        spot_fee=spot_fee,
                     )
                     buy_label = "✅"
                 except (CreateOrderError, Exception) as e:

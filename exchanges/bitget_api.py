@@ -207,7 +207,15 @@ class BitgetAPI(AbstractExchange):
         else:
             return address
 
-    def create_order(self, pair: Pair, ccy_quantity: float, ccy_precision: int, price: float, price_precision: int):
+    def create_order(
+        self,
+        pair: Pair,
+        ccy_quantity: float,
+        ccy_precision: int,
+        price: float,
+        price_precision: int,
+        spot_fee: float,
+    ):
         body = {
             "symbol": pair.bitget_name,
             "side": "buy",

@@ -153,7 +153,15 @@ class HuobiAPI(AbstractExchange):
         else:
             raise DepositAddressError()
 
-    def create_order(self, pair: Pair, ccy_quantity: float, ccy_precision: int, price: float, price_precision: int):
+    def create_order(
+        self,
+        pair: Pair,
+        ccy_quantity: float,
+        ccy_precision: int,
+        price: float,
+        price_precision: int,
+        spot_fee: float,
+    ):
         body = {
             "symbol": pair.huobi_name,
             "account_id": self.ACCOUNT_ID,
