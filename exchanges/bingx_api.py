@@ -26,7 +26,7 @@ error_logger = getLogger("error")
 class BingxAPI(AbstractExchange):
     NAME = "Bingx"
     withdraw_status = WithdrawStatus.enabled
-    async_limiter = AsyncLimiter(2.8, 0.2)  # 14r/1s
+    async_limiter = AsyncLimiter(2.5, 0.2)  # 12.5r/1s
 
     def __init__(self, config, connection, logger=None):
         self.connection = connection
