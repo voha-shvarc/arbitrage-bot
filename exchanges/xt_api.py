@@ -248,22 +248,21 @@ class XTAPI(AbstractExchange):
         return change
 
     def get_balance(self, coin_name: str = "usdt") -> float:
-        # params = {"currency": coin_name.lower()}
-        # response = self.sign_request("GET", "/v4/balance", params)
-        # try:
-        #     data = response.json()
-        #     if data is None:
-        #         error_response = json.loads(response.text)
-        #         msg = ERROR_MAPPING[error_response.get("mc")]
-        #         self.logger.error(f"[xt] {msg}")
-        #         raise WithdrawError(f"[xt] {msg}") from None
-        #
-        # except JSONDecodeError as e:
-        #     self.logger.error(f"[xt] Error getting balance for {coin_name}. {response.text}")
-        #     raise WithdrawError("Couldn't get balance") from e
-        #
-        # return float(data["result"]["availableAmount"])
-        return 0
+        params = {"currency": coin_name.lower()}
+        response = self.sign_request("GET", "/v4/balance", params)
+        try:
+            data = response.json()
+            if data is None:
+                error_response = json.loads(response.text)
+                msg = ERROR_MAPPING[error_response.get("mc")]
+                self.logger.error(f"[xt] {msg}")
+                raise WithdrawError(f"[xt] {msg}") from None
+
+        except JSONDecodeError as e:
+            self.logger.error(f"[xt] Error getting balance for {coin_name}. {response.text}")
+            raise WithdrawError("Couldn't get balance") from e
+
+        return float(data["result"]["availableAmount"])
 
     def get_deposit_address(self, cne: CoinNetworkExchange) -> DepositAddress:
         try:

@@ -108,27 +108,27 @@ class Pair(Base):
     quote_coin = relationship("Coin", uselist=False, foreign_keys=[quote_coin_id])
 
     @property
-    def default_name(self):
+    def default_name(self) -> str:
         return f"{self.base_coin.name}{self.quote_coin.name}"
 
     @property
-    def dashed_name(self):
+    def dashed_name(self) -> str:
         return f"{self.base_coin.name}-{self.quote_coin.name}"
 
     @property
-    def underscored_name(self):
+    def underscored_name(self) -> str:
         return f"{self.base_coin.name}_{self.quote_coin.name}"
 
     @property
-    def slashed_name(self):
+    def slashed_name(self) -> str:
         return f"{self.base_coin.name}/{self.quote_coin.name}"
 
     @property
-    def huobi_name(self):
+    def huobi_name(self) -> str:
         return f"{self.base_coin.name.lower()}{self.quote_coin.name.lower()}"
 
     @property
-    def bitget_name(self):
+    def bitget_name(self) -> str:
         return f"{self.base_coin.name}{self.quote_coin.name}_SPBL"
 
 

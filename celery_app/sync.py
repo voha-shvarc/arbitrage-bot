@@ -144,7 +144,7 @@ def sync_coin_exchange_networks():
 
 def _run_networks_mapping(session: Session):
     data = {
-        "Avalanche": ["AVAX", "XAVAX", "Avalanche X", "X-Chain", "XCHAIN", "AVAX XCHAIN"],
+        "Avalanche": ["AVAX", "XAVAX", "Avalanche X", "X-Chain", "XCHAIN", "AVAX XCHAIN", "AVA"],
         "AVAXC": [
             "AVAXC",
             "AVAX_C",
@@ -158,6 +158,7 @@ def _run_networks_mapping(session: Session):
             "AVAX-C",
             "AVAX CCHAIN",
             "AVAX_CCHAIN",
+            "AVA_C",
         ],
         "DYM": ["DYM", "DYMEVM"],
         "Manta": ["Manta", "MANTA"],

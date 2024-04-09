@@ -254,6 +254,29 @@ class NetworkExchange:
 
         return cls(net_name, can_deposit, can_withdraw, withdraw_min, withdraw_fee)
 
+    @classmethod
+    def from_coinex(cls, data: dict):
+        # can get max confirmations
+        net_name = data["chain"]
+        can_deposit = data["deposit_enabled"]
+        can_withdraw = data["withdraw_enabled"]
+        withdraw_fee = float(data["withdrawal_fee"])
+        withdraw_min = float(data["min_withdraw_amount"])
+        deposit_min = float(data["min_deposit_amount"])
+        withdraw_precision = data["withdrawal_precision"]
+        confirmations_needed = data["safe_confirmations"]
+
+        return cls(
+            name=net_name,
+            can_deposit=can_deposit,
+            can_withdraw=can_withdraw,
+            withdraw_fee=withdraw_fee,
+            withdraw_min=withdraw_min,
+            deposit_min=deposit_min,
+            withdraw_precision=withdraw_precision,
+            confirmations_needed=confirmations_needed,
+        )
+
 
 @dataclass
 class CoinNetworkExchangeDC:
@@ -385,6 +408,12 @@ class CoinNetworkExchangeDC:
         networks = [NetworkExchange.from_xt(net_data) for net_data in data["supportChains"]]
 
         return cls(coin_name, "XT", networks, {})
+
+    @classmethod
+    def from_coinex(cls, coin_name: str, chains_data: list):
+        networks = [NetworkExchange.from_coinex(net_data) for net_data in chains_data]
+
+        return cls(coin_name, "CoinEx", networks, {})
 
 
 @dataclass

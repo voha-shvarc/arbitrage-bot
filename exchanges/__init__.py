@@ -2,6 +2,7 @@ from .binance_api import BinanceAPI
 from .bingx_api import BingxAPI
 from .bitget_api import BitgetAPI
 from .bybit_api import BybitAPI
+from .coinex_api import CoinExAPI
 from .huobi_api import HuobiAPI
 from .kucoin_api import KuCoinAPI
 from .mexc_api import MexcAPI
@@ -23,4 +24,5 @@ EXCHANGES_MAPPING = {
     PoloniexAPI.NAME: PoloniexAPI,
     MexcAPI.NAME: MexcAPI,
     XTAPI.NAME: XTAPI,
+    CoinExAPI.NAME: CoinExAPI,
 }

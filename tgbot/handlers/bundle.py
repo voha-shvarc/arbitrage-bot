@@ -145,11 +145,13 @@ async def withdraw_bundle_callback_query(query: CallbackQuery, callback_data: Wi
             else:
                 ccy_quantity_to_withdraw = base_exchange.get_balance()
 
+            logger.info(
+                f"Withdraw - {bundle.withdraw_coin_network_exchange.coin.name} "
+                f"| {bundle.withdraw_coin_network_exchange.network.name} | {ccy_quantity_to_withdraw}",
+            )
             base_exchange.withdraw(bundle.withdraw_coin_network_exchange, ccy_quantity_to_withdraw, deposit_address)
         except Exception as e:
-            logger.error(
-                f"Error proceeding withdraw. {e}. {deposit_address.address = }, {deposit_address.memo = }",
-            )
+            logger.error(f"Error proceeding withdraw. {e}")
             withdraw_label = "❌"
 
     await query.message.edit_reply_markup(
