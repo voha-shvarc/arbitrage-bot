@@ -162,7 +162,6 @@ class CoinExAPI(AbstractExchange):
 
     def get_trading_pairs(self) -> List[TradingPair]:
         data = self.public_request("GET", "/spot/market")
-        print(data)
 
         trading_pairs = [
             TradingPair(
