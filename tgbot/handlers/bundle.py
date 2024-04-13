@@ -140,19 +140,21 @@ async def withdraw_bundle_callback_query(query: CallbackQuery, callback_data: Wi
         withdraw_label = "❌"
     else:
         try:
-            if bundle.bought_ccy_quantity:
-                ccy_quantity_to_withdraw = bundle.bought_ccy_quantity
-            else:
-                ccy_quantity_to_withdraw = base_exchange.get_balance()
+            # if bundle.bought_ccy_quantity:
+            # ccy_quantity_to_withdraw = bundle.bought_ccy_quantity
+            # else:
+            ccy_quantity_to_withdraw = base_exchange.get_balance(bundle.pair.base_coin.name)
 
             logger.info(
                 f"Withdraw - {bundle.withdraw_coin_network_exchange.coin.name} "
-                f"| {bundle.withdraw_coin_network_exchange.network.name} | {ccy_quantity_to_withdraw}",
+                f"| {bundle.withdraw_coin_network_exchange.network.name} \n"
+                f"{ccy_quantity_to_withdraw = } | {bundle.bought_ccy_quantity = }",
             )
             base_exchange.withdraw(bundle.withdraw_coin_network_exchange, ccy_quantity_to_withdraw, deposit_address)
         except Exception as e:
             logger.error(f"Error proceeding withdraw. {e}")
             withdraw_label = "❌"
+            await query.message.reply(str(e))
 
     await query.message.edit_reply_markup(
         reply_markup=get_bundle_keyboard(
@@ -164,7 +166,7 @@ async def withdraw_bundle_callback_query(query: CallbackQuery, callback_data: Wi
     )
 
 
-async def create_order(profit_bundle_id: int, limit=None) -> str:
+async def create_order(profit_bundle_id: int, limit=None) -> tuple[str, str]:
     with Session() as session:
         bundle: ProfitBundle = (
             session.query(ProfitBundle)
@@ -204,20 +206,24 @@ async def create_order(profit_bundle_id: int, limit=None) -> str:
         custom_liquid_limit=limit,
     )
     buy_label = "🛠️"
+    response = ""
     try:
         price_analyzer.run()
     except Exception as e:
         logger.exception(e)
+        response = str(e)
     else:
         if price_analyzer.profit > BASE_USDT_PROFIT:
             if pair_to_exchange.base_coin_precision is not None and pair_to_exchange.quote_coin_precision is not None:
                 try:
+                    spot_fee = price_analyzer.user_based_coin_available_amount * pair_to_exchange.taker_fee
                     logger.info(
                         f"Create order with {bundle.pair.default_name = };\n "
                         f"{price_analyzer.user_based_coin_available_amount = }; {pair_to_exchange.base_coin_precision};\n"
-                        f"{price_analyzer.user_based_max_buy_price = }; {pair_to_exchange.quote_coin_precision}",
+                        f"{price_analyzer.user_based_max_buy_price = }; {pair_to_exchange.quote_coin_precision};\n"
+                        f"{pair_to_exchange.taker_fee = }, {spot_fee = }",
                     )
-                    spot_fee = price_analyzer.user_based_coin_available_amount * pair_to_exchange.taker_fee
+
                     base_exchange.create_order(
                         pair=bundle.pair,
                         ccy_quantity=price_analyzer.user_based_coin_available_amount,
@@ -229,7 +235,7 @@ async def create_order(profit_bundle_id: int, limit=None) -> str:
                     buy_label = "✅"
                 except (CreateOrderError, Exception) as e:
                     logger.error(e)
-                    pass
+                    response = str(e)
                 finally:
                     ccy_quantity_to_withdraw = (
                         price_analyzer.user_based_coin_available_amount
@@ -245,11 +251,12 @@ async def create_order(profit_bundle_id: int, limit=None) -> str:
                         )
                         session.commit()
             else:
-                logger.error("Creating order. No precision info found")
+                response = "Creating order. No precision info found"
+                logger.error(response)
         else:
             buy_label = "💀"
 
-    return buy_label
+    return buy_label, response
 
 
 @bundle_router.callback_query(CreateOrderCallbackData.filter(F.set_limit == "False"))
@@ -267,7 +274,7 @@ async def create_order_callback_query(query: CallbackQuery, callback_data: Creat
             ),
         )
     else:
-        buy_label = await create_order(callback_data.profit_bundle_id)
+        buy_label, response = await create_order(callback_data.profit_bundle_id)
         await query.message.edit_reply_markup(
             reply_markup=get_bundle_keyboard(
                 callback_data.profit_bundle_id,
@@ -276,6 +283,8 @@ async def create_order_callback_query(query: CallbackQuery, callback_data: Creat
                 buy_label=buy_label,
             ),
         )
+        if response:
+            await query.message.reply(response)
 
 
 @bundle_router.callback_query(StateFilter(None), CreateOrderCallbackData.filter(F.set_limit == "True"))
@@ -308,7 +317,7 @@ async def create_limited_order(message: Message, state: FSMContext):
         await message.reply("Please enter a whole number...")
     else:
         profit_bundle_id = state_data["profit_bundle_id"]
-        buy_label = await create_order(profit_bundle_id, float(limit))
+        buy_label, response = await create_order(profit_bundle_id, float(limit))
 
         await message.bot.edit_message_reply_markup(
             chat_id=state_data["chat_id"],
@@ -321,6 +330,8 @@ async def create_limited_order(message: Message, state: FSMContext):
             ),
         )
         await state.clear()
+        if response:
+            await message.reply(response)
 
 
 @bundle_router.callback_query(CheckedBundleCallbackData.filter())

@@ -170,12 +170,12 @@ class OkxAPI(AbstractExchange):
         change = (closed - opened) / opened * 100
         return change
 
-    def get_balance(self) -> float:
-        response = self.account_client.get_account_balance(ccy="USDT")
+    def get_balance(self, coin_name: str = "USDT") -> float:
+        response = self.account_client.get_account_balance(ccy=coin_name)
         try:
             balance = float(response["data"][0]["details"][0]["availBal"])
-        except (KeyError, IndexError):
-            balance = 0
+        except (KeyError, IndexError) as e:
+            raise WithdrawError(f"No available balance for {coin_name}") from e
 
         return balance
 

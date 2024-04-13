@@ -137,8 +137,8 @@ class BinanceAPI(AbstractExchange):
         response = self.client.rolling_window_ticker(symbol=pair.default_name, windowSize="10m")
         return float(response["priceChangePercent"])
 
-    def get_balance(self) -> float:
-        response = self.client.user_asset(asset="USDT")
+    def get_balance(self, coin_name: str = "USDT") -> float:
+        response = self.client.user_asset(asset=coin_name)
         try:
             balance = float(response[0]["free"])
         except (KeyError, IndexError):

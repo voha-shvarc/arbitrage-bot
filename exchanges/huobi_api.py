@@ -10,6 +10,7 @@ from huobi.client.trade import TradeClient
 from huobi.client.wallet import WalletClient
 from huobi.constant import DepthStep
 from huobi.constant import InstrumentStatus
+from huobi.constant.definition import AccountBalanceUpdateType
 from huobi.constant.definition import OrderType
 from huobi.exception.huobi_api_exception import HuobiApiException
 
@@ -137,9 +138,13 @@ class HuobiAPI(AbstractExchange):
         change = (closed - opened) / opened * 100
         return change
 
-    def get_balance(self) -> float:
-        response = self.account_client.get_account_asset_valuation("spot", "USD")
-        return float(response.balance)
+    def get_balance(self, coin_name: str = "USDT") -> float:
+        account_balance = self.account_client.get_balance(self.ACCOUNT_ID)
+        for balance in account_balance.list:
+            if balance.currency == coin_name.lower() and balance.type == AccountBalanceUpdateType.TRADE:
+                return float(balance.balance)
+
+        raise WithdrawError(f"No available balance for {coin_name}")
 
     def get_deposit_address(self, cne: CoinNetworkExchange) -> DepositAddress:
         try:

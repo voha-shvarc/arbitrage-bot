@@ -63,7 +63,7 @@ class AbstractExchange(ABC):
         """Returns pair chart change for the last 15 minutes in percents"""
         raise NotImplementedError()
 
-    def get_balance(self) -> float:
+    def get_balance(self, coin_name: str = "USDT") -> float:
         raise NotImplementedError()
 
     def get_deposit_address(self, cne: CoinNetworkExchange) -> DepositAddress:

@@ -185,9 +185,9 @@ class BitgetAPI(AbstractExchange):
         change = (closed - opened) / opened * 100
         return change
 
-    def get_balance(self) -> float:
+    def get_balance(self, coin_name: str = "USDT") -> float:
         params = {
-            "coin": "USDT",
+            "coin": coin_name,
         }
         response = self.account_client.assetsLite(params=params)
         try:
