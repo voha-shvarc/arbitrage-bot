@@ -37,7 +37,7 @@ async def get_exchanges_combinations() -> list[str]:
         circle_exchanges: list[Exchange] = list(
             await session.scalars(
                 select(Exchange).where(or_(Exchange.active_buy, Exchange.active_sell)),
-            )
+            ),
         )
 
     while len(circle_exchanges) > 1:
@@ -73,8 +73,6 @@ async def main():
     redis_client = Redis(
         host=config["REDIS_HOST"],
         port=config["REDIS_PORT"],
-        username="default",
-        password=config["REDIS_PASSWORD"],
         decode_responses=True,
     )
 
