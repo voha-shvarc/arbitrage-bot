@@ -82,7 +82,7 @@ class CoinNetworkExchange(Base):
     withdraw_min = Column(Float)
     withdraw_max = Column(Float)
     deposit_min = Column(Float)
-    withdraw_precision = Column(Float)
+    withdraw_precision = Column(Integer)
     is_checked = Column(Boolean, server_default="false", index=True)
     checked_at = Column(Date, index=True)
 
