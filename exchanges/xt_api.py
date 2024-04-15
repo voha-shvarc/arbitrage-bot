@@ -281,7 +281,8 @@ class XTAPI(AbstractExchange):
         try:
             data = response.json()
             if data["rc"] != 0:
-                self.logger.error(f"[xt] {data['mc']}")
+                msg = ERROR_MAPPING.get(data["mc"], data["mc"])
+                self.logger.error(f"[xt] {msg}")
                 raise DepositAddressError()
 
             address = DepositAddress(data["result"]["address"], data["result"].get("memo"))
@@ -321,8 +322,9 @@ class XTAPI(AbstractExchange):
         try:
             data = response.json()
             if data["rc"] != 0:
-                self.logger.error(f"[xt] {data['mc']}")
-                raise WithdrawError(data["mc"])
+                msg = ERROR_MAPPING.get(data["mc"], data["mc"])
+                self.logger.error(f"[xt] {msg}")
+                raise WithdrawError(msg)
 
         except JSONDecodeError as e:
             self.logger.exception(e)
@@ -351,8 +353,9 @@ class XTAPI(AbstractExchange):
         try:
             data = response.json()
             if data["rc"] != 0:
-                self.logger.error(f"[xt] {data['mc']}")
-                raise CreateOrderError(f"{data['mc']}")
+                msg = ERROR_MAPPING.get(data["mc"], data["mc"])
+                self.logger.error(f"[xt] {msg}")
+                raise CreateOrderError(msg)
 
         except JSONDecodeError as e:
             self.logger.error(f"[xt] couldn't parse response. {response.text}. {body = }")
