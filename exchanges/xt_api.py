@@ -267,11 +267,11 @@ class XTAPI(AbstractExchange):
     def get_deposit_address(self, cne: CoinNetworkExchange) -> DepositAddress:
         try:
             response = self.sign_request(
-                "POST",
+                "GET",
                 "/v4/deposit/address",
                 params={
-                    "currency": cne.coin.name.lower(),
-                    "network": cne.network.name,
+                    "currency": cne.coin.name,
+                    "chain": cne.network.name,
                 },
             )
         except Exception as e:
@@ -280,19 +280,14 @@ class XTAPI(AbstractExchange):
 
         try:
             data = response.json()
-            if data is None:
-                error_response = json.loads(response.text)
-                msg = ERROR_MAPPING[error_response.get("mc")]
-                self.logger.error(f"[xt] {msg}")
-                raise DepositAddressError() from None
+            if data["rc"] != 0:
+                self.logger.error(f"[xt] {data['mc']}")
+                raise DepositAddressError()
 
             address = DepositAddress(data["result"]["address"], data["result"].get("memo"))
 
         except JSONDecodeError as e:
             self.logger.error(f"[xt] deposit address error. couldn't parse response. {response.text}")
-            raise DepositAddressError() from e
-        except KeyError as e:
-            self.logger.error(f"[xt] deposit address error. couldn't parse response. {data}")
             raise DepositAddressError() from e
         else:
             return address
