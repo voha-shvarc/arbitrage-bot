@@ -3,6 +3,8 @@ from json import JSONDecodeError
 from logging import getLogger
 from typing import List
 
+from requests.exceptions import HTTPError
+
 from abstract import AbstractExchange
 from abstract.abstract import CreateOrderError
 from abstract.abstract import NoPriceFound
@@ -167,8 +169,11 @@ class PoloniexAPI(AbstractExchange):
         if deposit_address.memo:
             body["addressTag"] = deposit_address.memo
 
-        response = self.request("POST", "v2/wallets/withdraw", params=body)
-        self.logger.error(f"[poloniex withdraw] - {response}")
+        try:
+            self.request("POST", "/v2/wallets/withdraw", body=body)
+        except HTTPError as e:
+            self.logger.error(f"[poloniex withdraw] - {e.response.text}")
+            raise WithdrawError(e.response.text) from e
 
     def create_order(
         self,
