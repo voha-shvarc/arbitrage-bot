@@ -138,12 +138,22 @@ class WhitebitAPI(AbstractExchange):
                 params={"ticker": cne.coin.name, "network": cne.network.name},
                 auth=True,
             )
-            address = DepositAddress(data["account"]["address"], data["account"].get("memo"))
+            return DepositAddress(data["account"]["address"], data["account"].get("memo"))
         except Exception as e:
-            self.logger.error(f"[bybit] deposit address error - {e}")
+            if "The selected network is invalid" in str(e):
+                try:
+                    data = self.account_client._request(
+                        "POST",
+                        uri=uri,
+                        params={"ticker": cne.coin.name},
+                        auth=True,
+                    )
+                    return DepositAddress(data["account"]["address"], data["account"].get("memo"))
+                except Exception as e:
+                    pass
+
+            self.logger.error(f"[whitebit] deposit address error - {e}")
             raise DepositAddressError() from e
-        else:
-            return address
 
     def withdraw(
         self,
