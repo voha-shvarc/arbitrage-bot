@@ -207,7 +207,7 @@ class MexcAPI(AbstractExchange):
 
         body = {
             "coin": cne.coin.name,
-            "network": cne.plain_network_name,
+            "network": cne.plain_network_name or cne.network.name,
             "address": deposit_address.address,
             "amount": amount,
         }
