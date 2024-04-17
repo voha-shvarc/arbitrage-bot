@@ -98,6 +98,7 @@ def sync_coin_exchange_networks():
                     Coin.name == "LOOP",  # additional 10% fee
                     Coin.name == "QUACK",  # additional 12% fee
                     # after mex and bingx integration
+                    and_(Exchange.name == "Mexc", Network.name == "Solana"),
                     and_(Exchange.name == "Mexc", Coin.name == "KT"),
                     and_(Exchange.name == "Mexc", Coin.name == "STC"),
                     and_(Exchange.name == "Mexc", Coin.name == "CO"),
@@ -133,6 +134,7 @@ def sync_coin_exchange_networks():
                     and_(Exchange.name == "Poloniex", Coin.name == "APU"),
                     and_(Exchange.name == "XT", Coin.name == "AC"),
                     and_(Exchange.name == "XT", Coin.name == "TITAN"),
+                    and_(Exchange.name == "XT", Coin.name == "MTO"),
                 ),
             )
         )
