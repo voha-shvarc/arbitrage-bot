@@ -338,12 +338,13 @@ class XTAPI(AbstractExchange):
         price: float,
         price_precision: int,
         spot_fee: float,
+        is_buy: bool = True,
     ):
         body = {
             "symbol": pair.underscored_name.lower(),
-            "side": "BUY",
+            "side": "BUY" if is_buy else "SELL",
             "type": "LIMIT",
-            "timeInForce": "FOK",
+            "timeInForce": "FOK" if is_buy else "GTC",
             "bizType": "SPOT",
             "quantity": f"{ccy_quantity:.{ccy_precision}f}",
             "price": f"{price:.{price_precision}f}",

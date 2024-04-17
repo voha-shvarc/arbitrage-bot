@@ -33,6 +33,12 @@ class CheckedBundleCallbackData(CallbackData, prefix="checked"):
     deposit_exchange_name: str
 
 
+class AutoSellBundleCallbackData(CallbackData, prefix="auto_sell"):
+    profit_bundle_id: int
+    withdraw_exchange_name: str
+    deposit_exchange_name: str
+
+
 def _get_withdraw_status(
     withdraw_exchange_name: str,
     deposit_exchange_name: str,
@@ -56,6 +62,7 @@ def get_bundle_keyboard(
     buy_limit_label: str = "",
     force_refresh_label: str = "",
     checked_label: str = "",
+    sell_label: str = "",
 ):
     keyboard = InlineKeyboardBuilder()
 
@@ -102,6 +109,15 @@ def get_bundle_keyboard(
             withdraw_exchange_name=withdraw_exchange_name,
             deposit_exchange_name=deposit_exchange_name,
             set_limit="True",
+        ),
+    )
+
+    keyboard.button(
+        text=f"Auto Sell {sell_label}",
+        callback_data=AutoSellBundleCallbackData(
+            profit_bundle_id=profit_bundle_id,
+            withdraw_exchange_name=withdraw_exchange_name,
+            deposit_exchange_name=deposit_exchange_name,
         ),
     )
 

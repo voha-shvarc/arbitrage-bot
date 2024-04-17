@@ -1,10 +1,12 @@
 import asyncio
 import logging
+import time
 
 from aiogram import Bot
 from celery import Task
 from celery.exceptions import MaxRetriesExceededError
 from dotenv import dotenv_values
+from sqlalchemy import and_
 from sqlalchemy.orm import joinedload
 
 from analyze.price_analyzer import PriceAnalyzer
@@ -13,6 +15,7 @@ from db.base import Session
 from db.models import BundleStatus
 from db.models import CoinNetworkExchange
 from db.models import Pair
+from db.models import PairExchange
 from db.models import ProfitBundle
 from db.models import ProfitBundleItem
 from exchanges import EXCHANGES_MAPPING
@@ -189,3 +192,43 @@ def fill_up_bundle(bundle_id):
         session.commit()
 
     send_tg_message.apply_async(args=[bundle_id], countdown=1)
+
+
+@app.task
+def auto_sell(price: float, profit_bundle_id: int):
+    with Session() as session:
+        pair_to_exchange: PairExchange = (
+            session.query(PairExchange)
+            .join(
+                ProfitBundle,
+                and_(
+                    ProfitBundle.pair_id == PairExchange.pair_id,
+                    ProfitBundle.pair_exchange_id == PairExchange.exchange_id,
+                ),
+            )
+            .filter(ProfitBundle.id == profit_bundle_id)
+            .options(
+                joinedload(PairExchange.pair),
+                joinedload(PairExchange.pair).joinedload(Pair.base_coin),
+                joinedload(PairExchange.exchange),
+            )
+            .first()
+        )
+
+    exchange_api = EXCHANGES_MAPPING[pair_to_exchange.exchange.name]
+    exchange_api = exchange_api(config, {})
+
+    balance = 0
+    while balance == 0:
+        balance = exchange_api.get_balance(pair_to_exchange.pair.base_coin.name)
+        time.sleep(0.5)
+
+    exchange_api.create_order(
+        pair=pair_to_exchange.pair,
+        ccy_quantity=balance,
+        ccy_precision=pair_to_exchange.base_coin_precision,
+        price=price,
+        price_precision=pair_to_exchange.quote_coin_precision,
+        spot_fee=balance * pair_to_exchange.taker_fee,
+        is_buy=False,
+    )

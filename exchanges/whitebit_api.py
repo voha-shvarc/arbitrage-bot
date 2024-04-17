@@ -6,11 +6,13 @@ from uuid import uuid4
 from whitebit import MainAccountClient
 from whitebit import TradeAccountClient
 from whitebit import TradeMarketClient
+from whitebit import TradeOrderClient
 from whitebit.client import _create_uri
 from whitebit.client import Whitebit
 
 from abstract import AbstractExchange
 from abstract import NoPriceFound
+from abstract.abstract import CreateOrderError
 from abstract.abstract import DepositAddressError
 from abstract.abstract import WithdrawError
 from abstract.abstract import WithdrawStatus
@@ -38,6 +40,7 @@ class WhitebitAPI(AbstractExchange):
         self.account_client = MainAccountClient(api_key, api_secret)
         self.trade_account_client = TradeAccountClient(api_key, api_secret)
         self.market_client = TradeMarketClient(api_key, api_secret)
+        self.trade_client = TradeOrderClient(api_key, api_secret)
         self.base_client = Whitebit(api_key, api_secret)
 
     def get_trading_pairs(self) -> List[TradingPair]:
@@ -154,6 +157,28 @@ class WhitebitAPI(AbstractExchange):
 
             self.logger.error(f"[whitebit] deposit address error - {e}")
             raise DepositAddressError() from e
+
+    def create_order(
+        self,
+        pair: Pair,
+        ccy_quantity: float,
+        ccy_precision: int,
+        price: float,
+        price_precision: int,
+        spot_fee: float,
+        is_buy: bool = True,
+    ):
+        body = {
+            "market": pair.underscored_name,
+            "side": "buy" if is_buy else "sell",
+            "amount": f"{ccy_quantity:.{ccy_precision}f}",
+            "price": f"{price:.{price_precision}f}",
+        }
+        try:
+            self.trade_client.put_limit(**body)
+        except Exception as e:
+            self.logger.error(f"[whitebit] {e = }, {body = }")
+            raise CreateOrderError(e) from e
 
     def withdraw(
         self,

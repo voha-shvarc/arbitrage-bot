@@ -333,12 +333,13 @@ class CoinExAPI(AbstractExchange):
         price: float,
         price_precision: int,
         spot_fee: float,
+        is_buy: bool = True,
     ):
         body = {
             "market": pair.default_name,
             "market_type": "SPOT",
-            "side": "buy",
-            "type": "fok",
+            "side": "buy" if is_buy else "sell",
+            "type": "fok" if is_buy else "limit",
             "amount": f"{ccy_quantity:.{ccy_precision}f}",
             "price": f"{price:.{price_precision}f}",
         }

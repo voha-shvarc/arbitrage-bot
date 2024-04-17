@@ -215,12 +215,13 @@ class BitgetAPI(AbstractExchange):
         price: float,
         price_precision: int,
         spot_fee: float,
+        is_buy: bool = True,
     ):
         body = {
             "symbol": pair.bitget_name,
-            "side": "buy",
+            "side": "buy" if is_buy else "sell",
             "orderType": "limit",
-            "force": "fok",
+            "force": "fok" if is_buy else "normal",
             "quantity": f"{ccy_quantity:.{ccy_precision}f}",
             "price": f"{price:.{price_precision}f}",
         }

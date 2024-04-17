@@ -154,15 +154,16 @@ class BybitAPI(AbstractExchange):
         price: float,
         price_precision: int,
         spot_fee: float,
+        is_buy: bool = True,
     ):
         body = {
             "category": "spot",
             "symbol": pair.default_name,
-            "side": "Buy",
+            "side": "Buy" if is_buy else "Sell",
             "orderType": "Limit",
             "qty": f"{ccy_quantity:.{ccy_precision}f}",
             "price": f"{price:.{price_precision}f}",
-            "timeInForce": "FOK",
+            "timeInForce": "FOK" if is_buy else "GTC",
         }
         try:
             self.session.place_order(**body)

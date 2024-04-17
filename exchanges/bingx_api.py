@@ -202,10 +202,11 @@ class BingxAPI(AbstractExchange):
         price: float,
         price_precision: int,
         spot_fee: float,
+        is_buy: bool = True,
     ):
         body = {
             "symbol": pair.dashed_name,
-            "side": "BUY",
+            "side": "BUY" if is_buy else "SELL",
             "type": "LIMIT",
             "quantity": f"{ccy_quantity:.{ccy_precision}f}",
             "price": f"{price:.{price_precision}f}",

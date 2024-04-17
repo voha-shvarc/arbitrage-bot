@@ -166,11 +166,12 @@ class HuobiAPI(AbstractExchange):
         price: float,
         price_precision: int,
         spot_fee: float,
+        is_buy: bool = True,
     ):
         body = {
             "symbol": pair.huobi_name,
             "account_id": self.ACCOUNT_ID,
-            "order_type": OrderType.BUY_LIMIT_FOK,
+            "order_type": OrderType.BUY_LIMIT_FOK if is_buy else OrderType.SELL_LIMIT,
             "amount": f"{ccy_quantity:.{ccy_precision}f}",
             "price": f"{price:.{price_precision}f}",
         }

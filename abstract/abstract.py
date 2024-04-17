@@ -80,6 +80,7 @@ class AbstractExchange(ABC):
         price: float,
         price_precision: int,
         spot_fee: float,
+        is_buy: bool = True,
     ):
         raise NotImplementedError()
 

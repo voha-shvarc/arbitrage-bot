@@ -243,12 +243,14 @@ class MexcAPI(AbstractExchange):
         price: float,
         price_precision: int,
         spot_fee: float,
+        is_buy: bool = True,
     ):
         ccy_quantity -= spot_fee
+
         body = {
             "symbol": pair.default_name,
-            "side": "BUY",
-            "type": "LIMIT",
+            "side": "BUY" if is_buy else "SELL",
+            "type": "FILL_OR_KILL" if is_buy else "LIMIT",
             "quantity": f"{ccy_quantity:.{ccy_precision}f}",
             "price": f"{price:.{price_precision}f}",
         }

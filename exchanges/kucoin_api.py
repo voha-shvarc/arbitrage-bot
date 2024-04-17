@@ -233,14 +233,15 @@ class KuCoinAPI(AbstractExchange):
         price: float,
         price_precision: int,
         spot_fee: float,
+        is_buy: bool = True,
     ):
         body = {
             "symbol": pair.dashed_name,
-            "side": "buy",
+            "side": "buy" if is_buy else "sell",
             "type": "limit",
             "size": f"{ccy_quantity:.{ccy_precision}f}",
             "price": f"{price:.{price_precision}f}",
-            "timeInForce": "FOK",
+            "timeInForce": "FOK" if is_buy else "GTC",
         }
         try:
             self.trade_client.create_limit_order(**body)

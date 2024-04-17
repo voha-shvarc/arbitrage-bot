@@ -18,6 +18,7 @@ from abstract.abstract import AbstractExchange
 from abstract.abstract import CreateOrderError
 from abstract.abstract import DepositAddressError
 from analyze.price_analyzer import PriceAnalyzer
+from celery_app.tasks import auto_sell
 from celery_app.tasks import monitor_bundle
 from db.base import Session
 from db.models import CoinNetworkExchange
@@ -27,6 +28,7 @@ from db.models import ProfitBundle
 from db.models import ProfitBundleItem
 from exchanges import EXCHANGES_MAPPING
 
+from ..keyboards.bundle import AutoSellBundleCallbackData
 from ..keyboards.bundle import CheckedBundleCallbackData
 from ..keyboards.bundle import CreateOrderCallbackData
 from ..keyboards.bundle import ForceRefreshBundleCallbackData
@@ -46,6 +48,11 @@ BASE_USDT_PROFIT = 4  # 4 USDT
 
 class SetLimitedOrder(StatesGroup):
     set_amount = State()
+
+
+class AutoSell(StatesGroup):
+    set_price = State()
+    set_timer = State()
 
 
 @bundle_router.callback_query(RefreshBundleCallbackData.filter())
@@ -366,3 +373,59 @@ async def checked_bundle_callback_query(query: CallbackQuery, callback_data: Che
                 checked_label=checked_label,
             ),
         )
+
+
+@bundle_router.callback_query(StateFilter(None), AutoSellBundleCallbackData.filter())
+async def auto_sell_bundle_callback_query(
+    query: CallbackQuery,
+    callback_data: AutoSellBundleCallbackData,
+    state: FSMContext,
+):
+    await query.answer()
+    await query.message.reply("Please enter a limit price...")
+    await state.set_state(AutoSell.set_price)
+    await state.set_data(
+        {
+            "profit_bundle_id": callback_data.profit_bundle_id,
+            "withdraw_exchange_name": callback_data.withdraw_exchange_name,
+            "deposit_exchange_name": callback_data.deposit_exchange_name,
+            "chat_id": query.message.chat.id,
+            "message_id": query.message.message_id,
+        },
+    )
+
+
+@bundle_router.callback_query(StateFilter(AutoSell.set_price))
+async def set_limit_price(message: Message, state: FSMContext):
+    try:
+        price = float(message.text)
+    except ValueError as e:
+        await message.reply(f"It should be a number. Try again...\n{e}")
+    else:
+        await state.update_data({"price": price})
+        await message.reply("Please enter seconds to wait till trying to sell...")
+        await state.set_state(AutoSell.set_timer)
+
+
+@bundle_router.callback_query(StateFilter(AutoSell.set_timer))
+async def set_timer(message: Message, state: FSMContext):
+    try:
+        timer = int(message.text)
+    except ValueError as e:
+        await message.reply(f"It should be a number. Try again...\n{e}")
+    else:
+        state_data = await state.get_data()
+
+        await message.bot.edit_message_reply_markup(
+            chat_id=state_data["chat_id"],
+            message_id=state_data["message_id"],
+            reply_markup=get_bundle_keyboard(
+                state_data["profit_bundle_id"],
+                state_data["withdraw_exchange_name"],
+                state_data["deposit_exchange_name"],
+                sell_label="✅",
+            ),
+        )
+        await state.clear()
+
+        auto_sell.apply_async(args=(state_data["price"], state_data["profit_bundle_id"]), countdown=timer)

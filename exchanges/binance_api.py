@@ -164,12 +164,13 @@ class BinanceAPI(AbstractExchange):
         price: float,
         price_precision: int,
         spot_fee: float,
+        is_buy: bool = True,
     ):
         body = {
             "symbol": pair.default_name,
-            "side": "BUY",
+            "side": "BUY" if is_buy else "SELL",
             "type": "LIMIT",
-            "timeInForce": "FOK",
+            "timeInForce": "FOK" if is_buy else "GTC",
             "quantity": f"{ccy_quantity:.{ccy_precision}f}",
             "price": f"{price:.{price_precision}f}",
         }

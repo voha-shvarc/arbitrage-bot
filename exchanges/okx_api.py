@@ -199,12 +199,13 @@ class OkxAPI(AbstractExchange):
         price: float,
         price_precision: int,
         spot_fee: float,
+        is_buy: bool = True,
     ):
         body = {
             "instId": pair.dashed_name,
             "tdMode": "cash",
-            "side": "buy",
-            "ordType": "fok",
+            "side": "buy" if is_buy else "sell",
+            "ordType": "fok" if is_buy else "limit",
             "sz": f"{ccy_quantity:.{ccy_precision}f}",
             "px": f"{price:.{price_precision}f}",
         }

@@ -183,12 +183,13 @@ class PoloniexAPI(AbstractExchange):
         price: float,
         price_precision: int,
         spot_fee: float,
+        is_buy: bool = True,
     ):
         body = {
             "symbol": pair.underscored_name,
-            "time_in_force": "FOK",
+            "time_in_force": "FOK" if is_buy else "GTC",
             "type": "LIMIT",
-            "side": "BUY",
+            "side": "BUY" if is_buy else "SELL",
             "quantity": f"{ccy_quantity:.{ccy_precision}f}",
             "price": f"{price:.{price_precision}f}",
         }
