@@ -211,6 +211,7 @@ def auto_sell(price: float, profit_bundle_id: int):
             .options(
                 joinedload(PairExchange.pair),
                 joinedload(PairExchange.pair).joinedload(Pair.base_coin),
+                joinedload(PairExchange.pair).joinedload(Pair.quote_coin),
                 joinedload(PairExchange.exchange),
             )
             .first()
