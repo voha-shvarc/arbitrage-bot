@@ -6,3 +6,4 @@ error.log
 service_account.json
 .env
 .env.prod
+.scannerwork

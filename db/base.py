@@ -10,7 +10,13 @@ from sqlalchemy.orm import sessionmaker
 
 load_dotenv()
 
-engine = create_engine(f"postgresql+psycopg2://{os.environ['DB_URL']}", echo=False)
+engine = create_engine(
+    f"postgresql+psycopg2://{os.environ['DB_URL']}",
+    pool_size=5,
+    max_overflow=1,
+    pool_recycle=10,
+    echo=False,
+)
 Session = sessionmaker(engine)
 
 async_engine = create_async_engine(f"postgresql+asyncpg://{os.environ['DB_URL']}", echo=False)
