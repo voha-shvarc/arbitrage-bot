@@ -12,8 +12,8 @@ load_dotenv()
 
 engine = create_engine(
     f"postgresql+psycopg2://{os.environ['DB_URL']}",
-    pool_size=5,
-    max_overflow=1,
+    pool_size=4,
+    max_overflow=0,
     pool_recycle=10,
     echo=False,
 )
