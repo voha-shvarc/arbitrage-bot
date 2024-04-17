@@ -395,7 +395,7 @@ async def auto_sell_bundle_callback_query(
     )
 
 
-@bundle_router.callback_query(StateFilter(AutoSell.set_price))
+@bundle_router.message(StateFilter(AutoSell.set_price))
 async def set_limit_price(message: Message, state: FSMContext):
     try:
         price = float(message.text)
@@ -407,7 +407,7 @@ async def set_limit_price(message: Message, state: FSMContext):
         await state.set_state(AutoSell.set_timer)
 
 
-@bundle_router.callback_query(StateFilter(AutoSell.set_timer))
+@bundle_router.message(StateFilter(AutoSell.set_timer))
 async def set_timer(message: Message, state: FSMContext):
     try:
         timer = int(message.text)
