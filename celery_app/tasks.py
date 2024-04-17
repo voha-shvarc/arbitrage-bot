@@ -9,6 +9,7 @@ from dotenv import dotenv_values
 from sqlalchemy import and_
 from sqlalchemy.orm import joinedload
 
+from abstract.abstract import WithdrawError
 from analyze.price_analyzer import PriceAnalyzer
 from celery_app.conf import app
 from db.base import Session
@@ -218,10 +219,16 @@ def auto_sell(price: float, profit_bundle_id: int):
     exchange_api = EXCHANGES_MAPPING[pair_to_exchange.exchange.name]
     exchange_api = exchange_api(config, {})
 
-    balance = 0
-    while balance == 0:
-        balance = exchange_api.get_balance(pair_to_exchange.pair.base_coin.name)
-        time.sleep(0.5)
+    while True:
+        try:
+            balance = exchange_api.get_balance(pair_to_exchange.pair.base_coin.name)
+        except WithdrawError:
+            balance = 0
+
+        if balance == 0:
+            time.sleep(0.5)
+        else:
+            break
 
     exchange_api.create_order(
         pair=pair_to_exchange.pair,
