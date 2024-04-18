@@ -429,3 +429,5 @@ async def set_timer(message: Message, state: FSMContext):
         await state.clear()
 
         auto_sell.apply_async(args=(state_data["price"], state_data["profit_bundle_id"]), countdown=timer)
+
+        await message.reply("Auto sell enabled...")
