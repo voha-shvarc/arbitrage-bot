@@ -1,3 +1,5 @@
+from decimal import Decimal
+from decimal import ROUND_DOWN
 from json import JSONDecodeError
 from logging import getLogger
 from typing import List
@@ -172,8 +174,8 @@ class HuobiAPI(AbstractExchange):
             "symbol": pair.huobi_name,
             "account_id": self.ACCOUNT_ID,
             "order_type": OrderType.BUY_LIMIT_FOK if is_buy else OrderType.SELL_LIMIT,
-            "amount": f"{ccy_quantity:.{ccy_precision}f}",
-            "price": f"{price:.{price_precision}f}",
+            "amount": Decimal(ccy_quantity).quantize(Decimal(f"1e-{ccy_precision}"), rounding=ROUND_DOWN),
+            "price": Decimal(price).quantize(Decimal(f"1e-{price_precision}"), rounding=ROUND_DOWN),
         }
         try:
             self.trade_client.create_spot_order(**body)

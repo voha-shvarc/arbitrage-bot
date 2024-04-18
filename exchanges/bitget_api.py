@@ -1,6 +1,8 @@
 import base64
 import hmac
 import time
+from decimal import Decimal
+from decimal import ROUND_DOWN
 from json import JSONDecodeError
 from logging import getLogger
 from typing import List
@@ -222,8 +224,8 @@ class BitgetAPI(AbstractExchange):
             "side": "buy" if is_buy else "sell",
             "orderType": "limit",
             "force": "fok" if is_buy else "normal",
-            "quantity": f"{ccy_quantity:.{ccy_precision}f}",
-            "price": f"{price:.{price_precision}f}",
+            "quantity": Decimal(ccy_quantity).quantize(Decimal(f"1e-{ccy_precision}"), rounding=ROUND_DOWN),
+            "price": Decimal(price).quantize(Decimal(f"1e-{price_precision}"), rounding=ROUND_DOWN),
         }
         try:
             self.order_client.placeOrder(params=body)

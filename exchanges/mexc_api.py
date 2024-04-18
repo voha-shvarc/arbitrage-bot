@@ -1,6 +1,8 @@
 import hashlib
 import hmac
 import time
+from decimal import Decimal
+from decimal import ROUND_DOWN
 from json import JSONDecodeError
 from logging import getLogger
 from typing import List
@@ -251,8 +253,8 @@ class MexcAPI(AbstractExchange):
             "symbol": pair.default_name,
             "side": "BUY" if is_buy else "SELL",
             "type": "FILL_OR_KILL" if is_buy else "LIMIT",
-            "quantity": f"{ccy_quantity:.{ccy_precision}f}",
-            "price": f"{price:.{price_precision}f}",
+            "quantity": Decimal(ccy_quantity).quantize(Decimal(f"1e-{ccy_precision}"), rounding=ROUND_DOWN),
+            "price": Decimal(price).quantize(Decimal(f"1e-{price_precision}"), rounding=ROUND_DOWN),
         }
         response = self.sign_request("POST", "/api/v3/order", body)
 

@@ -1,4 +1,6 @@
 import json
+from decimal import Decimal
+from decimal import ROUND_DOWN
 from json import JSONDecodeError
 from logging import getLogger
 from typing import List
@@ -190,8 +192,8 @@ class PoloniexAPI(AbstractExchange):
             "time_in_force": "FOK" if is_buy else "GTC",
             "type": "LIMIT",
             "side": "BUY" if is_buy else "SELL",
-            "quantity": f"{ccy_quantity:.{ccy_precision}f}",
-            "price": f"{price:.{price_precision}f}",
+            "quantity": Decimal(ccy_quantity).quantize(Decimal(f"1e-{ccy_precision}"), rounding=ROUND_DOWN),
+            "price": Decimal(price).quantize(Decimal(f"1e-{price_precision}"), rounding=ROUND_DOWN),
         }
         response = self.orders_client.create(**body)
 

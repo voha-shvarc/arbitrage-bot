@@ -2,6 +2,8 @@ import base64
 import hashlib
 import hmac
 import time
+from decimal import Decimal
+from decimal import ROUND_DOWN
 from json import JSONDecodeError
 from logging import getLogger
 from typing import List
@@ -239,8 +241,8 @@ class KuCoinAPI(AbstractExchange):
             "symbol": pair.dashed_name,
             "side": "buy" if is_buy else "sell",
             "type": "limit",
-            "size": f"{ccy_quantity:.{ccy_precision}f}",
-            "price": f"{price:.{price_precision}f}",
+            "size": Decimal(ccy_quantity).quantize(Decimal(f"1e-{ccy_precision}"), rounding=ROUND_DOWN),
+            "price": Decimal(price).quantize(Decimal(f"1e-{price_precision}"), rounding=ROUND_DOWN),
             "timeInForce": "FOK" if is_buy else "GTC",
         }
         try:

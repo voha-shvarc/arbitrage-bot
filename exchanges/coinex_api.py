@@ -1,6 +1,8 @@
 import hashlib
 import json
 import time
+from decimal import Decimal
+from decimal import ROUND_DOWN
 from json import JSONDecodeError
 from logging import getLogger
 from typing import List
@@ -340,8 +342,8 @@ class CoinExAPI(AbstractExchange):
             "market_type": "SPOT",
             "side": "buy" if is_buy else "sell",
             "type": "fok" if is_buy else "limit",
-            "amount": f"{ccy_quantity:.{ccy_precision}f}",
-            "price": f"{price:.{price_precision}f}",
+            "amount": Decimal(ccy_quantity).quantize(Decimal(f"1e-{ccy_precision}"), rounding=ROUND_DOWN),
+            "price": Decimal(price).quantize(Decimal(f"1e-{price_precision}"), rounding=ROUND_DOWN),
         }
         data = self.sign_request("POST", "/spot/order/new", body=json.dumps(body))
         if err_msg := data["message"]:

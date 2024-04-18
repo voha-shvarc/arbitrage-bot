@@ -1,6 +1,8 @@
 import base64
 import datetime
 import hmac
+from decimal import Decimal
+from decimal import ROUND_DOWN
 from json import JSONDecodeError
 from logging import getLogger
 
@@ -206,8 +208,8 @@ class OkxAPI(AbstractExchange):
             "tdMode": "cash",
             "side": "buy" if is_buy else "sell",
             "ordType": "fok" if is_buy else "limit",
-            "sz": f"{ccy_quantity:.{ccy_precision}f}",
-            "px": f"{price:.{price_precision}f}",
+            "sz": Decimal(ccy_quantity).quantize(Decimal(f"1e-{ccy_precision}"), rounding=ROUND_DOWN),
+            "px": Decimal(price).quantize(Decimal(f"1e-{price_precision}"), rounding=ROUND_DOWN),
         }
         res = self.trade_client.place_order(**body)
         if res["code"] != "0":
