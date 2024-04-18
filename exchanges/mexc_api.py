@@ -249,12 +249,14 @@ class MexcAPI(AbstractExchange):
     ):
         ccy_quantity -= spot_fee
 
+        qty = Decimal(ccy_quantity).quantize(Decimal(f"1e-{ccy_precision}"), rounding=ROUND_DOWN)
+        price = Decimal(price).quantize(Decimal(f"1e-{price_precision}"), rounding=ROUND_DOWN)
         body = {
             "symbol": pair.default_name,
             "side": "BUY" if is_buy else "SELL",
             "type": "FILL_OR_KILL" if is_buy else "LIMIT",
-            "quantity": Decimal(ccy_quantity).quantize(Decimal(f"1e-{ccy_precision}"), rounding=ROUND_DOWN),
-            "price": Decimal(price).quantize(Decimal(f"1e-{price_precision}"), rounding=ROUND_DOWN),
+            "quantity": float(qty),
+            "price": float(price),
         }
         response = self.sign_request("POST", "/api/v3/order", body)
 

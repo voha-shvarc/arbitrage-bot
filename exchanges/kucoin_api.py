@@ -237,12 +237,14 @@ class KuCoinAPI(AbstractExchange):
         spot_fee: float,
         is_buy: bool = True,
     ):
+        qty = Decimal(ccy_quantity).quantize(Decimal(f"1e-{ccy_precision}"), rounding=ROUND_DOWN)
+        price = Decimal(price).quantize(Decimal(f"1e-{price_precision}"), rounding=ROUND_DOWN)
         body = {
             "symbol": pair.dashed_name,
             "side": "buy" if is_buy else "sell",
             "type": "limit",
-            "size": Decimal(ccy_quantity).quantize(Decimal(f"1e-{ccy_precision}"), rounding=ROUND_DOWN),
-            "price": Decimal(price).quantize(Decimal(f"1e-{price_precision}"), rounding=ROUND_DOWN),
+            "size": float(qty),
+            "price": float(price),
             "timeInForce": "FOK" if is_buy else "GTC",
         }
         try:

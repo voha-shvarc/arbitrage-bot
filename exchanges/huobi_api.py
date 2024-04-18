@@ -170,12 +170,14 @@ class HuobiAPI(AbstractExchange):
         spot_fee: float,
         is_buy: bool = True,
     ):
+        qty = Decimal(ccy_quantity).quantize(Decimal(f"1e-{ccy_precision}"), rounding=ROUND_DOWN)
+        price = Decimal(price).quantize(Decimal(f"1e-{price_precision}"), rounding=ROUND_DOWN)
         body = {
             "symbol": pair.huobi_name,
             "account_id": self.ACCOUNT_ID,
             "order_type": OrderType.BUY_LIMIT_FOK if is_buy else OrderType.SELL_LIMIT,
-            "amount": Decimal(ccy_quantity).quantize(Decimal(f"1e-{ccy_precision}"), rounding=ROUND_DOWN),
-            "price": Decimal(price).quantize(Decimal(f"1e-{price_precision}"), rounding=ROUND_DOWN),
+            "amount": float(qty),
+            "price": float(price),
         }
         try:
             self.trade_client.create_spot_order(**body)

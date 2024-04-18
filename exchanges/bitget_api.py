@@ -219,13 +219,15 @@ class BitgetAPI(AbstractExchange):
         spot_fee: float,
         is_buy: bool = True,
     ):
+        qty = Decimal(ccy_quantity).quantize(Decimal(f"1e-{ccy_precision}"), rounding=ROUND_DOWN)
+        price = Decimal(price).quantize(Decimal(f"1e-{price_precision}"), rounding=ROUND_DOWN)
         body = {
             "symbol": pair.bitget_name,
             "side": "buy" if is_buy else "sell",
             "orderType": "limit",
             "force": "fok" if is_buy else "normal",
-            "quantity": Decimal(ccy_quantity).quantize(Decimal(f"1e-{ccy_precision}"), rounding=ROUND_DOWN),
-            "price": Decimal(price).quantize(Decimal(f"1e-{price_precision}"), rounding=ROUND_DOWN),
+            "quantity": float(qty),
+            "price": float(price),
         }
         try:
             self.order_client.placeOrder(params=body)

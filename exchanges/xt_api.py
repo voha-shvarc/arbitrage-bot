@@ -342,14 +342,16 @@ class XTAPI(AbstractExchange):
         spot_fee: float,
         is_buy: bool = True,
     ):
+        qty = Decimal(ccy_quantity).quantize(Decimal(f"1e-{ccy_precision}"), rounding=ROUND_DOWN)
+        price = Decimal(price).quantize(Decimal(f"1e-{price_precision}"), rounding=ROUND_DOWN)
         body = {
             "symbol": pair.underscored_name.lower(),
             "side": "BUY" if is_buy else "SELL",
             "type": "LIMIT",
             "timeInForce": "FOK" if is_buy else "GTC",
             "bizType": "SPOT",
-            "quantity": Decimal(ccy_quantity).quantize(Decimal(f"1e-{ccy_precision}"), rounding=ROUND_DOWN),
-            "price": Decimal(price).quantize(Decimal(f"1e-{price_precision}"), rounding=ROUND_DOWN),
+            "quantity": float(qty),
+            "price": float(price),
         }
         response = self.sign_request("POST", "/v4/order", body=body)
 

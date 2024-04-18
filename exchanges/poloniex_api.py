@@ -187,13 +187,15 @@ class PoloniexAPI(AbstractExchange):
         spot_fee: float,
         is_buy: bool = True,
     ):
+        qty = Decimal(ccy_quantity).quantize(Decimal(f"1e-{ccy_precision}"), rounding=ROUND_DOWN)
+        price = Decimal(price).quantize(Decimal(f"1e-{price_precision}"), rounding=ROUND_DOWN)
         body = {
             "symbol": pair.underscored_name,
             "time_in_force": "FOK" if is_buy else "GTC",
             "type": "LIMIT",
             "side": "BUY" if is_buy else "SELL",
-            "quantity": Decimal(ccy_quantity).quantize(Decimal(f"1e-{ccy_precision}"), rounding=ROUND_DOWN),
-            "price": Decimal(price).quantize(Decimal(f"1e-{price_precision}"), rounding=ROUND_DOWN),
+            "quantity": float(qty),
+            "price": float(price),
         }
         response = self.orders_client.create(**body)
 

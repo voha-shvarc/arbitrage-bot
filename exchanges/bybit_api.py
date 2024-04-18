@@ -158,13 +158,15 @@ class BybitAPI(AbstractExchange):
         spot_fee: float,
         is_buy: bool = True,
     ):
+        qty = Decimal(ccy_quantity).quantize(Decimal(f"1e-{ccy_precision}"), rounding=ROUND_DOWN)
+        price = Decimal(price).quantize(Decimal(f"1e-{price_precision}"), rounding=ROUND_DOWN)
         body = {
             "category": "spot",
             "symbol": pair.default_name,
             "side": "Buy" if is_buy else "Sell",
             "orderType": "Limit",
-            "qty": Decimal(ccy_quantity).quantize(Decimal(f"1e-{ccy_precision}"), rounding=ROUND_DOWN),
-            "price": Decimal(price).quantize(Decimal(f"1e-{price_precision}"), rounding=ROUND_DOWN),
+            "qty": float(qty),
+            "price": float(price),
             "timeInForce": "FOK" if is_buy else "GTC",
         }
         try:
