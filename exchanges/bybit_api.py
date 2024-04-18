@@ -188,7 +188,7 @@ class BybitAPI(AbstractExchange):
 
         body = {
             "coin": cne.coin.name,
-            "network": cne.network.name,
+            "chain": cne.network.name,
             "address": deposit_address.address,
             "tag": deposit_address.memo or "",
             "amount": amount,
