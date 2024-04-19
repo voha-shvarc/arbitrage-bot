@@ -87,9 +87,8 @@ class CoinExAPI(AbstractExchange):
         self.connection = connection
         self.logger = logger or error_logger
 
-        self.api_key = config["DIGIFINEX_API_KEY"]
-        self.api_secret = config["DIGIFINEX_API_SECRET"]
-
+        self.api_key = config["COINEX_API_KEY"]
+        self.api_secret = config["COINEX_API_SECRET"]
         self.HEADERS = {
             "Content-Type": "application/json; charset=utf-8",
             "Accept": "application/json",
