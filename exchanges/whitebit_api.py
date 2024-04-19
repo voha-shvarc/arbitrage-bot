@@ -1,5 +1,6 @@
 from decimal import Decimal
 from decimal import ROUND_DOWN
+from decimal import ROUND_HALF_EVEN
 from json import JSONDecodeError
 from logging import getLogger
 from typing import List
@@ -171,7 +172,7 @@ class WhitebitAPI(AbstractExchange):
         is_buy: bool = True,
     ):
         qty = Decimal(ccy_quantity).quantize(Decimal(f"1e-{ccy_precision}"), rounding=ROUND_DOWN)
-        price = Decimal(price).quantize(Decimal(f"1e-{price_precision}"), rounding=ROUND_DOWN)
+        price = Decimal(price).quantize(Decimal(f"1e-{price_precision}"), rounding=ROUND_HALF_EVEN)
         body = {
             "market": pair.underscored_name,
             "side": "buy" if is_buy else "sell",

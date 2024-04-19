@@ -3,6 +3,7 @@ import datetime
 import hmac
 from decimal import Decimal
 from decimal import ROUND_DOWN
+from decimal import ROUND_HALF_EVEN
 from json import JSONDecodeError
 from logging import getLogger
 
@@ -204,7 +205,7 @@ class OkxAPI(AbstractExchange):
         is_buy: bool = True,
     ):
         qty = Decimal(ccy_quantity).quantize(Decimal(f"1e-{ccy_precision}"), rounding=ROUND_DOWN)
-        price = Decimal(price).quantize(Decimal(f"1e-{price_precision}"), rounding=ROUND_DOWN)
+        price = Decimal(price).quantize(Decimal(f"1e-{price_precision}"), rounding=ROUND_HALF_EVEN)
         body = {
             "instId": pair.dashed_name,
             "tdMode": "cash",
