@@ -2,8 +2,8 @@ import asyncio
 import logging
 import time
 from collections import defaultdict
-from typing import Generator
-from typing import Tuple
+from itertools import chain
+from itertools import groupby
 from typing import Union
 
 from httpcore import ConnectError
@@ -11,6 +11,7 @@ from httpx import PoolTimeout
 from sqlalchemy import and_
 from sqlalchemy import exists
 from sqlalchemy import func
+from sqlalchemy import or_
 from sqlalchemy import select
 from sqlalchemy.orm import contains_eager
 from sqlalchemy.orm import joinedload
@@ -22,7 +23,6 @@ from celery_app.tasks import monitor_bundle
 from db.base import AsyncSession
 from db.base import Session
 from db.models import BundleStatus
-from db.models import Coin
 from db.models import CoinNetworkExchange
 from db.models import Exchange
 from db.models import Pair
@@ -36,7 +36,6 @@ from .price_analyzer import PriceAnalyzer
 
 log = logging.getLogger("output")
 error_log = logging.getLogger("error")
-best_cne_T = Union[dict[str, CoinNetworkExchange], None]
 
 
 class ExchangePairAnalyzer:
@@ -51,8 +50,8 @@ class ExchangePairAnalyzer:
         loop = asyncio.get_event_loop()
         common_pairs = self._get_common_pairs()
 
-        for pair in common_pairs:
-            task = loop.create_task(self.manage_pair(pair))
+        for pair_data in common_pairs.values():
+            task = loop.create_task(self.manage_pair(pair_data))
             running_tasks.add(task)
 
         log.info(f"Found {len(running_tasks)} common pairs")
@@ -66,15 +65,12 @@ class ExchangePairAnalyzer:
 
     async def manage_pair(self, pair_data: dict[str, Union[Pair, dict[str, float]]]):
         pair = pair_data["pair"]
-        from_base_net_mapping, from_second_net_mapping = await self._get_best_networks(pair.base_coin)
-        if not from_base_net_mapping and not from_second_net_mapping:
-            log.info(f"no network found - {pair.default_name}")
-            return
+        from_base_net_mapping = self._get_best_cne(self.base_exchange.NAME, self.pair_exchange.NAME, pair_data["nets"])
+        from_second_net_mapping = self._get_best_cne(self.pair_exchange.NAME, self.base_exchange.NAME, pair_data["nets"])
 
         try:
             async with self.base_exchange.async_limiter:
                 base_exchange_price = await self.base_exchange.async_get_price(pair)
-
             async with self.pair_exchange.async_limiter:
                 pair_exchange_price = await self.pair_exchange.async_get_price(pair)
 
@@ -162,7 +158,7 @@ class ExchangePairAnalyzer:
 
         return can_withdraw
 
-    def _get_common_pairs(self) -> Generator[dict[str, Union[Pair, dict[str, float]]], None, None]:
+    def _get_common_pairs(self) -> dict[str, dict]:
         with Session() as session:
             subq = (
                 session.query(Pair.id)
@@ -182,65 +178,75 @@ class ExchangePairAnalyzer:
                 .order_by(Pair.id)
                 .all()
             )
+            cnes_mapping = self.get_cnes_mapping(session)
 
+        pairs_data = {}
         for idx in range(0, len(pairs), 2):
             pair, exchange_name1, taker_fee1 = pairs[idx]
             _, exchange_name2, taker_fee2 = pairs[idx + 1]
-            yield {
+
+            nets = cnes_mapping.get(pair.base_coin.name)
+            if not nets:
+                continue
+            pairs_data[pair.base_coin.name] = {
                 "pair": pair,
+                "nets": nets,
                 "taker_fees": {
                     exchange_name1: taker_fee1,
                     exchange_name2: taker_fee2,
                 },
             }
 
-    async def _get_best_networks(self, coin: Coin) -> Tuple[best_cne_T, best_cne_T]:
-        async with AsyncSession() as session:
-            subq = (
-                select(CoinNetworkExchange.base_network_id)
-                .join(Exchange)
-                .where(CoinNetworkExchange.coin_id == coin.id)
-                .where(Exchange.name.in_([self.base_exchange.NAME, self.pair_exchange.NAME]))
-                .group_by(CoinNetworkExchange.base_network_id)
-                .having(func.count(CoinNetworkExchange.id) == 2)
-            )
-            coin_network_exchange_qs = await session.scalars(
-                select(CoinNetworkExchange)
-                .join(CoinNetworkExchange.exchange)
-                .where(CoinNetworkExchange.base_network_id.in_(subq))
-                .where(CoinNetworkExchange.coin_id == coin.id)
-                .where(Exchange.name.in_([self.base_exchange.NAME, self.pair_exchange.NAME]))
-                .options(
-                    contains_eager(CoinNetworkExchange.exchange),
-                    joinedload(CoinNetworkExchange.network),
-                    joinedload(CoinNetworkExchange.base_network),
-                    joinedload(CoinNetworkExchange.coin),
-                ),
-            )
+        return pairs_data
 
-        nets_mapping = defaultdict(dict)
-        for cne in coin_network_exchange_qs:
-            nets_mapping[cne.base_network.name][cne.exchange.name] = cne
-
-        best_base_to_second_network = self._get_best_cne(
-            self.base_exchange.NAME,
-            self.pair_exchange.NAME,
-            nets_mapping,
+    def get_cnes_mapping(self, session) -> dict[str, dict[str, dict[str, CoinNetworkExchange]]]:
+        coins_subq = (
+            select(Pair.base_coin_id)
+            .join(PairExchange)
+            .join(Exchange)
+            .where(Exchange.name.in_([self.base_exchange.NAME, self.pair_exchange.NAME]))
+            .group_by(Pair.id)
+            .having(func.count(PairExchange.id) == 2)
         )
-        best_second_to_base_network = self._get_best_cne(
-            self.pair_exchange.NAME,
-            self.base_exchange.NAME,
-            nets_mapping,
+        cne_ids = session.scalars(
+            select(func.array_agg(CoinNetworkExchange.id))
+            .join(Exchange)
+            .where(
+                CoinNetworkExchange.coin_id.in_(coins_subq),
+                Exchange.name.in_([self.base_exchange.NAME, self.pair_exchange.NAME]),
+                or_(CoinNetworkExchange.can_deposit, CoinNetworkExchange.can_withdraw),
+            )
+            .group_by(CoinNetworkExchange.coin_id, CoinNetworkExchange.base_network_id)
+            .having(func.count(CoinNetworkExchange.id) == 2),
         )
 
-        return best_base_to_second_network, best_second_to_base_network
+        coin_network_exchange_qs = session.scalars(
+            select(CoinNetworkExchange)
+            .join(CoinNetworkExchange.exchange)
+            .where(CoinNetworkExchange.id.in_(chain(*cne_ids)))
+            .order_by(CoinNetworkExchange.coin_id, CoinNetworkExchange.base_network_id)
+            .options(
+                contains_eager(CoinNetworkExchange.exchange),
+                joinedload(CoinNetworkExchange.network),
+                joinedload(CoinNetworkExchange.base_network),
+                joinedload(CoinNetworkExchange.coin),
+            ),
+        )
+
+        cnes_mapping = {}
+        for coin, cnes in groupby(coin_network_exchange_qs, lambda x: x.coin.name):
+            cnes_mapping[coin] = defaultdict(dict)
+            for cne in cnes:
+                cnes_mapping[coin][cne.base_network.name][cne.exchange.name] = cne
+
+        return cnes_mapping
 
     @staticmethod
     def _get_best_cne(
         withdraw_exchange_name: str,
         deposit_exchange_name: str,
         cnes_mapping: dict[str, [dict[str, CoinNetworkExchange]]],
-    ) -> best_cne_T:
+    ) -> Union[dict[str, CoinNetworkExchange], None]:
         available_cne_mapping = []
         for _, cne_mapping in cnes_mapping.items():
             if (
