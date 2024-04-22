@@ -75,7 +75,6 @@ def sync_coin_exchange_networks():
                     and_(Exchange.name == "ByBit", Coin.name == "GPT"),  # differs from okx and gateio
                     and_(Exchange.name == "ByBit", Coin.name == "TOMS"),  # on bybit available only in corea
                     and_(Exchange.name == "Bitget", Coin.name == "ALT"),  # differs from binance and gateio
-                    and_(Exchange.name == "Bitget", Coin.name == "PIT"),
                     and_(Exchange.name == "Bitget", Coin.name == "PMPY"),  # takes additional 7% for smart c
                     and_(Exchange.name == "Bingx", Coin.name == "TORN"),
                     and_(Exchange.name == "Bingx", Coin.name == "NGL"),
@@ -84,6 +83,7 @@ def sync_coin_exchange_networks():
                         Exchange.name.in_(["ByBit", "Binance", "OKX"]),
                         Network.name == "Chiliz",
                     ),  # different contract addresses for this chain
+                    Coin.name == "PIT",  # 8% of additional fee
                     Coin.name == "BABYDOGE",  # a lot of additional commission
                     Coin.name == "LSD",  # different coins
                     Coin.name == "PEPE2",  # kucoin asks not to deposit it, has different contract addresses
@@ -165,7 +165,7 @@ def _run_networks_mapping(session: Session):
             "AVA_C",
         ],
         "DYM": ["DYM", "DYMEVM"],
-        "Manta": ["Manta", "MANTA"],
+        "Manta": ["Manta", "MANTA", "MANTAETH"],
         "Bitcoin": ["BTC", "Bitcoin", "BRC20", "ARC20", "BTC_BRC20", "BTC_ARC20"],
         "Bitcoin Cash": ["BCH", "BitcoinCash", "BCHN"],
         "Bitcoin SV": ["BSV", "Bitcoin SV"],

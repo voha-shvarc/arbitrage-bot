@@ -3,10 +3,13 @@ from typing import Any
 from typing import List
 from typing import Union
 
+from gate_api.models.currency import Currency
 from huobi.constant import ChainDepositStatus
 from huobi.constant import ChainWithdrawStatus
 from huobi.model.generic import Chain
 from huobi.model.generic import ReferenceCurrency
+
+from celery_app.gateio_map import cne_mapping
 
 
 @dataclass
@@ -97,13 +100,29 @@ class NetworkExchange:
             plain_name=data["chain"],
         )
 
-    # @classmethod
-    # def from_gateio(cls, data: Currency):
-    #     name = data.chain
-    #     can_deposit = not data.deposit_disabled
-    #     can_withdraw = not data.withdraw_disabled
-    #
-    #     return cls(name, can_deposit, can_withdraw, 0)
+    @classmethod
+    def from_gateio(cls, coin_name: str, data: Currency):
+        if coin_name in cne_mapping:
+            cne_data = cne_mapping[coin_name].get(data.chain)
+        else:
+            cne_data = None
+
+        name = data.chain
+        can_deposit = not data.deposit_disabled
+        can_withdraw = not data.withdraw_disabled
+        withdraw_fee = cne_data["Withdraw Fee"] if cne_data else 0
+        confirmations_needed = cne_data["Deposit Confirmations"] if cne_data else None
+        deposit_min = cne_data["Deposit Min"] if cne_data else None
+
+        return cls(
+            name=name,
+            can_deposit=can_deposit,
+            can_withdraw=can_withdraw,
+            withdraw_fee=withdraw_fee,
+            confirmations_needed=confirmations_needed,
+            deposit_min=deposit_min,
+            withdraw_min=0,
+        )
 
     @classmethod
     def from_huobi(cls, network: Chain):
@@ -328,14 +347,12 @@ class CoinNetworkExchangeDC:
 
         return cls(coin_name, "OKX", networks, {})
 
-    # @classmethod
-    # def from_gateio(cls, data: Currency):
-    #     coin_name = data.currency.split("_")[0]
-    #     networks = []
-    #     if data.chain:
-    #         networks.append(NetworkExchange.from_gateio(data))
-    #
-    #     return cls(coin_name, "GateIO", networks, {})
+    @classmethod
+    def from_gateio(cls, data: Currency):
+        coin_name = data.currency.split("_")[0]
+        networks = [NetworkExchange.from_gateio(coin_name, data)] if data.chain else []
+
+        return cls(coin_name, "GateIO", networks, {})
 
     @classmethod
     def from_huobi(cls, data: ReferenceCurrency):
