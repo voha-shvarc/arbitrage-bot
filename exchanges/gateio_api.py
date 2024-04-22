@@ -4,6 +4,7 @@ from json import JSONDecodeError
 from logging import getLogger
 from typing import List
 
+from aiolimiter import AsyncLimiter
 from gate_api import ApiClient
 from gate_api import Configuration
 from gate_api import SpotApi
@@ -14,9 +15,9 @@ from gate_api.exceptions import GateApiException
 from abstract import AbstractExchange
 from abstract import NoPriceFound
 from abstract.abstract import CreateOrderError
-from abstract.abstract import DepositAddress
 from abstract.abstract import DepositAddressError
 from abstract.abstract import WithdrawError
+from abstract.abstract import WithdrawStatus
 from db.models import CoinNetworkExchange
 from db.models import Pair
 from db.structs import CoinNetworkExchangeDC
@@ -30,6 +31,8 @@ error_log = getLogger("error")
 class GateIOAPI(AbstractExchange):
     NAME = "GateIO"
     base_url = "https://api.gateio.ws"
+    withdraw_status = WithdrawStatus.whitelist
+    async_limiter = AsyncLimiter(3.6, 0.2)  # 18r/1s  max? 20r/1s
 
     def __init__(self, config, connection, logger=None):
         self.connection = connection

@@ -135,6 +135,13 @@ def sync_coin_exchange_networks():
                     and_(Exchange.name == "XT", Coin.name == "AC"),
                     and_(Exchange.name == "XT", Coin.name == "TITAN"),
                     and_(Exchange.name == "XT", Coin.name == "MTO"),
+                    and_(Exchange.name == "GateIO", Coin.name == "SMT"),
+                    and_(Exchange.name == "GateIO", Coin.name == "GTC"),
+                    and_(Exchange.name == "GateIO", Coin.name == "GDT"),
+                    and_(Exchange.name == "GateIO", Coin.name == "GAME"),
+                    and_(Exchange.name == "GateIO", Coin.name == "DERP"),
+                    and_(Exchange.name == "GateIO", Coin.name == "FREE"),
+                    and_(Exchange.name == "GateIO", Coin.name == "GEM"),
                 ),
             )
         )
