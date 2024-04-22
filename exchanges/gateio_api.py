@@ -32,7 +32,7 @@ class GateIOAPI(AbstractExchange):
     NAME = "GateIO"
     base_url = "https://api.gateio.ws"
     withdraw_status = WithdrawStatus.whitelist
-    async_limiter = AsyncLimiter(3.6, 0.2)  # 18r/1s  max? 20r/1s
+    async_limiter = AsyncLimiter(3.2, 0.2)  # 16r/1s  max? 20r/1s
 
     def __init__(self, config, connection, logger=None):
         self.connection = connection
