@@ -31,7 +31,13 @@ config = dotenv_values(".env")
 BASE_USDT_PROFIT = 4  # 4 USDT
 REFRESH_BASE_USDT_PROFIT = 2  # 2 USDT
 
-error_log = logging.getLogger("error")
+log_file = "celery_tasks.log"
+formatt = logging.Formatter("%(asctime)s - %(message)s")
+logger = logging.getLogger("celery_tasks")
+logger.setLevel(logging.INFO)
+handler = logging.FileHandler(log_file)
+handler.setFormatter(formatt)
+logger.addHandler(handler)
 
 
 @app.task(bind=True, max_retries=100)  # it takes 40 minutes to use all the retires
@@ -71,7 +77,7 @@ def monitor_bundle(self: Task, bundle_id, force_refresh: bool = False):
     try:
         price_analyzer.run()
     except Exception as e:
-        error_log.exception(e)
+        logger.exception(e)
         return
 
     if price_analyzer.user_based_profit > REFRESH_BASE_USDT_PROFIT:
@@ -218,7 +224,7 @@ def auto_sell(price: float, profit_bundle_id: int):
         )
 
     exchange_api = EXCHANGES_MAPPING[pair_to_exchange.exchange.name]
-    exchange_api = exchange_api(config, {})
+    exchange_api = exchange_api(config, {}, logger)
 
     while True:
         try:
@@ -231,6 +237,7 @@ def auto_sell(price: float, profit_bundle_id: int):
         else:
             break
 
+    logger.info(f"Creation auto sell order for {pair_to_exchange.pair.default_name}\n" f"{balance = }; {price = }")
     exchange_api.create_order(
         pair=pair_to_exchange.pair,
         ccy_quantity=balance,
