@@ -202,6 +202,7 @@ class NetworkExchange:
         withdraw_min = float(data["withdrawMin"])
         withdraw_max = float(data["withdrawMax"])
         deposit_min = float(data["depositMin"])
+        withdraw_precision = data["withdrawPrecision"]
 
         return cls(
             name=net_name,
@@ -212,6 +213,7 @@ class NetworkExchange:
             withdraw_max=withdraw_max,
             deposit_min=deposit_min,
             confirmations_needed=confirmations_needed,
+            withdraw_precision=withdraw_precision,
         )
 
     @classmethod
