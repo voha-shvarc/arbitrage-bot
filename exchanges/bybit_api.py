@@ -183,16 +183,16 @@ class BybitAPI(AbstractExchange):
         deposit_address: DepositAddress,
     ) -> None:
         if cne.withdraw_precision:
-            amount = f"{ccy_quantity_to_withdraw:.{cne.withdraw_precision}}"
+            amount = Decimal(ccy_quantity_to_withdraw).quantize(Decimal(f"1e-{cne.withdraw_precision}"), rounding=ROUND_DOWN)
         else:
-            amount = str(ccy_quantity_to_withdraw)
+            amount = ccy_quantity_to_withdraw
 
         body = {
             "coin": cne.coin.name,
             "chain": cne.network.name,
             "address": deposit_address.address,
             "tag": deposit_address.memo or "",
-            "amount": amount,
+            "amount": str(amount),
             "timestamp": int(time.time() * 1000),
             "feeType": 1,
             "forceChain": 1,

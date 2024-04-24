@@ -186,14 +186,14 @@ class GateIOAPI(AbstractExchange):
         deposit_address: DepositAddress,
     ) -> None:
         if cne.withdraw_precision:
-            amount = f"{ccy_quantity_to_withdraw:.{cne.withdraw_precision}}"
+            amount = Decimal(ccy_quantity_to_withdraw).quantize(Decimal(f"1e-{cne.withdraw_precision}"), rounding=ROUND_DOWN)
         else:
-            amount = str(ccy_quantity_to_withdraw)
+            amount = ccy_quantity_to_withdraw
 
         body = {
             "currency": cne.coin.name,
             "address": deposit_address.address,
-            "amount": amount,
+            "amount": str(amount),
             "memo": deposit_address.memo,
             "chain": cne.network.name,
         }

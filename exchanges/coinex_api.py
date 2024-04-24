@@ -310,9 +310,9 @@ class CoinExAPI(AbstractExchange):
         deposit_address: DepositAddress,
     ) -> None:
         if cne.withdraw_precision:
-            amount = f"{ccy_quantity_to_withdraw:.{cne.withdraw_precision}}"
+            amount = Decimal(ccy_quantity_to_withdraw).quantize(Decimal(f"1e-{cne.withdraw_precision}"), rounding=ROUND_DOWN)
         else:
-            amount = str(ccy_quantity_to_withdraw)
+            amount = ccy_quantity_to_withdraw
 
         path = "/assets/withdraw"
         body = {
@@ -320,7 +320,7 @@ class CoinExAPI(AbstractExchange):
             "chain": cne.network.name,
             "to_address": deposit_address.address,
             "memo": deposit_address.memo,
-            "amount": amount,
+            "amount": str(amount),
         }
         data = self.sign_request("POST", path, body=json.dumps(body))
         if err_msg := data["message"]:

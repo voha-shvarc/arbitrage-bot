@@ -227,9 +227,9 @@ class OkxAPI(AbstractExchange):
     ) -> None:
         ccy_quantity_to_withdraw -= cne.withdraw_fee
         if cne.withdraw_precision:
-            amount = f"{ccy_quantity_to_withdraw:.{cne.withdraw_precision}}"
+            amount = Decimal(ccy_quantity_to_withdraw).quantize(Decimal(f"1e-{cne.withdraw_precision}"), rounding=ROUND_DOWN)
         else:
-            amount = str(ccy_quantity_to_withdraw)
+            amount = ccy_quantity_to_withdraw
 
         if deposit_address.memo:
             address = f"{deposit_address.address}:{deposit_address.memo}"
@@ -239,7 +239,7 @@ class OkxAPI(AbstractExchange):
         body = {
             "ccy": cne.coin.name,
             "chain": cne.plain_network_name,
-            "amt": amount,  # doesn't include fee
+            "amt": str(amount),  # doesn't include fee
             "dest": "4",  # on-chain withdraw
             "toAddr": address,  # includes address and tag if present
             "fee": cne.withdraw_fee,

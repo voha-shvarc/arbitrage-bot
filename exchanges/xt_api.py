@@ -303,14 +303,14 @@ class XTAPI(AbstractExchange):
         deposit_address: DepositAddress,
     ) -> None:
         if cne.withdraw_precision:
-            amount = f"{ccy_quantity_to_withdraw:.{cne.withdraw_precision}}"
+            amount = Decimal(ccy_quantity_to_withdraw).quantize(Decimal(f"1e-{cne.withdraw_precision}"), rounding=ROUND_DOWN)
         else:
-            amount = str(ccy_quantity_to_withdraw)
+            amount = ccy_quantity_to_withdraw
 
         body = {
             "currency": cne.coin.name.lower(),
             "chain": cne.network.name,
-            "amount": amount,
+            "amount": str(amount),
             "address": deposit_address.address,
         }
         if deposit_address.memo:

@@ -172,15 +172,15 @@ class BingxAPI(AbstractExchange):
         deposit_address: DepositAddress,
     ) -> None:
         if cne.withdraw_precision:
-            amount = f"{ccy_quantity_to_withdraw:.{cne.withdraw_precision}}"
+            amount = Decimal(ccy_quantity_to_withdraw).quantize(Decimal(f"1e-{cne.withdraw_precision}"), rounding=ROUND_DOWN)
         else:
-            amount = str(ccy_quantity_to_withdraw)
+            amount = ccy_quantity_to_withdraw
 
         body = {
             "coin": cne.coin.name,
             "network": cne.network.name,
             "address": deposit_address.address,
-            "amount": amount,
+            "amount": str(amount),
             "walletType": 1,
         }
         if deposit_address.memo:
