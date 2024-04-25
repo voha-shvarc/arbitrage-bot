@@ -9,7 +9,6 @@ from logging import getLogger
 from typing import List
 
 from aiolimiter import AsyncLimiter
-from bitget.consts import POST
 
 from abstract import AbstractExchange
 from abstract import NoPriceFound
@@ -22,6 +21,7 @@ from db.models import Pair
 from db.structs import CoinNetworkExchangeDC
 from db.structs import DepositAddress
 from db.structs import TradingPair
+from exchanges.bitget.consts import POST
 from exchanges.bitget.exceptions import BitgetAPIException
 from exchanges.bitget.v1.spot.account_api import AccountApi
 from exchanges.bitget.v1.spot.market_api import MarketApi
