@@ -254,19 +254,20 @@ class XTAPI(AbstractExchange):
     def get_balance(self, coin_name: str = "usdt") -> float:
         params = {"currency": coin_name.lower()}
         response = self.sign_request("GET", "/v4/balance", params)
+        balance = 0
         try:
             data = response.json()
+        except JSONDecodeError:
+            self.logger.error(f"[xt] Error getting balance for {coin_name}. {response.text}")
+        else:
             if data is None:
                 error_response = json.loads(response.text)
                 msg = ERROR_MAPPING[error_response.get("mc")]
                 self.logger.error(f"[xt] {msg}")
-                raise WithdrawError(f"[xt] {msg}") from None
+            else:
+                balance = float(data["result"]["availableAmount"])
 
-        except JSONDecodeError as e:
-            self.logger.error(f"[xt] Error getting balance for {coin_name}. {response.text}")
-            raise WithdrawError("Couldn't get balance") from e
-
-        return float(data["result"]["availableAmount"])
+        return balance
 
     def get_deposit_address(self, cne: CoinNetworkExchange) -> DepositAddress:
         try:

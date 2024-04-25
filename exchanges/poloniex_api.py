@@ -143,11 +143,10 @@ class PoloniexAPI(AbstractExchange):
             for balance_data in response[0]["balances"]:
                 if balance_data["currency"] == coin_name:
                     return float(balance_data["available"])
-        except (KeyError, IndexError) as e:
-            self.logger.error(f"[poloniex] Error getting balance for {coin_name}. {response}")
-            raise WithdrawError("Couldn't get balance") from e
+        except (KeyError, IndexError):
+            self.logger.error(f"No available balance for {coin_name}. {response = }")
 
-        raise WithdrawError(f"No available balance for {coin_name}")
+        return 0
 
     def get_deposit_address(self, cne: CoinNetworkExchange) -> DepositAddress:
         response = self.wallet_client.create_address(cne.plain_network_name)

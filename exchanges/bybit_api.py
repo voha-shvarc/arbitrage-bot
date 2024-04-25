@@ -28,6 +28,7 @@ error_logger = getLogger("error")
 class BybitAPI(AbstractExchange):
     NAME = "ByBit"
     base_url = "https://api.bybit.com"
+    get_balance_limit = 0.7
 
     def __init__(self, config, connection, logger=None):
         self.connection = connection
@@ -135,6 +136,7 @@ class BybitAPI(AbstractExchange):
         try:
             balance = float(response["result"]["balance"]["walletBalance"])
         except KeyError:
+            self.logger.error(f"No available balance for {coin_name}. {response = }")
             balance = 0
 
         return balance

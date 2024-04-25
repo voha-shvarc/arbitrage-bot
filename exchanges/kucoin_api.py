@@ -174,11 +174,11 @@ class KuCoinAPI(AbstractExchange):
         response = self.account_client.get_account_list(currency=coin_name, account_type="trade")
         try:
             balance = float(response[0]["balance"])
-        except (KeyError, IndexError) as e:
-            self.logger.exception(f"[kucoin] error getting balance: {coin_name}, {e}")
-            raise WithdrawError(f"No available balance for {coin_name}") from e
-        else:
-            return balance
+        except (KeyError, IndexError):
+            self.logger.error(f"No available balance for {coin_name}. {response = }")
+            balance = 0
+
+        return balance
 
     def transfer(self, coin_name: str, amount: str, from_account: str = "trade", to_account: str = "main"):
         try:

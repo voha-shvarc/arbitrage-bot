@@ -149,7 +149,8 @@ class HuobiAPI(AbstractExchange):
             if balance.currency == coin_name.lower() and balance.type == AccountBalanceUpdateType.TRADE:
                 return float(balance.balance)
 
-        raise WithdrawError(f"No available balance for {coin_name}")
+        self.logger.error(f"No available balance for {coin_name}. {account_balance = }")
+        return 0
 
     def get_deposit_address(self, cne: CoinNetworkExchange) -> DepositAddress:
         try:

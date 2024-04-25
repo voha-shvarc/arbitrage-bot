@@ -24,6 +24,7 @@ class DepositStatus:
 class AbstractExchange(ABC):
     NAME = None
     async_limiter = AsyncLimiter(20, 0.2)  # 100r/1s
+    get_balance_limit: float = 0.2
     withdraw_status = WithdrawStatus.whitelist
     deposit_status = DepositStatus.enabled
 

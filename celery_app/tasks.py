@@ -9,7 +9,6 @@ from dotenv import dotenv_values
 from sqlalchemy import and_
 from sqlalchemy.orm import joinedload
 
-from abstract.abstract import WithdrawError
 from analyze.price_analyzer import PriceAnalyzer
 from celery_app.conf import app
 from db.base import Session
@@ -203,6 +202,21 @@ def fill_up_bundle(bundle_id):
 
 @app.task
 def auto_sell(price: float, profit_bundle_id: int):
+    """
+    Getting balance rate limit
+    Mexc: 2r/1s but 0.2 good
+    Bingx: 5r/1s  0.2 good
+    Bitget: 0.2 good
+    Huobi: 0.2 good
+    Gateio: 0.2 good
+    OKX: 10r/2s  0.2 good
+    ByBit: needs 1r/1s but this is too rarely  0.7 is good
+    Kucoin: 0.2 good
+    Whitebit: 0.2 good
+    XT: 0.2 good
+    Binance: 0.2 good
+    Poloniex: 0.2 good
+    """
     with Session() as session:
         pair_to_exchange: PairExchange = (
             session.query(PairExchange)
@@ -226,14 +240,12 @@ def auto_sell(price: float, profit_bundle_id: int):
     exchange_api = EXCHANGES_MAPPING[pair_to_exchange.exchange.name]
     exchange_api = exchange_api(config, {}, logger)
 
+    start_balance = exchange_api.get_balance(pair_to_exchange.pair.base_coin.name)
     while True:
-        try:
-            balance = exchange_api.get_balance(pair_to_exchange.pair.base_coin.name)
-        except WithdrawError:
-            balance = 0
+        balance = exchange_api.get_balance(pair_to_exchange.pair.base_coin.name)
 
-        if balance == 0:
-            time.sleep(0.5)
+        if balance == start_balance:
+            time.sleep(exchange_api.get_balance_limit)
         else:
             break
 

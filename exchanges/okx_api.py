@@ -177,8 +177,9 @@ class OkxAPI(AbstractExchange):
         response = self.account_client.get_account_balance(ccy=coin_name)
         try:
             balance = float(response["data"][0]["details"][0]["availBal"])
-        except (KeyError, IndexError) as e:
-            raise WithdrawError(f"No available balance for {coin_name}") from e
+        except (KeyError, IndexError):
+            self.logger.error(f"No available balance for {coin_name}. {response = }")
+            balance = 0
 
         return balance
 

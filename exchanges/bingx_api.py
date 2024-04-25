@@ -147,7 +147,8 @@ class BingxAPI(AbstractExchange):
                 balance = float(balance_data["free"])
                 return balance
 
-        raise WithdrawError(f"No available balance for {coin_name}")
+        self.logger.error(f"No available balance for {coin_name}. {data = }")
+        return 0
 
     def get_deposit_address(self, cne: CoinNetworkExchange) -> DepositAddress:
         try:

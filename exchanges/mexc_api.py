@@ -162,15 +162,16 @@ class MexcAPI(AbstractExchange):
         response = self.sign_request("GET", "/api/v3/account")
         try:
             data = response.json()
-        except JSONDecodeError as e:
+        except JSONDecodeError:
             self.logger.error(f"[mexc] Error getting balance for {coin_name}. {response.text}")
-            raise WithdrawError("Couldn't get balance") from e
-        for balance_data in data["balances"]:
-            if balance_data["asset"] == coin_name:
-                balance = float(balance_data["free"])
-                return balance
+        else:
+            for balance_data in data["balances"]:
+                if balance_data["asset"] == coin_name:
+                    balance = float(balance_data["free"])
+                    return balance
 
-        raise WithdrawError(f"No available balance for {coin_name}")
+        self.logger.error(f"No available balance for {coin_name}. {response.text = }")
+        return 0
 
     def get_deposit_address(self, cne: CoinNetworkExchange) -> DepositAddress:
         try:

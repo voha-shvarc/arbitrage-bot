@@ -191,13 +191,11 @@ class BitgetAPI(AbstractExchange):
         return change
 
     def get_balance(self, coin_name: str = "USDT") -> float:
-        params = {
-            "coin": coin_name,
-        }
-        response = self.account_client.assetsLite(params=params)
+        response = self.account_client.assetsLite(params={"coin": coin_name})
         try:
             balance = float(response["data"][0]["available"])
         except (KeyError, IndexError):
+            self.logger.error(f"No available balance for {coin_name}. {response = }")
             balance = 0
 
         return balance
