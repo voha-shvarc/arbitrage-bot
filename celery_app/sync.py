@@ -117,6 +117,7 @@ def sync_coin_exchange_networks():
                     and_(Exchange.name == "Mexc", Coin.name == "VT"),
                     and_(Exchange.name == "Mexc", Coin.name == "SQUAD"),
                     and_(Exchange.name == "Mexc", Coin.name == "PUMP"),
+                    and_(Exchange.name == "Mexc", Coin.name == "IMPT"),
                     and_(Exchange.name.in_(["Mexc", "KuCoin"]), Coin.name == "HERO"),
                     and_(Exchange.name.in_(["Poloniex", "KuCoin"]), Coin.name == "AI"),
                     and_(Exchange.name == "Poloniex", Coin.name == "AC"),
