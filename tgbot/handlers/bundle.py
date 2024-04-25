@@ -45,7 +45,7 @@ config = dotenv_values(".env")
 
 bundle_router = Router()
 
-BASE_USDT_PROFIT = 4  # 4 USDT
+BASE_USDT_PROFIT = 2  # 2 USDT
 
 
 class SetLimitedOrder(StatesGroup):
@@ -153,13 +153,17 @@ async def withdraw_bundle_callback_query(query: CallbackQuery, callback_data: Wi
             # ccy_quantity_to_withdraw = bundle.bought_ccy_quantity
             # else:
             ccy_quantity_to_withdraw = base_exchange.get_balance(bundle.pair.base_coin.name)
-
             logger.info(
                 f"Withdraw - {bundle.withdraw_coin_network_exchange.coin.name} "
                 f"| {bundle.withdraw_coin_network_exchange.network.name} \n"
                 f"{ccy_quantity_to_withdraw = } | {bundle.bought_ccy_quantity = }",
             )
-            base_exchange.withdraw(bundle.withdraw_coin_network_exchange, ccy_quantity_to_withdraw, deposit_address)
+
+            if ccy_quantity_to_withdraw == 0:
+                withdraw_label = "❌"
+                await query.message.reply("No balance available")
+            else:
+                base_exchange.withdraw(bundle.withdraw_coin_network_exchange, ccy_quantity_to_withdraw, deposit_address)
         except Exception as e:
             logger.error(f"Error proceeding withdraw. {e}")
             withdraw_label = "❌"
@@ -177,20 +181,25 @@ async def withdraw_bundle_callback_query(query: CallbackQuery, callback_data: Wi
 
 async def create_order(profit_bundle_id: int, limit=None) -> tuple[str, str]:
     with Session() as session:
-        bundle: ProfitBundle = (
-            session.query(ProfitBundle)
+        bundle = joinedload(ProfitBundleItem.profit_bundle)
+        bundle_item: ProfitBundleItem = (
+            session.query(ProfitBundleItem)
             .options(
-                joinedload(ProfitBundle.withdraw_coin_network_exchange),
-                joinedload(ProfitBundle.withdraw_coin_network_exchange).joinedload(CoinNetworkExchange.exchange),
-                joinedload(ProfitBundle.withdraw_coin_network_exchange).joinedload(CoinNetworkExchange.network),
-                joinedload(ProfitBundle.pair),
-                joinedload(ProfitBundle.pair).joinedload(Pair.base_coin),
-                joinedload(ProfitBundle.pair).joinedload(Pair.quote_coin),
-                joinedload(ProfitBundle.base_exchange),
-                joinedload(ProfitBundle.pair_exchange),
+                bundle,
+                bundle.joinedload(ProfitBundle.base_exchange),
+                bundle.joinedload(ProfitBundle.pair_exchange),
+                bundle.joinedload(ProfitBundle.pair),
+                bundle.joinedload(ProfitBundle.pair).joinedload(Pair.base_coin),
+                bundle.joinedload(ProfitBundle.pair).joinedload(Pair.quote_coin),
+                bundle.joinedload(ProfitBundle.withdraw_coin_network_exchange),
+                bundle.joinedload(ProfitBundle.withdraw_coin_network_exchange).joinedload(CoinNetworkExchange.network),
+                bundle.joinedload(ProfitBundle.withdraw_coin_network_exchange).joinedload(CoinNetworkExchange.exchange),
             )
-            .get(profit_bundle_id)
+            .filter(ProfitBundleItem.profit_bundle_id == profit_bundle_id)
+            .order_by(ProfitBundleItem.created_at.desc())
+            .first()
         )
+        bundle: ProfitBundle = bundle_item.profit_bundle
         pair_to_exchange: PairExchange = (
             session.query(PairExchange)
             .filter(
@@ -205,6 +214,8 @@ async def create_order(profit_bundle_id: int, limit=None) -> tuple[str, str]:
 
     base_exchange_price = base_exchange.get_price(bundle.pair)
     pair_exchange_price = pair_exchange.get_price(bundle.pair)
+    if not limit:
+        limit = bundle_item.user_based_to_use_usdt + (bundle_item.user_based_to_use_usdt * 0.1)
 
     price_analyzer = PriceAnalyzer(
         buy_price=base_exchange_price[0],

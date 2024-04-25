@@ -127,7 +127,6 @@ def send_tg_message(bundle_id):
         bundle = joinedload(ProfitBundleItem.profit_bundle)
         bundle_item: ProfitBundleItem = (
             session.query(ProfitBundleItem)
-            .filter(ProfitBundleItem.profit_bundle_id == bundle_id)
             .options(
                 bundle,
                 bundle.joinedload(ProfitBundle.base_exchange),
@@ -145,6 +144,7 @@ def send_tg_message(bundle_id):
                     CoinNetworkExchange.base_network,
                 ),
             )
+            .filter(ProfitBundleItem.profit_bundle_id == bundle_id)
             .order_by(ProfitBundleItem.created_at.desc())
             .first()
         )
