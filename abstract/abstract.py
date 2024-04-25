@@ -99,3 +99,11 @@ class WithdrawError(Exception):
 
 class CreateOrderError(Exception):
     pass
+
+
+class CanceledOrderError(Exception):
+    pass
+
+
+class NotFilledOrderError(Exception):
+    pass

@@ -16,6 +16,7 @@ from kucoin.client import UserData
 
 from abstract import AbstractExchange
 from abstract import NoPriceFound
+from abstract.abstract import CanceledOrderError
 from abstract.abstract import CreateOrderError
 from abstract.abstract import DepositAddressError
 from abstract.abstract import WithdrawError
@@ -251,7 +252,11 @@ class KuCoinAPI(AbstractExchange):
             "timeInForce": "FOK" if is_buy else "GTC",
         }
         try:
-            self.trade_client.create_limit_order(**body)
+            response = self.trade_client.create_limit_order(**body)
         except Exception as e:
             self.logger.exception(f"[kucoin] create order error - {e}. {body = }")
             raise CreateOrderError(str(e)) from e
+
+        order_info = self.trade_client.get_order_details(response["orderId"])
+        if order_info["cancelExist"]:
+            raise CanceledOrderError()

@@ -15,6 +15,7 @@ from aiolimiter import AsyncLimiter
 
 from abstract import AbstractExchange
 from abstract import NoPriceFound
+from abstract.abstract import CanceledOrderError
 from abstract.abstract import CreateOrderError
 from abstract.abstract import DepositAddressError
 from abstract.abstract import WithdrawError
@@ -266,6 +267,15 @@ class MexcAPI(AbstractExchange):
         except JSONDecodeError as e:
             self.logger.error(f"[mexc] couldn't parse response. {response.text}. {body = }")
             raise CreateOrderError("Couldn't parse response. Check logs") from e
+
         if err_msg := data.get("msg"):
             self.logger.error(f"[mexc] error creating order. {err_msg}. {body = }")
             raise CreateOrderError(err_msg)
+
+        params = {
+            "symbol": pair.default_name,
+            "orderId": data["orderId"],
+        }
+        order_info = self.sign_request("GET", "/api/v3/order", params).json()
+        if order_info["status"] == "CANCELED":
+            raise CanceledOrderError()

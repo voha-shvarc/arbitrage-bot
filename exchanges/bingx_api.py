@@ -14,6 +14,7 @@ from abstract import AbstractExchange
 from abstract import NoPriceFound
 from abstract.abstract import CreateOrderError
 from abstract.abstract import DepositAddressError
+from abstract.abstract import NotFilledOrderError
 from abstract.abstract import WithdrawError
 from abstract.abstract import WithdrawStatus
 from db.models import CoinNetworkExchange
@@ -219,7 +220,11 @@ class BingxAPI(AbstractExchange):
             "price": float(price),
         }
         try:
-            self.client.place_order(**body)
+            response = self.client.place_order(**body)
         except ClientError as e:
             self.logger.exception(f"[bingx] create order error - {e}. {body = }")
             raise CreateOrderError(str(e)) from e
+
+        order_info = self.client.order(pair.dashed_name, response["orderId"])
+        if order_info["status"] != "FILLED":
+            raise NotFilledOrderError()

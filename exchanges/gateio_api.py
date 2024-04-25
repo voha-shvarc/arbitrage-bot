@@ -14,6 +14,7 @@ from gate_api.exceptions import GateApiException
 
 from abstract import AbstractExchange
 from abstract import NoPriceFound
+from abstract.abstract import CanceledOrderError
 from abstract.abstract import CreateOrderError
 from abstract.abstract import DepositAddressError
 from abstract.abstract import WithdrawError
@@ -177,7 +178,10 @@ class GateIOAPI(AbstractExchange):
             self.spot_client.create_order(body)
         except GateApiException as e:
             self.logger.error(f"[gateio] {e.message}")
-            raise CreateOrderError(e.message) from e
+            if e.label == "FOK_NOT_FILL":
+                raise CanceledOrderError() from e
+            else:
+                raise CreateOrderError(e.message) from e
 
     def withdraw(
         self,

@@ -15,8 +15,10 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import joinedload
 
 from abstract.abstract import AbstractExchange
+from abstract.abstract import CanceledOrderError
 from abstract.abstract import CreateOrderError
 from abstract.abstract import DepositAddressError
+from abstract.abstract import NotFilledOrderError
 from analyze.price_analyzer import PriceAnalyzer
 from celery_app.tasks import auto_sell
 from celery_app.tasks import monitor_bundle
@@ -240,10 +242,14 @@ async def create_order(profit_bundle_id: int, limit=None) -> tuple[str, str]:
                         spot_fee=spot_fee,
                     )
                     buy_label = "✅"
+                except NotFilledOrderError:
+                    buy_label = "⚠️"
+                except CanceledOrderError:
+                    buy_label = "❌"
                 except (CreateOrderError, Exception) as e:
                     logger.error(e)
                     response = str(e)
-                finally:
+                else:
                     ccy_quantity_to_withdraw = (
                         price_analyzer.user_based_coin_available_amount
                         - price_analyzer.user_based_coin_available_amount * bundle.spot_buy_fee

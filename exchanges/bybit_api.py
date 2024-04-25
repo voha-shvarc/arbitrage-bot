@@ -11,6 +11,7 @@ from pybit.unified_trading import HTTP
 
 from abstract import AbstractExchange
 from abstract import NoPriceFound
+from abstract.abstract import CanceledOrderError
 from abstract.abstract import CreateOrderError
 from abstract.abstract import DepositAddressError
 from abstract.abstract import WithdrawError
@@ -171,10 +172,19 @@ class BybitAPI(AbstractExchange):
             "timeInForce": "FOK" if is_buy else "GTC",
         }
         try:
-            self.session.place_order(**body)
+            response = self.session.place_order(**body)
         except InvalidRequestError as e:
             self.logger.exception(f"[bybit] create order error - {e}. {body = }")
             raise CreateOrderError(str(e)) from e
+
+        body = {
+            "category": "spot",
+            "symbol": pair.default_name,
+            "orderId": response["result"]["orderId"],
+        }
+        order_info = self.session.get_open_orders(**body)
+        if order_info["result"]["list"][0]["orderStatus"] == "Cancelled":
+            raise CanceledOrderError()
 
     def withdraw(
         self,

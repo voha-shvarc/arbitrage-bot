@@ -14,11 +14,13 @@ from huobi.client.wallet import WalletClient
 from huobi.constant import DepthStep
 from huobi.constant import InstrumentStatus
 from huobi.constant.definition import AccountBalanceUpdateType
+from huobi.constant.definition import OrderState
 from huobi.constant.definition import OrderType
 from huobi.exception.huobi_api_exception import HuobiApiException
 
 from abstract import AbstractExchange
 from abstract import NoPriceFound
+from abstract.abstract import CanceledOrderError
 from abstract.abstract import CreateOrderError
 from abstract.abstract import DepositAddressError
 from abstract.abstract import WithdrawError
@@ -183,10 +185,14 @@ class HuobiAPI(AbstractExchange):
             "price": float(price),
         }
         try:
-            self.trade_client.create_spot_order(**body)
+            order_id = self.trade_client.create_spot_order(**body)
         except HuobiApiException as e:
             self.logger.exception(f"[huobi] create order error - {e}. {body = }")
             raise CreateOrderError(str(e)) from e
+
+        order_info = self.trade_client.get_order(order_id)
+        if order_info.state == OrderState.CANCELED:
+            raise CanceledOrderError()
 
     def withdraw(
         self,

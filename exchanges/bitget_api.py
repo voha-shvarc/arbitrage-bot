@@ -9,9 +9,11 @@ from logging import getLogger
 from typing import List
 
 from aiolimiter import AsyncLimiter
+from bitget.consts import POST
 
 from abstract import AbstractExchange
 from abstract import NoPriceFound
+from abstract.abstract import CanceledOrderError
 from abstract.abstract import CreateOrderError
 from abstract.abstract import DepositAddressError
 from abstract.abstract import WithdrawError
@@ -233,10 +235,19 @@ class BitgetAPI(AbstractExchange):
             "price": float(price),
         }
         try:
-            self.order_client.placeOrder(params=body)
+            response = self.order_client.placeOrder(params=body)
         except BitgetAPIException as e:
             self.logger.exception(f"[bitget] create order error - {e}. {body = }")
             raise CreateOrderError(str(e)) from e
+
+        order_info = self.order_client._request_with_params(
+            POST,
+            "/api/spot/v1/trade/orderInfo",
+            params={"orderId": response["data"]["orderId"]},
+        )
+
+        if order_info["data"][0]["status"] == "cancelled":
+            raise CanceledOrderError()
 
     def withdraw(
         self,

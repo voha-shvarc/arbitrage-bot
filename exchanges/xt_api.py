@@ -13,6 +13,7 @@ import requests
 
 from abstract import AbstractExchange
 from abstract import NoPriceFound
+from abstract.abstract import CanceledOrderError
 from abstract.abstract import CreateOrderError
 from abstract.abstract import DepositAddressError
 from abstract.abstract import WithdrawError
@@ -358,11 +359,15 @@ class XTAPI(AbstractExchange):
 
         try:
             data = response.json()
-            if data["rc"] != 0:
-                msg = ERROR_MAPPING.get(data["mc"], data["mc"])
-                self.logger.error(f"[xt] {msg}")
-                raise CreateOrderError(msg)
-
         except JSONDecodeError as e:
             self.logger.error(f"[xt] couldn't parse response. {response.text}. {body = }")
             raise CreateOrderError("Couldn't parse response. Check logs") from e
+
+        if data["rc"] != 0:
+            msg = ERROR_MAPPING.get(data["mc"], data["mc"])
+            self.logger.error(f"[xt] {msg}")
+            raise CreateOrderError(msg)
+
+        order_info = self.sign_request("GET", "/v4/order", params={"orderId": data["result"]["orderId"]}).json()
+        if order_info["result"]["state"] == "EXPIRED":
+            raise CanceledOrderError()

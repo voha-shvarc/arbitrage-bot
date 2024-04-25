@@ -9,6 +9,7 @@ from typing import List
 from requests.exceptions import HTTPError
 
 from abstract import AbstractExchange
+from abstract.abstract import CanceledOrderError
 from abstract.abstract import CreateOrderError
 from abstract.abstract import NoPriceFound
 from abstract.abstract import WithdrawError
@@ -205,6 +206,11 @@ class PoloniexAPI(AbstractExchange):
         except JSONDecodeError as e:
             self.logger.error(f"[poloniex] couldn't parse response. {response.text}. {body = }")
             raise CreateOrderError("Couldn't parse response. Check logs") from e
+
         if err_msg := data.get("msg"):
             self.logger.error(f"[poloniex] error creating order. {err_msg}. {body = }")
             raise CreateOrderError(err_msg)
+
+        order_info = self.orders_client.get_by_id(response["id"])
+        if order_info["state"] == "CANCELED":
+            raise CanceledOrderError()
