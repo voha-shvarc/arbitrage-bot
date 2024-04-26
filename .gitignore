@@ -7,3 +7,4 @@ service_account.json
 .env
 .env.prod
 .scannerwork
+ssh

@@ -1,0 +1,16 @@
+version: '3.3'
+
+services:
+  bot:
+    container_name: bot
+    build: .
+    image: ${APP_IMAGE_NAME}
+    command: ["/app/docker/bot.sh"]
+    volumes:
+      - .env:/app/.env
+    networks:
+      - main
+
+networks:
+  main:
+    driver: bridge

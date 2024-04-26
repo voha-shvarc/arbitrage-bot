@@ -1,0 +1,54 @@
+version: '3.3'
+
+services:
+  tgbot:
+    container_name: tgbot
+    build: .
+    image: ${APP_IMAGE_NAME}
+    command: ["/app/docker/bot.sh", "tgbot"]
+    volumes:
+      - .env:/app/.env
+    networks:
+      - main
+
+  celery:
+    container_name: celery
+    build: .
+    image: ${APP_IMAGE_NAME}
+    command: ["/app/docker/celery.sh", "celery"]
+    volumes:
+      - ./.env:/app/.env:ro
+    networks:
+      - main
+
+  celery-beat:
+    container_name: beat-celery
+    build: .
+    image: ${APP_IMAGE_NAME}
+    command: ["/app/docker/celery.sh", "beat"]
+    volumes:
+      - .env:/app/.env
+    networks:
+      - main
+    depends_on:
+      - celery
+
+  flower:
+    container_name: flower
+    build: .
+    image: ${APP_IMAGE_NAME}
+    environment:
+      - FLOWER_UNAUTHENTICATED_API=True
+    command: ["/app/docker/celery.sh", "flower"]
+    volumes:
+      - .env:/app/.env
+    ports:
+      - "5555:5555"
+    networks:
+      - main
+    depends_on:
+      - celery
+
+networks:
+  main:
+    driver: bridge
