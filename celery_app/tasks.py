@@ -7,6 +7,7 @@ from celery import Task
 from celery.exceptions import MaxRetriesExceededError
 from dotenv import dotenv_values
 from sqlalchemy import and_
+from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 
 from analyze.price_analyzer import PriceAnalyzer
@@ -42,8 +43,8 @@ logger.addHandler(handler)
 @app.task(bind=True, max_retries=100)  # it takes 40 minutes to use all the retires
 def monitor_bundle(self: Task, bundle_id, force_refresh: bool = False):
     with Session() as session:
-        bundle: ProfitBundle = (
-            session.query(ProfitBundle)
+        bundle: ProfitBundle = session.scalar(
+            select(ProfitBundle)
             .options(
                 joinedload(ProfitBundle.withdraw_coin_network_exchange),
                 joinedload(ProfitBundle.withdraw_coin_network_exchange).joinedload(CoinNetworkExchange.exchange),
@@ -54,7 +55,7 @@ def monitor_bundle(self: Task, bundle_id, force_refresh: bool = False):
                 joinedload(ProfitBundle.base_exchange),
                 joinedload(ProfitBundle.pair_exchange),
             )
-            .get(bundle_id)
+            .where(ProfitBundle.id == bundle_id),
         )
 
     base_exchange = EXCHANGES_MAPPING[bundle.base_exchange.name](config, {})
@@ -174,8 +175,8 @@ def send_tg_message(bundle_id):
 @app.task
 def fill_up_bundle(bundle_id):
     with Session() as session:
-        bundle: ProfitBundle = (
-            session.query(ProfitBundle)
+        bundle: ProfitBundle = session.scalar(
+            select(ProfitBundle)
             .options(
                 joinedload(ProfitBundle.pair),
                 joinedload(ProfitBundle.pair).joinedload(Pair.base_coin),
@@ -183,7 +184,7 @@ def fill_up_bundle(bundle_id):
                 joinedload(ProfitBundle.base_exchange),
                 joinedload(ProfitBundle.pair_exchange),
             )
-            .get(bundle_id)
+            .where(ProfitBundle.id == bundle_id),
         )
 
         base_exchange = EXCHANGES_MAPPING[bundle.base_exchange.name](config, {})
