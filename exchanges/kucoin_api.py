@@ -170,8 +170,8 @@ class KuCoinAPI(AbstractExchange):
         change = (closed - opened) / opened * 100
         return change
 
-    def get_balance(self, coin_name: str = "USDT") -> float:
-        response = self.account_client.get_account_list(currency=coin_name, account_type="trade")
+    def get_balance(self, coin_name: str = "USDT", account_type: str = "trade") -> float:
+        response = self.account_client.get_account_list(currency=coin_name, account_type=account_type)
         try:
             balance = float(response[0]["balance"])
         except (KeyError, IndexError):

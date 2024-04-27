@@ -11,6 +11,7 @@ class TgBot:
 
     token: str
     admin_ids: list[int]
+    system_channel_id: str
     use_redis: bool
 
     @staticmethod
@@ -23,8 +24,9 @@ class TgBot:
 
         token = env.str(token_field_name)
         admin_ids = env.list(admins_filed_name, subcast=int)
+        system_channel_id = env.str("SYSTEM_CHANNEL_ID")
 
-        return TgBot(token=token, admin_ids=admin_ids, use_redis=False)
+        return TgBot(token=token, admin_ids=admin_ids, system_channel_id=system_channel_id, use_redis=False)
 
 
 @dataclass
