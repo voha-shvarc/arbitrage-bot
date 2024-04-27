@@ -1,6 +1,9 @@
+import asyncio
 import logging
 from datetime import date
+from typing import Optional
 
+import httpx
 from aiogram import F
 from aiogram import Router
 from aiogram.exceptions import TelegramBadRequest
@@ -11,6 +14,9 @@ from aiogram.fsm.state import StatesGroup
 from aiogram.types import CallbackQuery
 from aiogram.types import Message
 from dotenv import dotenv_values
+from sqlalchemy import or_
+from sqlalchemy import select
+from sqlalchemy import update
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import joinedload
 
@@ -22,7 +28,7 @@ from abstract.abstract import NotFilledOrderError
 from analyze.price_analyzer import PriceAnalyzer
 from celery_app.tasks import auto_sell
 from celery_app.tasks import monitor_bundle
-from db.base import Session
+from db.base import AsyncSession
 from db.models import CoinNetworkExchange
 from db.models import Pair
 from db.models import ProfitBundle
@@ -59,11 +65,10 @@ class AutoSell(StatesGroup):
 @bundle_router.callback_query(RefreshBundleCallbackData.filter())
 async def recalculate_bundle_callback_query(query: CallbackQuery, callback_data: RefreshBundleCallbackData):
     await query.answer()
-    with Session() as session:
+    async with AsyncSession() as session:
         bundle = joinedload(ProfitBundleItem.profit_bundle)
-        bundle_item: ProfitBundleItem = (
-            session.query(ProfitBundleItem)
-            .filter(ProfitBundleItem.profit_bundle_id == callback_data.profit_bundle_id)
+        bundle_item: ProfitBundleItem = await session.scalar(
+            select(ProfitBundleItem)
             .options(
                 bundle,
                 bundle.joinedload(ProfitBundle.base_exchange),
@@ -83,8 +88,8 @@ async def recalculate_bundle_callback_query(query: CallbackQuery, callback_data:
                 bundle.joinedload(ProfitBundle.withdraw_pair_exchange),
                 bundle.joinedload(ProfitBundle.deposit_pair_exchange),
             )
-            .order_by(ProfitBundleItem.created_at.desc())
-            .first()
+            .where(ProfitBundleItem.profit_bundle_id == callback_data.profit_bundle_id)
+            .order_by(ProfitBundleItem.created_at.desc()),
         )
 
     bundle = bundle_item.profit_bundle
@@ -120,9 +125,9 @@ async def withdraw_bundle_callback_query(query: CallbackQuery, callback_data: Wi
     await query.answer()
     bundle_id = callback_data.profit_bundle_id
 
-    with Session() as session:
-        bundle: ProfitBundle = (
-            session.query(ProfitBundle)
+    async with AsyncSession() as session:
+        bundle: ProfitBundle = await session.scalar(
+            select(ProfitBundle)
             .options(
                 joinedload(ProfitBundle.withdraw_coin_network_exchange),
                 joinedload(ProfitBundle.withdraw_coin_network_exchange).joinedload(CoinNetworkExchange.coin),
@@ -136,7 +141,7 @@ async def withdraw_bundle_callback_query(query: CallbackQuery, callback_data: Wi
                 joinedload(ProfitBundle.base_exchange),
                 joinedload(ProfitBundle.pair_exchange),
             )
-            .get(bundle_id)
+            .where(ProfitBundle.id == bundle_id),
         )
 
     base_exchange: AbstractExchange = EXCHANGES_MAPPING[bundle.base_exchange.name](config, {}, logger)
@@ -180,34 +185,44 @@ async def withdraw_bundle_callback_query(query: CallbackQuery, callback_data: Wi
     )
 
 
-async def create_order(profit_bundle_id: int, limit=None) -> tuple[str, str]:
-    with Session() as session:
-        bundle = joinedload(ProfitBundleItem.profit_bundle)
-        bundle_item: ProfitBundleItem = (
-            session.query(ProfitBundleItem)
+async def create_order(profit_bundle_id: int, limit: Optional[float] = None, retries: int = 0) -> tuple[str, str]:
+    async with AsyncSession() as session:
+        bundle_join = joinedload(ProfitBundleItem.profit_bundle)
+        bundle_item: ProfitBundleItem = await session.scalar(
+            select(ProfitBundleItem)
             .options(
-                bundle,
-                bundle.joinedload(ProfitBundle.base_exchange),
-                bundle.joinedload(ProfitBundle.pair_exchange),
-                bundle.joinedload(ProfitBundle.pair),
-                bundle.joinedload(ProfitBundle.pair).joinedload(Pair.base_coin),
-                bundle.joinedload(ProfitBundle.pair).joinedload(Pair.quote_coin),
-                bundle.joinedload(ProfitBundle.withdraw_coin_network_exchange),
-                bundle.joinedload(ProfitBundle.withdraw_coin_network_exchange).joinedload(CoinNetworkExchange.network),
-                bundle.joinedload(ProfitBundle.withdraw_coin_network_exchange).joinedload(CoinNetworkExchange.exchange),
-                bundle.joinedload(ProfitBundle.withdraw_pair_exchange),
+                bundle_join,
+                bundle_join.joinedload(ProfitBundle.base_exchange),
+                bundle_join.joinedload(ProfitBundle.pair_exchange),
+                bundle_join.joinedload(ProfitBundle.pair),
+                bundle_join.joinedload(ProfitBundle.pair).joinedload(Pair.base_coin),
+                bundle_join.joinedload(ProfitBundle.pair).joinedload(Pair.quote_coin),
+                bundle_join.joinedload(ProfitBundle.withdraw_coin_network_exchange),
+                bundle_join.joinedload(ProfitBundle.withdraw_coin_network_exchange).joinedload(CoinNetworkExchange.network),
+                bundle_join.joinedload(ProfitBundle.withdraw_coin_network_exchange).joinedload(CoinNetworkExchange.exchange),
+                bundle_join.joinedload(ProfitBundle.withdraw_pair_exchange),
             )
-            .filter(ProfitBundleItem.profit_bundle_id == profit_bundle_id)
-            .order_by(ProfitBundleItem.created_at.desc())
-            .first()
+            .where(ProfitBundleItem.profit_bundle_id == profit_bundle_id)
+            .order_by(ProfitBundleItem.created_at.desc()),
         )
-        bundle: ProfitBundle = bundle_item.profit_bundle
 
-    base_exchange = EXCHANGES_MAPPING[bundle.base_exchange.name](config, {}, logger)
-    pair_exchange = EXCHANGES_MAPPING[bundle.pair_exchange.name](config, {}, logger)
+    return await process_bundle(bundle_item, limit, retries)
 
-    base_exchange_price = base_exchange.get_price(bundle.pair)
-    pair_exchange_price = pair_exchange.get_price(bundle.pair)
+
+async def process_bundle(bundle_item, limit: Optional[float] = None, retries: int = 0):
+    bundle: ProfitBundle = bundle_item.profit_bundle
+
+    connection = httpx.AsyncClient()
+    base_exchange_api = EXCHANGES_MAPPING[bundle.base_exchange.name](config, connection, logger)
+    pair_exchange_api = EXCHANGES_MAPPING[bundle.pair_exchange.name](config, connection, logger)
+
+    base_exchange_price_task = asyncio.create_task(base_exchange_api.async_get_price(bundle.pair))
+    pair_exchange_price_task = asyncio.create_task(pair_exchange_api.async_get_price(bundle.pair))
+
+    base_exchange_price = await base_exchange_price_task
+    pair_exchange_price = await pair_exchange_price_task
+    await connection.aclose()
+
     if not limit:
         limit = bundle_item.user_based_to_use_usdt + (bundle_item.user_based_to_use_usdt * 0.1)
 
@@ -241,7 +256,7 @@ async def create_order(profit_bundle_id: int, limit=None) -> tuple[str, str]:
                         f"{bundle.withdraw_pair_exchange.taker_fee = }, {spot_fee = }",
                     )
 
-                    base_exchange.create_order(
+                    base_exchange_api.create_order(
                         pair=bundle.pair,
                         ccy_quantity=price_analyzer.user_based_coin_available_amount,
                         ccy_precision=bundle.withdraw_pair_exchange.base_coin_precision,
@@ -253,7 +268,10 @@ async def create_order(profit_bundle_id: int, limit=None) -> tuple[str, str]:
                 except NotFilledOrderError:
                     buy_label = "⚠️"
                 except CanceledOrderError:
-                    buy_label = "❌"
+                    if retries < 2:
+                        buy_label, response = await process_bundle(bundle_item, limit, retries + 1)
+                    else:
+                        buy_label = "❌"
                 except (CreateOrderError, Exception) as e:
                     logger.error(e)
                     response = str(e)
@@ -262,15 +280,13 @@ async def create_order(profit_bundle_id: int, limit=None) -> tuple[str, str]:
                         price_analyzer.user_based_coin_available_amount
                         - price_analyzer.user_based_coin_available_amount * bundle.spot_buy_fee
                     )
-                    with Session() as session:
-                        (
-                            session.query(ProfitBundle)
-                            .filter(ProfitBundle.id == profit_bundle_id)
-                            .update(
-                                {"bought_ccy_quantity": ccy_quantity_to_withdraw},
-                            )
+                    async with AsyncSession() as session:
+                        await session.execute(
+                            update(ProfitBundle)
+                            .where(ProfitBundle.id == bundle.id)
+                            .values(bought_ccy_quantity=ccy_quantity_to_withdraw),
                         )
-                        session.commit()
+                        await session.commit()
             else:
                 response = "Creating order. No precision info found"
                 logger.error(response)
@@ -358,22 +374,29 @@ async def create_limited_order(message: Message, state: FSMContext):
 @bundle_router.callback_query(CheckedBundleCallbackData.filter())
 async def checked_bundle_callback_query(query: CallbackQuery, callback_data: CheckedBundleCallbackData):
     await query.answer()
-    with Session() as session:
-        withdraw_cne_id, deposit_cne_id = (
-            session.query(ProfitBundle.withdraw_coin_network_exchange_id, ProfitBundle.deposit_coin_network_exchange_id)
-            .filter(ProfitBundle.id == callback_data.profit_bundle_id)
-            .first()
+    async with AsyncSession() as session:
+        subq = await session.scalars(
+            select(CoinNetworkExchange.id)
+            .join(
+                ProfitBundle,
+                or_(
+                    ProfitBundle.withdraw_coin_network_exchange_id == CoinNetworkExchange.id,
+                    ProfitBundle.deposit_coin_network_exchange_id == CoinNetworkExchange.id,
+                ),
+            )
+            .where(ProfitBundle.id == 1),
+        )
+        await session.execute(
+            update(CoinNetworkExchange)
+            .where(CoinNetworkExchange.id.in_(subq))
+            .values(
+                is_checked=True,
+                checked_at=date.today(),
+            ),
         )
 
-        (
-            session.query(CoinNetworkExchange)
-            .filter(CoinNetworkExchange.id.in_([withdraw_cne_id, deposit_cne_id]))
-            .update(
-                {"is_checked": True, "checked_at": date.today()},
-            )
-        )
         try:
-            session.commit()
+            await session.commit()
             checked_label = "✅"
         except SQLAlchemyError as e:
             logger.error(f"Error checking bundle {e}")
