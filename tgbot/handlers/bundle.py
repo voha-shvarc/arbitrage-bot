@@ -224,7 +224,9 @@ async def process_bundle(bundle_item, limit: Optional[float] = None, retries: in
     await connection.aclose()
 
     if not limit:
-        limit = bundle_item.user_based_to_use_usdt + (bundle_item.user_based_to_use_usdt * 0.1)
+        safe_limit = bundle_item.user_based_to_use_usdt + (bundle_item.user_based_to_use_usdt * 0.1)
+        if safe_limit < bundle.withdraw_coin_network_exchange.max_liquid_amount:
+            limit = safe_limit
 
     price_analyzer = PriceAnalyzer(
         buy_price=base_exchange_price[0],
