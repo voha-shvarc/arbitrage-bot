@@ -444,6 +444,8 @@ class TradingPair:
     exchange: str
     taker_fee: float = 0.001  # 0.1%
     maker_fee: float = 0.001  # 0.1%
+    api_enabled: bool = True
+    ui_enabled: bool = True
 
     def to_standard(self):
         return f"{self.base_coin}{self.quote_coin}"
@@ -451,12 +453,16 @@ class TradingPair:
     def to_dashed(self):
         return f"{self.base_coin}-{self.quote_coin}"
 
-    def to_db(self):
+    def to_db(self, pair_id: int, exchange_id: int):
         data = {
+            "pair_id": pair_id,
+            "exchange_id": exchange_id,
             "base_coin_precision": self.base_coin_precision,
             "quote_coin_precision": self.quote_coin_precision,
             "taker_fee": self.taker_fee,
             "maker_fee": self.maker_fee,
+            "api_enabled": self.api_enabled,
+            "ui_enabled": self.ui_enabled,
         }
         return data
 

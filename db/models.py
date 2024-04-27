@@ -1,3 +1,4 @@
+from sqlalchemy import and_
 from sqlalchemy import ARRAY
 from sqlalchemy import Boolean
 from sqlalchemy import Column
@@ -7,8 +8,11 @@ from sqlalchemy import ForeignKey
 from sqlalchemy import Integer
 from sqlalchemy import String
 from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.orm import backref
+from sqlalchemy.orm import foreign
 from sqlalchemy.orm import relationship
+from sqlalchemy.orm import remote
 
 from .base import Base
 from .utils import db_created
@@ -143,6 +147,8 @@ class PairExchange(Base):
     quote_coin_precision = Column(Integer)
     maker_fee = Column(Float, server_default="0.001")
     taker_fee = Column(Float, server_default="0.001")
+    api_enabled = Column(Boolean, server_default="true", nullable=False)
+    ui_enabled = Column(Boolean, server_default="true", nullable=False, index=True)
     created_at = db_created()
     updated_at = db_updated()
 
@@ -196,6 +202,30 @@ class ProfitBundle(Base):
     )
     base_exchange = relationship("Exchange", uselist=False, foreign_keys=[base_exchange_id])
     pair_exchange = relationship("Exchange", uselist=False, foreign_keys=[pair_exchange_id])
+
+    @declared_attr
+    def withdraw_pair_exchange(cls):
+        return relationship(
+            "PairExchange",
+            uselist=False,
+            primaryjoin=and_(
+                foreign(cls.base_exchange_id) == remote(PairExchange.exchange_id),
+                foreign(cls.pair_id) == remote(PairExchange.pair_id),
+            ),
+            viewonly=True,
+        )
+
+    @declared_attr
+    def deposit_pair_exchange(cls):
+        return relationship(
+            "PairExchange",
+            uselist=False,
+            primaryjoin=and_(
+                foreign(cls.pair_exchange_id) == remote(PairExchange.exchange_id),
+                foreign(cls.pair_id) == remote(PairExchange.pair_id),
+            ),
+            viewonly=True,
+        )
 
 
 class ProfitBundleItem(Base):

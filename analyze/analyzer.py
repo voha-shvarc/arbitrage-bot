@@ -325,9 +325,9 @@ class ExchangePairAnalyzer:
                 select(
                     exists().where(
                         and_(
-                            bundle.base_exchange_id == Whitelist.withdraw_exchange_id,
-                            bundle.pair_exchange_id == Whitelist.deposit_exchange_id,
-                            price_analyzer.withdraw_cne.base_network_id == Whitelist.base_network_id,
+                            Whitelist.withdraw_exchange_id == bundle.base_exchange_id,
+                            Whitelist.deposit_exchange_id == bundle.pair_exchange_id,
+                            Whitelist.base_network_id == price_analyzer.withdraw_cne.base_network_id,
                         ),
                     ),
                 ),

@@ -74,6 +74,7 @@ ERROR_MAPPING = {
     "COMMON_002": "System busy, please try it later",
     "COMMON_003": "Operation failed, please try it later",
     "CURRENCY_001": "Information of currency is abnormal",
+    "SYMBOL_005": "The symbol does not support trading via API",
 }
 
 
@@ -136,9 +137,10 @@ class XTAPI(AbstractExchange):
                 exchange=self.NAME,
                 taker_fee=0.002,  # 0.2%
                 maker_fee=0.002,  # 0.2%
+                api_enabled=pair["openapiEnabled"],
             )
             for pair in data["result"]["symbols"]
-            if pair["quoteCurrency"] == "usdt" and pair["state"] == "ONLINE" and pair["tradingEnabled"]
+            if pair["quoteCurrency"] == "usdt" and pair["state"] == "ONLINE"
         ]
         return trading_pairs
 

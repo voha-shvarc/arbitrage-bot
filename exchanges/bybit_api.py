@@ -53,7 +53,7 @@ class BybitAPI(AbstractExchange):
                 else 0,
             )
             for pair in pairs_info["result"]["list"]
-            if pair["quoteCoin"] == "USDT"
+            if pair["quoteCoin"] == "USDT" and pair["status"] == "Trading"
         ]
         return trading_pairs
 

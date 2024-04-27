@@ -69,7 +69,7 @@ class OkxAPI(AbstractExchange):
                 maker_fee=0.0008,  # 0.08%
             )
             for pair in pairs_info["data"]
-            if pair["quoteCcy"] == "USDT"
+            if pair["quoteCcy"] == "USDT" and pair["state"] == "live"
         ]
         return trading_pairs
 

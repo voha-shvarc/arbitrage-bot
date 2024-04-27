@@ -84,9 +84,10 @@ class MexcAPI(AbstractExchange):
                 exchange=self.NAME,
                 taker_fee=float(pair["takerCommission"]),
                 maker_fee=float(pair["makerCommission"]),
+                api_enabled=pair["isSpotTradingAllowed"],
             )
             for pair in data["symbols"]
-            if pair["quoteAsset"] == "USDT" and pair["status"] == "ENABLED" and pair["isSpotTradingAllowed"]
+            if pair["quoteAsset"] == "USDT" and pair["status"] == "ENABLED"
         ]
         return trading_pairs
 

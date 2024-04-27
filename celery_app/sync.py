@@ -1,6 +1,7 @@
 from dotenv import dotenv_values
 from sqlalchemy import and_
 from sqlalchemy import or_
+from sqlalchemy import update
 from sqlalchemy.orm import joinedload
 
 from celery_app.conf import app
@@ -23,6 +24,14 @@ config = dotenv_values(".env")
 
 @app.task
 def sync_coin_exchange_networks():
+    """
+    IP Whitelist
+    Binance
+    ByBit
+    BingX
+    KuCoin (everyone need to be whitelisted)
+    Bitget
+    """
     with Session() as session:
         for exchange_name, exchange_api in EXCHANGES_MAPPING.items():
             print(f"Syncing {exchange_name}...")
@@ -304,35 +313,53 @@ def _run_networks_mapping(session: Session):
 
 @app.task
 def sync_pairs():
+    """
+    Biget statuses: halt(offline), gray(listing coming), online. No info about api, only UI
+    Bingx: some have turned off UI but enabled api
+    Bybit: only status Trading for ui and api combined
+    Gateio: tradable, untradable, sellable(listing coming), boughtable(not present)
+    Huobi: online, offline(delisted), suspend(paused), pre-online(listing coming)
+    KuCoin: enableTrading True/False. didn't find False values
+    Mexc: status = 'ENABLED' for UI, isSpotTradingAllowed for API
+    OKX: live, suspend, preopen. Found only live
+    Poloniex: normal, post_only(listing coming), pause
+    Whitebit: tradesEnabled True/False. didn't find False values
+    XT: state: ONLINE/OFFLINE, offline is either delisted or listing coming.
+     tradingEnabled is always True even if it shouldn't be.
+     opendapiEnabled is reasonable for API True/False
+    Binance: isSpotTradingAllowed should be for API, but didn't find False values. status TRADING/BREAK
+    """
     with Session() as session:
+        session.execute(update(PairExchange).values(api_enabled=False, ui_enabled=False))
+
         quote_coin, _ = get_or_create(session, Coin, name="USDT")
+        pairs_mapping = {pair.base_coin.name: pair for pair in session.query(Pair).options(joinedload(Pair.base_coin))}
         for exchange_name, exchange_api in EXCHANGES_MAPPING.items():
             print(f"Syncing {exchange_name}...")
             exchange_api = exchange_api(config, {})
             exchange, _ = get_or_create(session, Exchange, name=exchange_name)
 
-            existing_coins = (
-                session.query(Coin.name)
-                .select_from(PairExchange)
-                .join(PairExchange.pair)
-                .join(Pair.base_coin)
-                .filter(PairExchange.exchange_id == exchange.id)
-            )
-            existing_coins = [coin.name for coin in existing_coins]
-
             for pair_data in exchange_api.get_trading_pairs():
-                if pair_data.base_coin in existing_coins:
-                    continue
+                if pair := pairs_mapping.get(pair_data.base_coin):
+                    pair = pair
+                else:
+                    base_coin, _ = get_or_create(session, Coin, name=pair_data.base_coin)
+                    pair, _ = get_or_create(session, Pair, base_coin_id=base_coin.id, quote_coin_id=quote_coin.id)
+                from sqlalchemy import select
 
-                base_coin, _ = get_or_create(session, Coin, name=pair_data.base_coin)
-                pair, _ = get_or_create(session, Pair, base_coin_id=base_coin.id, quote_coin_id=quote_coin.id)
-                pair_exchange, _ = get_or_create(
-                    session,
-                    PairExchange,
-                    defaults=pair_data.to_db(),
-                    pair_id=pair.id,
-                    exchange_id=exchange.id,
+                pair_exchange = session.scalar(
+                    select(PairExchange).where(
+                        PairExchange.pair_id == pair.id,
+                        PairExchange.exchange_id == exchange.id,
+                    ),
                 )
+
+                new = PairExchange(**pair_data.to_db(pair.id, exchange.id))
+                if not pair_exchange:
+                    session.add(new)
+                else:
+                    new.id = pair_exchange.id
+                    session.merge(new)
 
         session.commit()
 

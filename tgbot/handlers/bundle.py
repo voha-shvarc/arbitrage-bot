@@ -25,7 +25,6 @@ from celery_app.tasks import monitor_bundle
 from db.base import Session
 from db.models import CoinNetworkExchange
 from db.models import Pair
-from db.models import PairExchange
 from db.models import ProfitBundle
 from db.models import ProfitBundleItem
 from exchanges import EXCHANGES_MAPPING
@@ -81,6 +80,8 @@ async def recalculate_bundle_callback_query(query: CallbackQuery, callback_data:
                 bundle.joinedload(ProfitBundle.withdraw_coin_network_exchange).joinedload(
                     CoinNetworkExchange.base_network,
                 ),
+                bundle.joinedload(ProfitBundle.withdraw_pair_exchange),
+                bundle.joinedload(ProfitBundle.deposit_pair_exchange),
             )
             .order_by(ProfitBundleItem.created_at.desc())
             .first()
@@ -194,20 +195,13 @@ async def create_order(profit_bundle_id: int, limit=None) -> tuple[str, str]:
                 bundle.joinedload(ProfitBundle.withdraw_coin_network_exchange),
                 bundle.joinedload(ProfitBundle.withdraw_coin_network_exchange).joinedload(CoinNetworkExchange.network),
                 bundle.joinedload(ProfitBundle.withdraw_coin_network_exchange).joinedload(CoinNetworkExchange.exchange),
+                bundle.joinedload(ProfitBundle.withdraw_pair_exchange),
             )
             .filter(ProfitBundleItem.profit_bundle_id == profit_bundle_id)
             .order_by(ProfitBundleItem.created_at.desc())
             .first()
         )
         bundle: ProfitBundle = bundle_item.profit_bundle
-        pair_to_exchange: PairExchange = (
-            session.query(PairExchange)
-            .filter(
-                PairExchange.exchange_id == bundle.base_exchange_id,
-                PairExchange.pair_id == bundle.pair_id,
-            )
-            .first()
-        )
 
     base_exchange = EXCHANGES_MAPPING[bundle.base_exchange.name](config, {}, logger)
     pair_exchange = EXCHANGES_MAPPING[bundle.pair_exchange.name](config, {}, logger)
@@ -234,22 +228,25 @@ async def create_order(profit_bundle_id: int, limit=None) -> tuple[str, str]:
         response = str(e)
     else:
         if price_analyzer.profit > BASE_USDT_PROFIT:
-            if pair_to_exchange.base_coin_precision is not None and pair_to_exchange.quote_coin_precision is not None:
+            if (
+                bundle.withdraw_pair_exchange.base_coin_precision is not None
+                and bundle.withdraw_pair_exchange.quote_coin_precision is not None
+            ):
                 try:
-                    spot_fee = price_analyzer.user_based_coin_available_amount * pair_to_exchange.taker_fee
+                    spot_fee = price_analyzer.user_based_coin_available_amount * bundle.withdraw_pair_exchange.taker_fee
                     logger.info(
                         f"Create order with {bundle.pair.default_name = };\n "
-                        f"{price_analyzer.user_based_coin_available_amount = }; {pair_to_exchange.base_coin_precision};\n"
-                        f"{price_analyzer.user_based_max_buy_price = }; {pair_to_exchange.quote_coin_precision};\n"
-                        f"{pair_to_exchange.taker_fee = }, {spot_fee = }",
+                        f"{price_analyzer.user_based_coin_available_amount = }; {bundle.withdraw_pair_exchange.base_coin_precision};\n"
+                        f"{price_analyzer.user_based_max_buy_price = }; {bundle.withdraw_pair_exchange.quote_coin_precision};\n"
+                        f"{bundle.withdraw_pair_exchange.taker_fee = }, {spot_fee = }",
                     )
 
                     base_exchange.create_order(
                         pair=bundle.pair,
                         ccy_quantity=price_analyzer.user_based_coin_available_amount,
-                        ccy_precision=pair_to_exchange.base_coin_precision,
+                        ccy_precision=bundle.withdraw_pair_exchange.base_coin_precision,
                         price=price_analyzer.user_based_max_buy_price,
-                        price_precision=pair_to_exchange.quote_coin_precision,
+                        price_precision=bundle.withdraw_pair_exchange.quote_coin_precision,
                         spot_fee=spot_fee,
                     )
                     buy_label = "✅"

@@ -57,9 +57,7 @@ def get_bundle_message(bundle: ProfitBundle, bundle_item: ProfitBundleItem) -> s
     if bundle.network_speed is not None:
         fees_section += f"\n🚀 Network Speed: {bundle.network_speed:.1f} - {bundle.network_speed + 2:.1f} minutes"
 
-    status = (
-        f"🟢 Status: {bundle.status}" if bundle.status == BundleStatus.in_progress else f"🔴 Status: {bundle.status}"
-    )
+    status = f"🟢 Status: {bundle.status}" if bundle.status == BundleStatus.in_progress else f"🔴 Status: {bundle.status}"
 
     if base_exchange.withdraw_status == WithdrawStatus.whitelist:
         whitelist_status = "✅ Whitelisted" if bundle.is_whitelisted else "🚫 Not whitelisted"
@@ -67,6 +65,9 @@ def get_bundle_message(bundle: ProfitBundle, bundle_item: ProfitBundleItem) -> s
         whitelist_status = ""
 
     exhausted_status = "🩸 Order Book is exhausted\n\n" if bundle_item.is_exhausted else ""
+
+    auto_buy_label = "" if bundle.withdraw_pair_exchange.api_enabled else "Auto Buy: ❌"
+    auto_sell_label = "" if bundle.deposit_pair_exchange.api_enabled else "Auto Sell: ❌"
 
     message = (
         f"<b>{bundle.base_exchange.name} -> {bundle.pair_exchange.name} | "
@@ -78,7 +79,8 @@ def get_bundle_message(bundle: ProfitBundle, bundle_item: ProfitBundleItem) -> s
         f"{pair_exchange_price_section}\n\n"
         f"{fees_section}\n\n"
         f"{status}\n"
-        f"⏳ Alive: {time_live.total_seconds() / 60:.1f} minutes"
+        f"⏳ Alive: {time_live.total_seconds() / 60:.1f} minutes\n\n"
+        f"{auto_buy_label}  {auto_sell_label}"
     )
 
     return message

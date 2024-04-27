@@ -144,6 +144,8 @@ def send_tg_message(bundle_id):
                 bundle.joinedload(ProfitBundle.withdraw_coin_network_exchange).joinedload(
                     CoinNetworkExchange.base_network,
                 ),
+                bundle.joinedload(ProfitBundle.withdraw_pair_exchange),
+                bundle.joinedload(ProfitBundle.deposit_pair_exchange),
             )
             .filter(ProfitBundleItem.profit_bundle_id == bundle_id)
             .order_by(ProfitBundleItem.created_at.desc())

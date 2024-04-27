@@ -50,6 +50,7 @@ class BingxAPI(AbstractExchange):
                 exchange=self.NAME,
                 base_coin_precision=self.__step_to_precision(pair["stepSize"]),
                 quote_coin_precision=self.__step_to_precision(pair["tickSize"]),
+                api_enabled=pair["apiStateBuy"] and pair["apiStateSell"],
             )
             for pair in pairs_info["symbols"]
             if pair["symbol"].split("-")[1] == "USDT" and pair["status"]
