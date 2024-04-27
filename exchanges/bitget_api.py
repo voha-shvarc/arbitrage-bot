@@ -229,8 +229,8 @@ class BitgetAPI(AbstractExchange):
             "side": "buy" if is_buy else "sell",
             "orderType": "limit",
             "force": "fok" if is_buy else "normal",
-            "quantity": float(qty),
-            "price": float(price),
+            "quantity": str(qty),
+            "price": str(price),
         }
         try:
             response = self.order_client.placeOrder(params=body)

@@ -247,8 +247,8 @@ class KuCoinAPI(AbstractExchange):
             "symbol": pair.dashed_name,
             "side": "buy" if is_buy else "sell",
             "type": "limit",
-            "size": float(qty),
-            "price": float(price),
+            "size": str(qty),
+            "price": str(price),
             "timeInForce": "FOK" if is_buy else "GTC",
         }
         try:

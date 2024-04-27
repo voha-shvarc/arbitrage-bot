@@ -355,8 +355,8 @@ class XTAPI(AbstractExchange):
             "type": "LIMIT",
             "timeInForce": "FOK" if is_buy else "GTC",
             "bizType": "SPOT",
-            "quantity": float(qty),
-            "price": float(price),
+            "quantity": str(qty),
+            "price": str(price),
         }
         response = self.sign_request("POST", "/v4/order", body=body)
 

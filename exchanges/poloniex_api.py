@@ -195,8 +195,8 @@ class PoloniexAPI(AbstractExchange):
             "time_in_force": "FOK" if is_buy else "GTC",
             "type": "LIMIT",
             "side": "BUY" if is_buy else "SELL",
-            "quantity": float(qty),
-            "price": float(price),
+            "quantity": str(qty),
+            "price": str(price),
         }
         response = self.orders_client.create(**body)
 

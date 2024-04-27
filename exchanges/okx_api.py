@@ -212,8 +212,8 @@ class OkxAPI(AbstractExchange):
             "tdMode": "cash",
             "side": "buy" if is_buy else "sell",
             "ordType": "fok" if is_buy else "limit",
-            "sz": float(qty),
-            "px": float(price),
+            "sz": str(qty),
+            "px": str(price),
         }
         res = self.trade_client.place_order(**body)
         if res["code"] != "0":

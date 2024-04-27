@@ -176,8 +176,8 @@ class BinanceAPI(AbstractExchange):
             "side": "BUY" if is_buy else "SELL",
             "type": "LIMIT",
             "timeInForce": "FOK" if is_buy else "GTC",
-            "quantity": float(qty),
-            "price": float(price),
+            "quantity": str(qty),
+            "price": str(price),
         }
         try:
             self.client.new_order(**body)

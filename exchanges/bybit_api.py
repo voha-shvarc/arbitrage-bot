@@ -169,8 +169,8 @@ class BybitAPI(AbstractExchange):
             "symbol": pair.default_name,
             "side": "Buy" if is_buy else "Sell",
             "orderType": "Limit",
-            "qty": float(qty),
-            "price": float(price),
+            "qty": str(qty),
+            "price": str(price),
             "timeInForce": "FOK" if is_buy else "GTC",
         }
         try:

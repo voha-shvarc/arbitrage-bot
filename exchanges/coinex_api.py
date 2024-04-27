@@ -344,8 +344,8 @@ class CoinExAPI(AbstractExchange):
             "market_type": "SPOT",
             "side": "buy" if is_buy else "sell",
             "type": "fok" if is_buy else "limit",
-            "amount": float(qty),
-            "price": float(price),
+            "amount": str(qty),
+            "price": str(price),
         }
         data = self.sign_request("POST", "/spot/order/new", body=json.dumps(body))
         if err_msg := data["message"]:

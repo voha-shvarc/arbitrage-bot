@@ -182,8 +182,8 @@ class HuobiAPI(AbstractExchange):
             "symbol": pair.huobi_name,
             "account_id": self.ACCOUNT_ID,
             "order_type": OrderType.BUY_LIMIT_FOK if is_buy else OrderType.SELL_LIMIT,
-            "amount": float(qty),
-            "price": float(price),
+            "amount": str(qty),
+            "price": str(price),
         }
         try:
             order_id = self.trade_client.create_spot_order(**body)

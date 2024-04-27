@@ -176,8 +176,8 @@ class WhitebitAPI(AbstractExchange):
         body = {
             "market": pair.underscored_name,
             "side": "buy" if is_buy else "sell",
-            "amount": float(qty),
-            "price": float(price),
+            "amount": str(qty),
+            "price": str(price),
         }
         try:
             self.trade_client.put_limit(**body)

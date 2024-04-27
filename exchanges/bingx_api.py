@@ -218,8 +218,8 @@ class BingxAPI(AbstractExchange):
             "symbol": pair.dashed_name,
             "side": "BUY" if is_buy else "SELL",
             "type": "LIMIT",
-            "quantity": float(qty),
-            "price": float(price),
+            "quantity": str(qty),
+            "price": str(price),
         }
         try:
             response = self.client.place_order(**body)

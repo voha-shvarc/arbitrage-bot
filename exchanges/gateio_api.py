@@ -170,8 +170,8 @@ class GateIOAPI(AbstractExchange):
             "type": "limit",
             "account": "spot",
             "side": "buy" if is_buy else "sell",
-            "amount": float(qty),
-            "price": float(price),
+            "amount": str(qty),
+            "price": str(price),
             "time_in_force": "fok" if is_buy else "gtc",
         }
         try:
