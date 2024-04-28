@@ -155,6 +155,7 @@ def sync_coin_exchange_networks():
                     and_(Exchange.name == "GateIO", Coin.name == "DERP"),
                     and_(Exchange.name == "GateIO", Coin.name == "FREE"),
                     and_(Exchange.name == "GateIO", Coin.name == "GEM"),
+                    and_(Exchange.name == "GateIO", Coin.name == "OMNI"),
                 ),
             )
         )
