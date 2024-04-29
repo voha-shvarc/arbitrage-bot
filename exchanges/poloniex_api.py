@@ -24,6 +24,7 @@ from exchanges.polosdk.rest.accounts import Accounts
 from exchanges.polosdk.rest.markets import Markets
 from exchanges.polosdk.rest.orders import Orders
 from exchanges.polosdk.rest.request import Request
+from exchanges.polosdk.rest.request import RequestError
 from exchanges.polosdk.rest.wallets import Wallets
 
 
@@ -198,17 +199,11 @@ class PoloniexAPI(AbstractExchange):
             "quantity": str(qty),
             "price": str(price),
         }
-        response = self.orders_client.create(**body)
-
         try:
-            data = response.json()
-        except JSONDecodeError as e:
-            self.logger.error(f"[poloniex] couldn't parse response. {response.text}. {body = }")
-            raise CreateOrderError("Couldn't parse response. Check logs") from e
-
-        if err_msg := data.get("msg"):
-            self.logger.error(f"[poloniex] error creating order. {err_msg}. {body = }")
-            raise CreateOrderError(err_msg)
+            response = self.orders_client.create(**body)
+        except RequestError as e:
+            self.logger.error(f"[poloniex] error creating order. {e}. {body = }")
+            raise CreateOrderError(str(e)) from e
 
         order_info = self.orders_client.get_by_id(response["id"])
         if order_info["state"] == "CANCELED":
