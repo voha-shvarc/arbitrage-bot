@@ -252,7 +252,7 @@ def auto_sell(price: float, profit_bundle_id: int):
         while True:
             balance = exchange_api.get_balance(**params)
 
-            if balance == start_balance:
+            if balance > start_balance:
                 time.sleep(exchange_api.get_balance_limit)
             else:
                 break
@@ -266,7 +266,10 @@ def auto_sell(price: float, profit_bundle_id: int):
             )
             time.sleep(0.5)
 
-        logger.info(f"Creation auto sell order for {pair_to_exchange.pair.default_name}\n" f"{balance = }; {price = }")
+        logger.info(
+            f"Creation auto sell order for {pair_to_exchange.pair.default_name}\n"
+            f"{start_balance = }; {balance = }; {price = }"
+        )
         exchange_api.create_order(
             pair=pair_to_exchange.pair,
             ccy_quantity=balance,
