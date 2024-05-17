@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # wait for postgres
-while ! pg_isready -h 10.63.144.3; do
+while ! pg_isready -h botarbitrage.postgres.database.azure.com; do  # example1!
   echo 'Retry in 5 seconds...'
   sleep 5
 done
