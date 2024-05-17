@@ -9,7 +9,7 @@ load_dotenv()
 app = Celery(
     "tasks",
     include=["celery_app.sync", "celery_app.tasks"],
-    broker=f"redis://:{os.getenv('REDIS_PASSWORD')}@{os.getenv('REDIS_HOST')}:{os.getenv('REDIS_PORT')}?ssl=True",
+    broker=f"redis://:{os.getenv('REDIS_PASSWORD')}@{os.getenv('REDIS_HOST')}:{os.getenv('REDIS_PORT')}?ssl_cert_reqs=CERT_REQUIRED",
 )
 
 
