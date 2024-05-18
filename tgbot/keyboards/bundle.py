@@ -1,3 +1,5 @@
+from typing import Optional
+
 from aiogram.filters.callback_data import CallbackData
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
@@ -25,6 +27,7 @@ class CreateOrderCallbackData(CallbackData, prefix="create_order"):
     deposit_exchange_name: str
     confirmed: bool = False
     set_limit: str = "False"
+    amount_to_buy: Optional[float] = None
 
 
 class CheckedBundleCallbackData(CallbackData, prefix="checked"):
@@ -63,6 +66,7 @@ def get_bundle_keyboard(
     force_refresh_label: str = "",
     checked_label: str = "",
     sell_label: str = "",
+    amount_to_buy: Optional[float] = None,
 ):
     keyboard = InlineKeyboardBuilder()
 
@@ -77,6 +81,7 @@ def get_bundle_keyboard(
             withdraw_exchange_name=withdraw_exchange_name,
             deposit_exchange_name=deposit_exchange_name,
             confirmed=buy_confirmed,
+            amount_to_buy=amount_to_buy,
         ),
     )
 

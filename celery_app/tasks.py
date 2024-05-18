@@ -162,7 +162,12 @@ def send_tg_message(bundle_id):
                 bot,
                 user_id,
                 message,
-                reply_markup=get_bundle_keyboard(bundle_id, bundle.base_exchange.name, bundle.pair_exchange.name),
+                reply_markup=get_bundle_keyboard(
+                    bundle_id,
+                    bundle.base_exchange.name,
+                    bundle.pair_exchange.name,
+                    amount_to_buy=bundle_item.user_based_to_use_usdt,
+                ),
                 disable_web_page_preview=True,
             )
             for user_id in config_tg.tg_bot.admin_ids

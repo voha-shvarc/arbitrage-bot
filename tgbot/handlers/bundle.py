@@ -98,7 +98,12 @@ async def recalculate_bundle_callback_query(query: CallbackQuery, callback_data:
         await query.message.edit_text(
             message,
             disable_web_page_preview=True,
-            reply_markup=get_bundle_keyboard(bundle.id, bundle.base_exchange.name, bundle.pair_exchange.name),
+            reply_markup=get_bundle_keyboard(
+                bundle.id,
+                bundle.base_exchange.name,
+                bundle.pair_exchange.name,
+                amount_to_buy=bundle_item.user_based_to_use_usdt,
+            ),
         )
     except TelegramBadRequest:
         logger.warning(f"Bundle (id={bundle.id}) haven't changed...")
@@ -302,7 +307,9 @@ async def process_bundle(bundle_item, limit: Optional[float] = None, retries: in
 async def create_order_callback_query(query: CallbackQuery, callback_data: CreateOrderCallbackData):
     await query.answer()
 
-    if not callback_data.confirmed:
+    if not callback_data.amount_to_buy:
+        await query.message.reply("Refresh first and then Buy")
+    elif not callback_data.confirmed:
         await query.message.edit_reply_markup(
             reply_markup=get_bundle_keyboard(
                 callback_data.profit_bundle_id,
@@ -310,6 +317,7 @@ async def create_order_callback_query(query: CallbackQuery, callback_data: Creat
                 callback_data.deposit_exchange_name,
                 buy_confirmed=True,
                 buy_label="🔓",
+                amount_to_buy=callback_data.amount_to_buy,
             ),
         )
     else:
