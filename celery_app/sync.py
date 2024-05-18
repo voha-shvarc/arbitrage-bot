@@ -91,6 +91,7 @@ def sync_coin_exchange_networks():
                     and_(Exchange.name == "Bingx", Coin.name == "TORN"),
                     and_(Exchange.name == "Bingx", Coin.name == "NGL"),
                     and_(Exchange.name == "KuCoin", Coin.name == "ARC"),
+                    and_(Exchange.name == "Huobi", Coin.name == "GAME"),
                     and_(
                         Exchange.name.in_(["ByBit", "Binance", "OKX"]),
                         Network.name == "Chiliz",
@@ -159,6 +160,7 @@ def sync_coin_exchange_networks():
                     and_(Exchange.name == "GateIO", Coin.name == "FREE"),
                     and_(Exchange.name == "GateIO", Coin.name == "GEM"),
                     and_(Exchange.name == "GateIO", Coin.name == "OMNI"),
+                    and_(Exchange.name == "GateIO", Coin.name == "AXL"),
                 ),
             )
         )
