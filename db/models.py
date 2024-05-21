@@ -185,6 +185,7 @@ class ProfitBundle(Base):
     spot_sell_fee = Column(Float, server_default="0.001")
     back_way_network_fee = Column(Float)
     is_checked = Column(Boolean, server_default="false")
+    times_occurred = Column(Integer, default=0, server_default="0", nullable=False)
 
     created_at = db_created()
     updated_at = db_updated()

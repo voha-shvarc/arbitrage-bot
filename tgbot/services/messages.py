@@ -79,7 +79,8 @@ def get_bundle_message(bundle: ProfitBundle, bundle_item: ProfitBundleItem) -> s
         f"{pair_exchange_price_section}\n\n"
         f"{fees_section}\n\n"
         f"{status}\n"
-        f"⏳ Alive: {time_live.total_seconds() / 60:.1f} minutes\n\n"
+        f"⏳ Alive: {time_live.total_seconds() / 60:.1f} minutes\n"
+        f"⚠️Already occurred: {bundle.times_occurred} times\n\n"
         f"{auto_buy_label}  {auto_sell_label}"
     )
 

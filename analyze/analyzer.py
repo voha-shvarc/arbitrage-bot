@@ -2,6 +2,8 @@ import asyncio
 import logging
 import time
 from collections import defaultdict
+from datetime import datetime
+from datetime import timedelta
 from itertools import chain
 from itertools import groupby
 from typing import Union
@@ -329,6 +331,16 @@ class ExchangePairAnalyzer:
                             Whitelist.deposit_exchange_id == bundle.pair_exchange_id,
                             Whitelist.base_network_id == price_analyzer.withdraw_cne.base_network_id,
                         ),
+                    ),
+                ),
+            )
+            bundle.times_occurred = await session.scalar(
+                select(
+                    func.count(),
+                ).where(
+                    and_(
+                        ProfitBundle.created_at >= datetime.utcnow() - timedelta(hours=3),
+                        ProfitBundle.pair_id == pair.id,
                     ),
                 ),
             )
