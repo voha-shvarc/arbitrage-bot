@@ -83,15 +83,14 @@ def sync_coin_exchange_networks():
             .filter(
                 or_(
                     and_(Exchange.name == "ByBit", Coin.name == "VPAD"),
-                    and_(Exchange.name == "ByBit", Coin.name == "NGL"),  # different from other exchanges
                     and_(Exchange.name == "ByBit", Coin.name == "GPT"),  # differs from okx and gateio
                     and_(Exchange.name == "ByBit", Coin.name == "TOMS"),  # on bybit available only in corea
                     and_(Exchange.name == "Bitget", Coin.name == "ALT"),  # differs from binance and gateio
                     and_(Exchange.name == "Bitget", Coin.name == "PMPY"),  # takes additional 7% for smart c
                     and_(Exchange.name == "Bingx", Coin.name == "TORN"),
-                    and_(Exchange.name == "Bingx", Coin.name == "NGL"),
                     and_(Exchange.name == "KuCoin", Coin.name == "ARC"),
                     and_(Exchange.name == "Huobi", Coin.name == "GAME"),
+                    and_(Exchange.name == "Huobi", Coin.name == "NIM"),
                     and_(
                         Exchange.name.in_(["ByBit", "Binance", "OKX"]),
                         Network.name == "Chiliz",
@@ -136,6 +135,7 @@ def sync_coin_exchange_networks():
                     and_(Exchange.name == "Mexc", Coin.name == "AOG"),
                     and_(Exchange.name.in_(["Mexc", "KuCoin"]), Coin.name == "HERO"),
                     and_(Exchange.name.in_(["Poloniex", "KuCoin"]), Coin.name == "AI"),
+                    and_(Exchange.name.in_(["Poloniex", "ByBit", "Bingx"]), Coin.name == "NGL"),
                     and_(Exchange.name == "Poloniex", Coin.name == "AC"),
                     and_(Exchange.name == "Poloniex", Coin.name == "BOBO"),
                     and_(Exchange.name == "Poloniex", Coin.name == "CLOSEDAI"),
@@ -146,7 +146,6 @@ def sync_coin_exchange_networks():
                     and_(Exchange.name == "Poloniex", Coin.name == "GPU"),
                     and_(Exchange.name == "Poloniex", Coin.name == "KNOB"),
                     and_(Exchange.name == "Poloniex", Coin.name == "WSB"),
-                    and_(Exchange.name == "Poloniex", Coin.name == "NGL"),
                     and_(Exchange.name == "Poloniex", Coin.name == "DMT"),
                     and_(Exchange.name == "Poloniex", Coin.name == "APU"),
                     and_(Exchange.name == "Poloniex", Coin.name == "KAI"),
