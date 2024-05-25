@@ -20,7 +20,7 @@ app.conf.beat_schedule = {
     },
     "sync_coin_exchange_networks": {
         "task": "celery_app.sync.sync_coin_exchange_networks",
-        "schedule": 60 * 19,  # every 19 minutes
+        "schedule": 60 * 27,  # every 27 minutes
     },
     "sync_spot__withdraw_fees": {
         "task": "celery_app.sync.sync_spot__withdraw_fees",

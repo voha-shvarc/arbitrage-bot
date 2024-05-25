@@ -70,9 +70,6 @@ def sync_coin_exchange_networks():
                         new.id = coin_network_exchange.id
                         session.merge(new)
 
-            # commit per exchange results
-            session.commit()
-
         _run_networks_mapping(session)
 
         subq = (
