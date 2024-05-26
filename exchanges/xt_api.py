@@ -239,7 +239,7 @@ class XTAPI(AbstractExchange):
         response = self.public_request(
             "GET",
             "/v4/public/kline",
-            {"symbol": pair.underscored_name.lower(), "interval": "1m", "limit": 10},
+            {"symbol": pair.underscored_name.lower(), "interval": "1m", "limit": 5},
         )
         data = response.json()
         opened = float(data["result"][-1]["o"])
@@ -252,6 +252,17 @@ class XTAPI(AbstractExchange):
 
         change = (closed - opened) / opened * 100
         return change
+
+    def get_recent_trading_volume(self, pair: Pair) -> float:
+        response = self.public_request(
+            "GET",
+            "/v4/public/kline",
+            {"symbol": pair.underscored_name.lower(), "interval": "1m", "limit": 10},
+        )
+        data = response.json()
+
+        total_volume = sum([float(kline["q"]) for kline in data["result"]])
+        return total_volume
 
     def get_balance(self, coin_name: str = "usdt") -> float:
         params = {"currency": coin_name.lower()}

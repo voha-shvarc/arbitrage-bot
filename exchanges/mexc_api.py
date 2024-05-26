@@ -151,13 +151,24 @@ class MexcAPI(AbstractExchange):
         response = self.public_request(
             "GET",
             "/api/v3/klines",
-            {"symbol": pair.default_name, "interval": "1m", "limit": 10},
+            {"symbol": pair.default_name, "interval": "1m", "limit": 5},
         )
         data = response.json()
         opened = float(data[0][1])
         closed = float(data[-1][4])
         change = (closed - opened) / opened * 100
         return change
+
+    def get_recent_trading_volume(self, pair: Pair) -> float:
+        response = self.public_request(
+            "GET",
+            "/api/v3/klines",
+            {"symbol": pair.default_name, "interval": "1m", "limit": 10},
+        )
+        data = response.json()
+
+        total_volume = sum([float(kline[5]) for kline in data])
+        return total_volume
 
     def get_balance(self, coin_name: str = "USDT") -> float:
         response = self.sign_request("GET", "/api/v3/account")

@@ -182,13 +182,24 @@ class BitgetAPI(AbstractExchange):
         params = {
             "symbol": pair.bitget_name,
             "period": "1min",
-            "limit": "10",
+            "limit": "5",
         }
         response = self.client.candles(params=params)
         opened = float(response["data"][0]["open"])
         closed = float(response["data"][-1]["close"])
         change = (closed - opened) / opened * 100
         return change
+
+    def get_recent_trading_volume(self, pair: Pair) -> float:
+        params = {
+            "symbol": pair.bitget_name,
+            "period": "1min",
+            "limit": "10",
+        }
+        response = self.client.candles(params=params)
+
+        total_volume = sum([float(kline["baseVol"]) for kline in response["data"]])
+        return total_volume
 
     def get_balance(self, coin_name: str = "USDT") -> float:
         response = self.account_client.assetsLite(params={"coin": coin_name})

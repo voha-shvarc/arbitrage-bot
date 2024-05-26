@@ -48,7 +48,8 @@ def get_bundle_message(bundle: ProfitBundle, bundle_item: ProfitBundleItem) -> s
         f"{format_number(bundle_item.user_based_to_use_base_ccy)} {bundle.withdraw_coin_network_exchange.coin.name}\n"
         f"📈 {bundle_item.user_based_used_sell_orders} orders | {(bundle_item.user_based_percent_of_pair_trading_vol * 100):.3f}%"
         f" | {bundle.pair_exchange_chart_change:+.1f}%\n"
-        f"🛒 {bundle_item.used_sell_orders} orders | {(bundle_item.percent_of_pair_trading_vol * 100):.3f}% | {bundle_item.to_use_usdt:.2f}$"
+        f"🛒 {bundle_item.used_sell_orders} orders | {(bundle_item.percent_of_pair_trading_vol * 100):.3f}% | {bundle_item.to_use_usdt:.2f}$\n"
+        f"💸 Last 10 min: {format_number(bundle.pair_exchange_recent_trading_volume)} {bundle.withdraw_coin_network_exchange.coin.name}"
     )
 
     fees_section = f"‼️️ Spot Fee: <b>{bundle_item.user_based_spot_fee:.2f}$</b> | Network Fee: <b>{bundle_item.user_based_network_fee:.2f}$</b>"
@@ -80,7 +81,7 @@ def get_bundle_message(bundle: ProfitBundle, bundle_item: ProfitBundleItem) -> s
         f"{fees_section}\n\n"
         f"{status}\n"
         f"⏳ Alive: {time_live.total_seconds() / 60:.1f} minutes\n"
-        f"⚠️Already occurred: {bundle.times_occurred} times\n\n"
+        f"⚠️ Already occurred: {bundle.times_occurred} times\n\n"
         f"{auto_buy_label}  {auto_sell_label}"
     )
 

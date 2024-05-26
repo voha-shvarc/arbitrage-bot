@@ -167,11 +167,17 @@ class OkxAPI(AbstractExchange):
         return link
 
     def get_pair_chart_change(self, pair: Pair) -> float:
-        response = self.market_client.get_candlesticks(pair.dashed_name, bar="1m", limit=10)
+        response = self.market_client.get_candlesticks(pair.dashed_name, bar="1m", limit=5)
         opened = float(response["data"][-1][1])
         closed = float(response["data"][0][4])
         change = (closed - opened) / opened * 100
         return change
+
+    def get_recent_trading_volume(self, pair: Pair) -> float:
+        response = self.market_client.get_candlesticks(pair.dashed_name, bar="1m", limit=10)
+
+        total_volume = sum([float(kline[5]) for kline in response["data"]])
+        return total_volume
 
     def get_balance(self, coin_name: str = "USDT") -> float:
         response = self.account_client.get_account_balance(ccy=coin_name)

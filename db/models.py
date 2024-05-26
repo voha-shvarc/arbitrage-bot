@@ -186,6 +186,7 @@ class ProfitBundle(Base):
     back_way_network_fee = Column(Float)
     is_checked = Column(Boolean, server_default="false")
     times_occurred = Column(Integer, default=0, server_default="0", nullable=False)
+    pair_exchange_recent_trading_volume = Column(Float)
 
     created_at = db_created()
     updated_at = db_updated()

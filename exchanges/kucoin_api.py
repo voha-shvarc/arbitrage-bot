@@ -165,10 +165,16 @@ class KuCoinAPI(AbstractExchange):
 
     def get_pair_chart_change(self, pair: Pair) -> float:
         response = self.client.get_kline(symbol=pair.dashed_name, kline_type="1min")
-        opened = float(response[9][1])
+        opened = float(response[4][1])
         closed = float(response[0][2])
         change = (closed - opened) / opened * 100
         return change
+
+    def get_recent_trading_volume(self, pair: Pair) -> float:
+        response = self.client.get_kline(symbol=pair.dashed_name, kline_type="1min")
+
+        total_volume = sum([float(kline[5]) for kline in response[:10]])
+        return total_volume
 
     def get_balance(self, coin_name: str = "USDT", account_type: str = "trade") -> float:
         response = self.account_client.get_account_list(currency=coin_name, account_type=account_type)

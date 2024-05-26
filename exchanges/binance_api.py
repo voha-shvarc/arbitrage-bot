@@ -137,8 +137,14 @@ class BinanceAPI(AbstractExchange):
         return link
 
     def get_pair_chart_change(self, pair: Pair) -> float:
-        response = self.client.rolling_window_ticker(symbol=pair.default_name, windowSize="10m")
+        response = self.client.rolling_window_ticker(symbol=pair.default_name, windowSize="5m")
         return float(response["priceChangePercent"])
+
+    def get_recent_trading_volume(self, pair: Pair) -> float:
+        response = self.client.klines(symbol=pair.default_name, interval="1m", limit=10)
+
+        total_volume = sum([float(kline[5]) for kline in response])
+        return total_volume
 
     def get_balance(self, coin_name: str = "USDT") -> float:
         response = self.client.user_asset(asset=coin_name)

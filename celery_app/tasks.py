@@ -203,6 +203,8 @@ def fill_up_bundle(bundle_id):
         bundle.base_exchange_chart_change = base_exchange.get_pair_chart_change(bundle.pair)
         bundle.pair_exchange_chart_change = pair_exchange.get_pair_chart_change(bundle.pair)
 
+        bundle.pair_exchange_recent_trading_volume = pair_exchange.get_recent_trading_volume(bundle.pair)
+
         session.commit()
 
     send_tg_message.apply_async(args=[bundle_id], countdown=1)

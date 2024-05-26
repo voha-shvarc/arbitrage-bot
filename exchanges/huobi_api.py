@@ -137,11 +137,17 @@ class HuobiAPI(AbstractExchange):
         return link
 
     def get_pair_chart_change(self, pair: Pair) -> float:
-        response = self.price_client.get_candlestick(symbol=pair.huobi_name, period="1min", size=10)
+        response = self.price_client.get_candlestick(symbol=pair.huobi_name, period="1min", size=5)
         opened = response[-1].open
         closed = response[0].close
         change = (closed - opened) / opened * 100
         return change
+
+    def get_recent_trading_volume(self, pair: Pair) -> float:
+        response = self.price_client.get_candlestick(symbol=pair.huobi_name, period="1min", size=10)
+
+        total_volume = sum([kline.amount for kline in response])
+        return total_volume
 
     def get_balance(self, coin_name: str = "USDT") -> float:
         account_balance = self.account_client.get_balance(self.ACCOUNT_ID)

@@ -110,11 +110,17 @@ class WhitebitAPI(AbstractExchange):
         return total
 
     def get_pair_chart_change(self, pair) -> float:
-        response = self.market_client.get_kline(market=pair.underscored_name, interval="1m", limit="10")
+        response = self.market_client.get_kline(market=pair.underscored_name, interval="1m", limit="5")
         opened = float(response["result"][0][1])
         closed = float(response["result"][-1][2])
         change = (closed - opened) / opened * 100
         return change
+
+    def get_recent_trading_volume(self, pair: Pair) -> float:
+        response = self.market_client.get_kline(market=pair.underscored_name, interval="1m", limit="10")
+
+        total_volume = sum([float(kline[5]) for kline in response["result"]])
+        return total_volume
 
     @classmethod
     def spot_link(cls, pair: Pair) -> str:

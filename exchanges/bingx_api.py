@@ -134,12 +134,21 @@ class BingxAPI(AbstractExchange):
     def get_pair_chart_change(self, pair: Pair) -> float:
         response = self.client.get(
             "/openApi/spot/v2/market/kline",
-            params={"symbol": "BTC-USDT", "interval": "1m", "limit": 10},
+            params={"symbol": pair.dashed_name, "interval": "1m", "limit": 5},
         )
         opened = response["data"][-1][1]
         closed = response["data"][0][4]
         change = (closed - opened) / opened * 100
         return change
+
+    def get_recent_trading_volume(self, pair: Pair) -> float:
+        response = self.client.get(
+            "/openApi/spot/v2/market/kline",
+            params={"symbol": pair.dashed_name, "interval": "1m", "limit": 10},
+        )
+
+        total_volume = sum([kline[5] for kline in response["data"]])
+        return total_volume
 
     def get_balance(self, coin_name: str = "USDT") -> float:
         data = self.client.assets()

@@ -249,6 +249,9 @@ class CoinExAPI(AbstractExchange):
 
         return float(data[0]["volume"])
 
+    def get_recent_trading_volume(self, pair: Pair) -> float:
+        return 0
+
     @classmethod
     def spot_link(cls, pair: Pair) -> str:
         link = f"https://www.coinex.com/en/exchange/{pair.dashed_name.lower()}"

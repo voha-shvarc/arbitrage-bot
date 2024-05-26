@@ -125,11 +125,17 @@ class BybitAPI(AbstractExchange):
         return link
 
     def get_pair_chart_change(self, pair: Pair) -> float:
-        response = self.session.get_kline(category="spot", symbol=pair.default_name, interval=1, limit=10)
+        response = self.session.get_kline(category="spot", symbol=pair.default_name, interval=1, limit=5)
         opened = float(response["result"]["list"][-1][1])
         closed = float(response["result"]["list"][0][2])
         change = (closed - opened) / opened * 100
         return change
+
+    def get_recent_trading_volume(self, pair: Pair) -> float:
+        response = self.session.get_kline(category="spot", symbol=pair.default_name, interval=1, limit=10)
+
+        total_volume = sum([float(kline[5]) for kline in response["result"]["list"]])
+        return total_volume
 
     def get_balance(self, coin_name: str = "USDT") -> float:
         response = self.session.get_coin_balance(coin=coin_name, account_type="SPOT")

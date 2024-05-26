@@ -128,12 +128,22 @@ class GateIOAPI(AbstractExchange):
         response = self.spot_client.list_candlesticks(
             currency_pair=pair.underscored_name,
             interval="1m",
-            limit=3,
+            limit=5,
         )
         opened = float(response[0][5])
         closed = float(response[0][2])
         change = (closed - opened) / opened * 100
         return change
+
+    def get_recent_trading_volume(self, pair: Pair) -> float:
+        response = self.spot_client.list_candlesticks(
+            currency_pair=pair.underscored_name,
+            interval="1m",
+            limit=10,
+        )
+
+        total_volume = sum([float(kline[6]) for kline in response])
+        return total_volume
 
     def get_balance(self, coin_name: str = "USDT") -> float:
         spot_accounts = self.spot_client.list_spot_accounts(currency=coin_name)

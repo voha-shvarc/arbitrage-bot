@@ -48,6 +48,10 @@ class AbstractExchange(ABC):
     def get_pair_trading_volume(self, pair: Pair) -> float:
         raise NotImplementedError()
 
+    @abstractmethod
+    def get_recent_trading_volume(self, pair: Pair) -> float:
+        raise NotImplementedError()
+
     @classmethod
     def spot_link(cls, pair: Pair) -> str:
         raise NotImplementedError()
