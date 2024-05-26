@@ -45,11 +45,10 @@ def get_bundle_message(bundle: ProfitBundle, bundle_item: ProfitBundleItem) -> s
         f"📗 {bundle.pair_exchange.name} | <a href='{pair_ex_spot_link}'>spot</a> | <a href='{pair_ex_deposit_link}'>deposit</a>\n"
         f"💲[ <code>{bundle_item.user_based_pair_exchange_min_price}</code> - "
         f"<code>{bundle_item.user_based_pair_exchange_max_price}</code> ] | "
-        f"{format_number(bundle_item.user_based_to_use_base_ccy)} {bundle.withdraw_coin_network_exchange.coin.name}\n"
+        f"{format_number(bundle_item.user_based_to_use_base_ccy)} | {format_number(bundle.pair_exchange_recent_trading_volume)}\n"
         f"📈 {bundle_item.user_based_used_sell_orders} orders | {(bundle_item.user_based_percent_of_pair_trading_vol * 100):.3f}%"
         f" | {bundle.pair_exchange_chart_change:+.1f}%\n"
         f"🛒 {bundle_item.used_sell_orders} orders | {(bundle_item.percent_of_pair_trading_vol * 100):.3f}% | {bundle_item.to_use_usdt:.2f}$\n"
-        f"💸 Last 10 min: {format_number(bundle.pair_exchange_recent_trading_volume)} {bundle.withdraw_coin_network_exchange.coin.name}"
     )
 
     fees_section = f"‼️️ Spot Fee: <b>{bundle_item.user_based_spot_fee:.2f}$</b> | Network Fee: <b>{bundle_item.user_based_network_fee:.2f}$</b>"
