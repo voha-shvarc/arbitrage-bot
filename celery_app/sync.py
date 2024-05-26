@@ -108,6 +108,7 @@ def sync_coin_exchange_networks():
                     Coin.name == "QUACK",  # additional 12% fee
                     Coin.name == "FLOKICEO",
                     Coin.name == "GAME",  # has absolute different values on different exchanges
+                    Coin.name == "PEPEAI",
                     # after mex and bingx integration
                     and_(Exchange.name == "Mexc", Network.name == "Solana"),
                     and_(Exchange.name == "Mexc", Coin.name == "KT"),
