@@ -35,7 +35,7 @@ def get_bundle_message(bundle: ProfitBundle, bundle_item: ProfitBundleItem) -> s
         f"📕 {bundle.base_exchange.name} | <a href='{base_ex_spot_link}'>spot</a> | <a href='{base_ex_withdraw_link}'>withdraw</a>\n"
         f"💲 [ <code>{bundle_item.user_based_base_exchange_min_price}</code> - "
         f"<code>{bundle_item.user_based_base_exchange_max_price}</code> ] | "
-        f"{format_number(bundle_item.user_based_to_use_base_ccy)} {bundle.withdraw_coin_network_exchange.coin.name}\n"
+        f"{format_number(bundle_item.user_based_to_use_base_ccy)}\n"
         f"📈 {bundle_item.user_based_used_buy_orders} orders | {(bundle_item.user_based_percent_of_base_trading_vol * 100):.3f}%"
         f" | {bundle.base_exchange_chart_change:+.1f}%\n"
         f"🛒 {bundle_item.used_buy_orders} orders | {(bundle_item.percent_of_base_trading_vol * 100):.3f}% | {bundle_item.to_use_usdt:.2f}$"
@@ -48,7 +48,7 @@ def get_bundle_message(bundle: ProfitBundle, bundle_item: ProfitBundleItem) -> s
         f"{format_number(bundle_item.user_based_to_use_base_ccy)} | {format_number(bundle.pair_exchange_recent_trading_volume)}\n"
         f"📈 {bundle_item.user_based_used_sell_orders} orders | {(bundle_item.user_based_percent_of_pair_trading_vol * 100):.3f}%"
         f" | {bundle.pair_exchange_chart_change:+.1f}%\n"
-        f"🛒 {bundle_item.used_sell_orders} orders | {(bundle_item.percent_of_pair_trading_vol * 100):.3f}% | {bundle_item.to_use_usdt:.2f}$\n"
+        f"🛒 {bundle_item.used_sell_orders} orders | {(bundle_item.percent_of_pair_trading_vol * 100):.3f}% | {bundle_item.to_use_usdt:.2f}$"
     )
 
     fees_section = f"‼️️ Spot Fee: <b>{bundle_item.user_based_spot_fee:.2f}$</b> | Network Fee: <b>{bundle_item.user_based_network_fee:.2f}$</b>"
