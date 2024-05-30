@@ -69,7 +69,7 @@ class GateIOAPI(AbstractExchange):
                 yield CoinNetworkExchangeDC.from_gateio(coin_data)
 
     def get_price(self, pair: Pair, limit=30) -> tuple[list[list[str]], list[list[str]]]:
-        res = self.spot_client.list_order_book(pair.underscored_name)
+        res = self.spot_client.list_order_book(pair.underscored_name, limit=limit)
         buy = res.asks
         sell = res.bids
         if not buy or not sell:
@@ -124,15 +124,14 @@ class GateIOAPI(AbstractExchange):
         link = f"https://www.gate.io/ru/myaccount/withdraw/{cne.coin.name}"
         return link
 
-    def get_pair_chart_change(self, pair: Pair) -> float:
+    def get_pair_chart_change(self, pair: Pair, current_price: float) -> float:
         response = self.spot_client.list_candlesticks(
             currency_pair=pair.underscored_name,
             interval="1m",
             limit=5,
         )
         opened = float(response[0][5])
-        closed = float(response[0][2])
-        change = (closed - opened) / opened * 100
+        change = (current_price - opened) / opened * 100
         return change
 
     def get_recent_trading_volume(self, pair: Pair) -> float:

@@ -131,14 +131,13 @@ class BingxAPI(AbstractExchange):
         link = "https://bingx.com/en-us/assets/withdraw/"
         return link
 
-    def get_pair_chart_change(self, pair: Pair) -> float:
+    def get_pair_chart_change(self, pair: Pair, current_price: float) -> float:
         response = self.client.get(
             "/openApi/spot/v2/market/kline",
             params={"symbol": pair.dashed_name, "interval": "1m", "limit": 5},
         )
         opened = response["data"][-1][1]
-        closed = response["data"][0][4]
-        change = (closed - opened) / opened * 100
+        change = (current_price - opened) / opened * 100
         return change
 
     def get_recent_trading_volume(self, pair: Pair) -> float:

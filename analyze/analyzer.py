@@ -355,7 +355,10 @@ class ExchangePairAnalyzer:
             bundle_id = bundle.id
             await session.commit()
 
-            fill_up_bundle.apply_async(args=[bundle_id], countdown=5)
+            fill_up_bundle.apply_async(
+                args=[bundle_id, price_analyzer.user_based_min_buy_price, price_analyzer.user_based_min_sell_price],
+                countdown=5,
+            )
             monitor_bundle.apply_async(args=[bundle_id], countdown=10)
 
         return True

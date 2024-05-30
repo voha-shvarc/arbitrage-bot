@@ -109,11 +109,10 @@ class WhitebitAPI(AbstractExchange):
         total = sum([float(volume[5]) for volume in response["result"]])
         return total
 
-    def get_pair_chart_change(self, pair) -> float:
+    def get_pair_chart_change(self, pair: Pair, current_price: float) -> float:
         response = self.market_client.get_kline(market=pair.underscored_name, interval="1m", limit="5")
         opened = float(response["result"][0][1])
-        closed = float(response["result"][-1][2])
-        change = (closed - opened) / opened * 100
+        change = (current_price - opened) / opened * 100
         return change
 
     def get_recent_trading_volume(self, pair: Pair) -> float:

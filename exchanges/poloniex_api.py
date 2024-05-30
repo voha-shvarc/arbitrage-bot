@@ -116,11 +116,10 @@ class PoloniexAPI(AbstractExchange):
         response = self.market_client.get_ticker24h(pair.underscored_name)
         return float(response["quantity"])
 
-    def get_pair_chart_change(self, pair: Pair) -> float:
+    def get_pair_chart_change(self, pair: Pair, current_price: float) -> float:
         response = self.market_client.get_candles(pair.underscored_name, interval="MINUTE_1", limit=5)
         opened = float(response[0][2])
-        closed = float(response[-1][3])
-        change = (opened - closed) / opened * 100
+        change = (current_price - opened) / opened * 100
         return change
 
     def get_recent_trading_volume(self, pair: Pair) -> float:

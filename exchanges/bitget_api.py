@@ -178,7 +178,7 @@ class BitgetAPI(AbstractExchange):
 
         return link
 
-    def get_pair_chart_change(self, pair: Pair) -> float:
+    def get_pair_chart_change(self, pair: Pair, current_price: float) -> float:
         params = {
             "symbol": pair.bitget_name,
             "period": "1min",
@@ -186,8 +186,7 @@ class BitgetAPI(AbstractExchange):
         }
         response = self.client.candles(params=params)
         opened = float(response["data"][0]["open"])
-        closed = float(response["data"][-1]["close"])
-        change = (closed - opened) / opened * 100
+        change = (current_price - opened) / opened * 100
         return change
 
     def get_recent_trading_volume(self, pair: Pair) -> float:

@@ -124,11 +124,10 @@ class BybitAPI(AbstractExchange):
         link = "https://www.bybit.com/user/assets/withdraw"
         return link
 
-    def get_pair_chart_change(self, pair: Pair) -> float:
+    def get_pair_chart_change(self, pair: Pair, current_price: float) -> float:
         response = self.session.get_kline(category="spot", symbol=pair.default_name, interval=1, limit=5)
         opened = float(response["result"]["list"][-1][1])
-        closed = float(response["result"]["list"][0][2])
-        change = (closed - opened) / opened * 100
+        change = (current_price - opened) / opened * 100
         return change
 
     def get_recent_trading_volume(self, pair: Pair) -> float:

@@ -235,7 +235,7 @@ class XTAPI(AbstractExchange):
         link = f"https://www.xt.com/wallet/account/common/withdrawal?currency={cne.coin.name.lower()}"
         return link
 
-    def get_pair_chart_change(self, pair: Pair) -> float:
+    def get_pair_chart_change(self, pair: Pair, current_price: float) -> float:
         response = self.public_request(
             "GET",
             "/v4/public/kline",
@@ -243,14 +243,13 @@ class XTAPI(AbstractExchange):
         )
         data = response.json()
         opened = float(data["result"][-1]["o"])
-        closed = float(data["result"][0]["c"])
         if data is None:
             error_response = json.loads(response.text)
             msg = ERROR_MAPPING[error_response.get("mc")]
             self.logger.error(f"[xt] {msg}")
             return 0
 
-        change = (closed - opened) / opened * 100
+        change = (current_price - opened) / opened * 100
         return change
 
     def get_recent_trading_volume(self, pair: Pair) -> float:

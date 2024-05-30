@@ -64,7 +64,7 @@ class AbstractExchange(ABC):
     def withdraw_link(cls, cne: CoinNetworkExchange) -> str:
         raise NotImplementedError()
 
-    def get_pair_chart_change(self, pair: Pair) -> float:
+    def get_pair_chart_change(self, pair: Pair, current_price: float) -> float:
         """Returns pair chart change for the last 15 minutes in percents"""
         raise NotImplementedError()
 

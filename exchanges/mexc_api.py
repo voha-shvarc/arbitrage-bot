@@ -1,5 +1,6 @@
 import hashlib
 import hmac
+import json
 import time
 from decimal import Decimal
 from decimal import ROUND_DOWN
@@ -147,7 +148,7 @@ class MexcAPI(AbstractExchange):
         link = f"https://www.mexc.com/assets/withdraw/{cne.coin.name}"
         return link
 
-    def get_pair_chart_change(self, pair: Pair) -> float:
+    def get_pair_chart_change(self, pair: Pair, current_price: float) -> float:
         response = self.public_request(
             "GET",
             "/api/v3/klines",
@@ -155,8 +156,7 @@ class MexcAPI(AbstractExchange):
         )
         data = response.json()
         opened = float(data[0][1])
-        closed = float(data[-1][4])
-        change = (closed - opened) / opened * 100
+        change = (current_price - opened) / opened * 100
         return change
 
     def get_recent_trading_volume(self, pair: Pair) -> float:
@@ -246,8 +246,6 @@ class MexcAPI(AbstractExchange):
         except JSONDecodeError as e:
             self.logger.exception(e)
             raise WithdrawError(f"[mexc]Couldn't parse response, {response.text}") from e
-
-        import json
 
         if data.get("code"):
             raise WithdrawError(f"{data['msg'] = }\n{json.dumps(body)}")

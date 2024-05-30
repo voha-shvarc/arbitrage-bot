@@ -166,11 +166,10 @@ class OkxAPI(AbstractExchange):
         link = f"https://www.okx.com/ua/balance/withdrawal/{cne.coin.name.lower()}"
         return link
 
-    def get_pair_chart_change(self, pair: Pair) -> float:
+    def get_pair_chart_change(self, pair: Pair, current_price: float) -> float:
         response = self.market_client.get_candlesticks(pair.dashed_name, bar="1m", limit=5)
         opened = float(response["data"][-1][1])
-        closed = float(response["data"][0][4])
-        change = (closed - opened) / opened * 100
+        change = (current_price - opened) / opened * 100
         return change
 
     def get_recent_trading_volume(self, pair: Pair) -> float:

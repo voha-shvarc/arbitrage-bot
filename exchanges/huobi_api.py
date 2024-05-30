@@ -136,11 +136,10 @@ class HuobiAPI(AbstractExchange):
         link = f"https://www.htx.com/en-us/finance/withdraw/{cne.coin.name.lower()}"
         return link
 
-    def get_pair_chart_change(self, pair: Pair) -> float:
+    def get_pair_chart_change(self, pair: Pair, current_price: float) -> float:
         response = self.price_client.get_candlestick(symbol=pair.huobi_name, period="1min", size=5)
         opened = response[-1].open
-        closed = response[0].close
-        change = (closed - opened) / opened * 100
+        change = (current_price - opened) / opened * 100
         return change
 
     def get_recent_trading_volume(self, pair: Pair) -> float:

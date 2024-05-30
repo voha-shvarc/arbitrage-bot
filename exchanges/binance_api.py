@@ -136,7 +136,7 @@ class BinanceAPI(AbstractExchange):
         link = f"https://www.binance.com/en/my/wallet/account/main/withdrawal/crypto/{cne.coin.name}"
         return link
 
-    def get_pair_chart_change(self, pair: Pair) -> float:
+    def get_pair_chart_change(self, pair: Pair, current_price: float) -> float:
         response = self.client.rolling_window_ticker(symbol=pair.default_name, windowSize="5m")
         return float(response["priceChangePercent"])
 

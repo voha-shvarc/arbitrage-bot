@@ -163,11 +163,10 @@ class KuCoinAPI(AbstractExchange):
         link = f"https://www.kucoin.com/assets/withdraw/{cne.coin.name}"
         return link
 
-    def get_pair_chart_change(self, pair: Pair) -> float:
+    def get_pair_chart_change(self, pair: Pair, current_price: float) -> float:
         response = self.client.get_kline(symbol=pair.dashed_name, kline_type="1min")
         opened = float(response[4][1])
-        closed = float(response[0][2])
-        change = (closed - opened) / opened * 100
+        change = (current_price - opened) / opened * 100
         return change
 
     def get_recent_trading_volume(self, pair: Pair) -> float:

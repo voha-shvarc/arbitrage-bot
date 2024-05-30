@@ -267,7 +267,7 @@ class CoinExAPI(AbstractExchange):
         link = f"https://www.coinex.com/en/asset/withdraw?type={cne.coin.name}"
         return link
 
-    def get_pair_chart_change(self, pair: Pair) -> float:
+    def get_pair_chart_change(self, pair: Pair, current_price: float) -> float:
         params = {
             "market": pair.default_name,
             "period": "1min",
@@ -279,8 +279,7 @@ class CoinExAPI(AbstractExchange):
             return 0
 
         opened = float(data[0]["open"])
-        closed = float(data[-1]["close"])
-        change = (closed - opened) / opened * 100
+        change = (current_price - opened) / opened * 100
         return change
 
     def get_balance(self, coin_name: str = "USDT") -> float:
