@@ -167,6 +167,7 @@ class ExchangePairAnalyzer:
                 .join(PairExchange)
                 .join(Exchange)
                 .filter(Exchange.name.in_([self.base_exchange.NAME, self.pair_exchange.NAME]))
+                .filter(PairExchange.ui_enabled == True)
                 .group_by(Pair.id)
                 .having(func.count(PairExchange.id) == 2)
             )
