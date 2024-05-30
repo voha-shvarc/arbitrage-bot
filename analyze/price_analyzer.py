@@ -148,6 +148,8 @@ class PriceAnalyzer:
         if not b_prices or not s_prices:
             self.is_exhausted = True
             self.opportunity_status = OpportunityStatus.exhausted_opportunity
+        elif not self.profit_orders:
+            pass
         else:
             last_profit_book_order = self.profit_orders[-1]
             if last_profit_book_order.buy_price != buy_p.price:
