@@ -24,6 +24,13 @@ class BundleStatus:
     done = "Done"
 
 
+class OpportunityStatus:
+    buy_opportunity = "Buy Opportunity"
+    sell_opportunity = "Sell Opportunity"
+    equal_opportunity = "Equal Opportunity"
+    exhausted_opportunity = "Exhausted"
+
+
 class Coin(Base):
     __tablename__ = "coins"
 
@@ -187,6 +194,7 @@ class ProfitBundle(Base):
     is_checked = Column(Boolean, server_default="false")
     times_occurred = Column(Integer, default=0, server_default="0", nullable=False)
     pair_exchange_recent_trading_volume = Column(Float)
+    opportunity_status = Column(String(20), server_default=OpportunityStatus.equal_opportunity)
 
     created_at = db_created()
     updated_at = db_updated()

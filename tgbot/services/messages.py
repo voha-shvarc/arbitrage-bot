@@ -3,6 +3,7 @@ from datetime import datetime
 from abstract.abstract import AbstractExchange
 from abstract.abstract import WithdrawStatus
 from db.models import BundleStatus
+from db.models import OpportunityStatus
 from db.models import ProfitBundle
 from db.models import ProfitBundleItem
 from exchanges import EXCHANGES_MAPPING
@@ -66,6 +67,10 @@ def get_bundle_message(bundle: ProfitBundle, bundle_item: ProfitBundleItem) -> s
 
     exhausted_status = "🩸 Order Book is exhausted\n\n" if bundle_item.is_exhausted else ""
 
+    opportunity_status = (
+        f"💸 {bundle.opportunity_status}" if bundle.opportunity_status != OpportunityStatus.exhausted_opportunity else ""
+    )
+
     auto_buy_label = "" if bundle.withdraw_pair_exchange.api_enabled else "Auto Buy: ❌"
     auto_sell_label = "" if bundle.deposit_pair_exchange.api_enabled else "Auto Sell: ❌"
 
@@ -74,7 +79,9 @@ def get_bundle_message(bundle: ProfitBundle, bundle_item: ProfitBundleItem) -> s
         f"<code>{bundle_item.user_based_to_use_usdt:.2f}</code>$ {bundle_item.user_based_profit:+.2f}$</b>\n\n"
         f"<code>{bundle.pair.base_coin.name}</code>-<b>{bundle.pair.quote_coin.name}</b> | "
         f"<b>{bundle.withdraw_coin_network_exchange.base_network.name}{' ✅' if bundle.is_checked else ''}</b> "
-        f"{whitelist_status}\n\n{exhausted_status}"
+        f"{whitelist_status}\n\n"
+        f"{exhausted_status}\n\n"
+        f"{opportunity_status}\n\n"
         f"{base_exchange_price_section}\n\n"
         f"{pair_exchange_price_section}\n\n"
         f"{fees_section}\n\n"

@@ -1,4 +1,5 @@
 from db.models import CoinNetworkExchange
+from db.models import OpportunityStatus
 from db.structs import Price
 from db.structs import ProfitBookOrder
 
@@ -26,6 +27,7 @@ class PriceAnalyzer:
         self.buy_prices = buy_price
         self.sell_prices = sell_price
         self.profit_orders: list[ProfitBookOrder] = []
+        self.opportunity_status = OpportunityStatus.equal_opportunity
 
         # general info
         self.to_use_usdt = 0
@@ -111,8 +113,7 @@ class PriceAnalyzer:
             self.user_based_used_sell_orders += 1
 
     def run(self):
-        buy_p = Price(amount_available=0)
-        sell_p = Price(amount_available=0)
+        buy_p = sell_p = Price(amount_available=0)
         b_prices = self.buy_prices.copy()
         s_prices = self.sell_prices.copy()
         complete_user_based = False
@@ -146,6 +147,22 @@ class PriceAnalyzer:
 
         if not b_prices or not s_prices:
             self.is_exhausted = True
+            self.opportunity_status = OpportunityStatus.exhausted_opportunity
+        else:
+            last_profit_book_order = self.profit_orders[-1]
+            if last_profit_book_order.buy_price != buy_p.price:
+                if last_profit_book_order.sell_price != sell_p.price:
+                    # double switch of book order
+                    last_buy_spread = (last_profit_book_order.buy_price / sell_p.price) / last_profit_book_order.buy_price
+                    last_sell_spread = (last_profit_book_order.sell_price / buy_p.price) / last_profit_book_order.sell_price
+                    if last_buy_spread > self.BASE_SPREAD:
+                        self.opportunity_status = OpportunityStatus.buy_opportunity
+                    elif last_sell_spread > self.BASE_SPREAD:
+                        self.opportunity_status = OpportunityStatus.sell_opportunity
+                else:
+                    self.opportunity_status = OpportunityStatus.buy_opportunity
+            else:
+                self.opportunity_status = OpportunityStatus.sell_opportunity
 
         if self.is_user_based:
             self.set_user_based_data(buy_p, sell_p)
@@ -198,6 +215,7 @@ class PriceAnalyzer:
         """Convert to ProfitBundleItem model object"""
         return {
             "is_exhausted": self.is_exhausted,
+            "opportunity_status": self.opportunity_status,
             # general info
             "to_use_usdt": self.to_use_usdt,
             "to_use_base_ccy": self.coins_to_buy,
