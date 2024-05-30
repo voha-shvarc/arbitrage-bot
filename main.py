@@ -53,17 +53,17 @@ async def get_exchanges_combinations() -> list[str]:
     return combinations
 
 
-async def get_exchanges_api_from_redis(redis_client, last_exchanges: set[str]):
+async def get_exchanges_api_from_redis(redis_client, last_exchanges: set[str], tries: int = 0):
     if not redis_client.exists("exchange_pairs"):
         redis_client.lpush("exchange_pairs", *await get_exchanges_combinations())
 
     pair = redis_client.brpop(["exchange_pairs"])[1]
     base_exchange_name, pair_exchange_name = pair.split(",")
-    if {base_exchange_name, pair_exchange_name}.intersection(last_exchanges):
+    if {base_exchange_name, pair_exchange_name}.intersection(last_exchanges) and tries < 3:
         redis_client.rpush("exchange_pairs", pair)
-        log.info("Sleeping for 1.5 secs. Wait for correct exchange...")
-        time.sleep(1.5)
-        return await get_exchanges_api_from_redis(redis_client, last_exchanges)
+        log.info("Sleeping for 1 sec. Wait for correct exchange...")
+        time.sleep(1)
+        return await get_exchanges_api_from_redis(redis_client, last_exchanges, tries + 1)
     else:
         return EXCHANGES_MAPPING[base_exchange_name], EXCHANGES_MAPPING[pair_exchange_name]
 
