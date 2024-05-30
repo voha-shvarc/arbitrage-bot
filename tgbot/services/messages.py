@@ -61,11 +61,11 @@ def get_bundle_message(bundle: ProfitBundle, bundle_item: ProfitBundleItem) -> s
     status = f"🟢 Status: {bundle.status}" if bundle.status == BundleStatus.in_progress else f"🔴 Status: {bundle.status}"
 
     if base_exchange.withdraw_status == WithdrawStatus.whitelist:
-        whitelist_status = "✅ Whitelisted\n\n" if bundle.is_whitelisted else "🚫 Not whitelisted\n\n"
+        whitelist_status = "✅ Whitelisted" if bundle.is_whitelisted else "🚫 Not whitelisted"
     else:
         whitelist_status = ""
 
-    exhausted_status = "🩸 Order Book is exhausted\n\n" if bundle_item.is_exhausted else ""
+    exhausted_status = "\n\n🩸 Order Book is exhausted" if bundle_item.is_exhausted else ""
 
     opportunity_status = (
         f"💸 {bundle.opportunity_status}" if bundle.opportunity_status != OpportunityStatus.exhausted_opportunity else ""
@@ -81,7 +81,7 @@ def get_bundle_message(bundle: ProfitBundle, bundle_item: ProfitBundleItem) -> s
         f"<b>{bundle.withdraw_coin_network_exchange.base_network.name}{' ✅' if bundle.is_checked else ''}</b> "
         f"{whitelist_status}"
         f"{exhausted_status}"
-        f"{opportunity_status}\n\n"
+        f"\n\n{opportunity_status}\n\n"
         f"{base_exchange_price_section}\n\n"
         f"{pair_exchange_price_section}\n\n"
         f"{fees_section}\n\n"
