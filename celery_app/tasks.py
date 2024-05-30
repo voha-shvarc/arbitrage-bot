@@ -197,11 +197,11 @@ def fill_up_bundle(bundle_id: int, current_buy_price: float, current_sell_price:
         base_exchange = EXCHANGES_MAPPING[bundle.base_exchange.name](config, {})
         pair_exchange = EXCHANGES_MAPPING[bundle.pair_exchange.name](config, {})
 
-        bundle.base_exchange_trading_volume = base_exchange.get_pair_trading_volume(bundle.pair, current_buy_price)
-        bundle.pair_exchange_trading_volume = pair_exchange.get_pair_trading_volume(bundle.pair, current_sell_price)
+        bundle.base_exchange_trading_volume = base_exchange.get_pair_trading_volume(bundle.pair)
+        bundle.pair_exchange_trading_volume = pair_exchange.get_pair_trading_volume(bundle.pair)
 
-        bundle.base_exchange_chart_change = base_exchange.get_pair_chart_change(bundle.pair)
-        bundle.pair_exchange_chart_change = pair_exchange.get_pair_chart_change(bundle.pair)
+        bundle.base_exchange_chart_change = base_exchange.get_pair_chart_change(bundle.pair, current_buy_price)
+        bundle.pair_exchange_chart_change = pair_exchange.get_pair_chart_change(bundle.pair, current_sell_price)
 
         bundle.pair_exchange_recent_trading_volume = pair_exchange.get_recent_trading_volume(bundle.pair)
 

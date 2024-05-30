@@ -59,7 +59,7 @@ async def get_exchanges_api_from_redis(redis_client, last_exchanges: set[str], t
 
     pair = redis_client.brpop(["exchange_pairs"])[1]
     base_exchange_name, pair_exchange_name = pair.split(",")
-    if {base_exchange_name, pair_exchange_name}.intersection(last_exchanges) and tries < 3:
+    if {base_exchange_name, pair_exchange_name}.intersection(last_exchanges) and tries < 8:
         redis_client.rpush("exchange_pairs", pair)
         log.info("Sleeping for 1 sec. Wait for correct exchange...")
         time.sleep(1)
