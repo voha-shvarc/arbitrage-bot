@@ -217,7 +217,6 @@ class PriceAnalyzer:
         """Convert to ProfitBundleItem model object"""
         return {
             "is_exhausted": self.is_exhausted,
-            "opportunity_status": self.opportunity_status,
             # general info
             "to_use_usdt": self.to_use_usdt,
             "to_use_base_ccy": self.coins_to_buy,
