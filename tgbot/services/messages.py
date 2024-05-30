@@ -68,7 +68,7 @@ def get_bundle_message(bundle: ProfitBundle, bundle_item: ProfitBundleItem) -> s
     exhausted_status = "\n\n🩸 Order Book is exhausted" if bundle_item.is_exhausted else ""
 
     opportunity_status = (
-        f"💸 {bundle.opportunity_status}" if bundle.opportunity_status != OpportunityStatus.exhausted_opportunity else ""
+        f"\n\n💸 {bundle.opportunity_status}" if bundle.opportunity_status != OpportunityStatus.exhausted_opportunity else ""
     )
 
     auto_buy_label = "" if bundle.withdraw_pair_exchange.api_enabled else "Auto Buy: ❌"
@@ -81,7 +81,7 @@ def get_bundle_message(bundle: ProfitBundle, bundle_item: ProfitBundleItem) -> s
         f"<b>{bundle.withdraw_coin_network_exchange.base_network.name}{' ✅' if bundle.is_checked else ''}</b> "
         f"{whitelist_status}"
         f"{exhausted_status}"
-        f"\n\n{opportunity_status}\n\n"
+        f"{opportunity_status}\n\n"
         f"{base_exchange_price_section}\n\n"
         f"{pair_exchange_price_section}\n\n"
         f"{fees_section}\n\n"
