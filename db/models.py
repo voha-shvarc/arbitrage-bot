@@ -252,6 +252,7 @@ class ProfitBundleItem(Base):
     spot_fee = Column(Float, server_default="0")
     network_fee = Column(Float, server_default="0")
     profit = Column(Float)
+    additional_base_ccy_to_sell = Column(Float, server_default="0")
 
     base_exchange_max_price = Column(Float, server_default="0")
     base_exchange_min_price = Column(Float, server_default="0")

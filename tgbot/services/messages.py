@@ -49,7 +49,8 @@ def get_bundle_message(bundle: ProfitBundle, bundle_item: ProfitBundleItem) -> s
         f"{format_number(bundle_item.user_based_to_use_base_ccy)} | {format_number(bundle.pair_exchange_recent_trading_volume)}\n"
         f"📈 {bundle_item.user_based_used_sell_orders} orders | {(bundle_item.user_based_percent_of_pair_trading_vol * 100):.3f}%"
         f" | {bundle.pair_exchange_chart_change:+.1f}%\n"
-        f"🛒 {bundle_item.used_sell_orders} orders | {(bundle_item.percent_of_pair_trading_vol * 100):.3f}% | {bundle_item.to_use_usdt:.2f}$"
+        f"🛒 {bundle_item.used_sell_orders} orders | {(bundle_item.percent_of_pair_trading_vol * 100):.3f}% | {bundle_item.to_use_usdt:.2f}$\n"
+        f"🎁 More to sell: {format_number(bundle_item.additional_base_ccy_to_sell)}"
     )
 
     fees_section = f"‼️️ Spot Fee: <b>{bundle_item.user_based_spot_fee:.2f}$</b> | Network Fee: <b>{bundle_item.user_based_network_fee:.2f}$</b>"

@@ -6,6 +6,7 @@ from db.structs import ProfitBookOrder
 
 class PriceAnalyzer:
     BASE_SPREAD = 0.004  # 0.4%
+    SAFE_SPREAD = 0.002  # 0.2%
 
     def __init__(
         self,
@@ -32,6 +33,7 @@ class PriceAnalyzer:
         # general info
         self.to_use_usdt = 0
         self.coins_to_buy = 0
+        self.additional_coins_to_sell = 0
 
         self.min_buy_price = 0
         self.max_buy_price = 0
@@ -142,29 +144,30 @@ class PriceAnalyzer:
                 if complete_user_based:
                     self.set_user_based_data(buy_p, sell_p)
                     self.is_user_based = complete_user_based = False
+            elif self.profit_orders:
+                last_profit_order = self.profit_orders[-1]
+                if last_profit_order.buy_price != buy_p.price:
+                    if last_profit_order.sell_price != sell_p.price:
+                        # double switch of book order
+                        last_buy_spread = (last_profit_order.buy_price / sell_p.price) / last_profit_order.buy_price
+                        last_sell_spread = (last_profit_order.sell_price / buy_p.price) / last_profit_order.sell_price
+                        if last_buy_spread > self.BASE_SPREAD:
+                            self.opportunity_status = OpportunityStatus.buy_opportunity
+                            self.set_additional_coins_to_sell(sell_p, s_prices, last_profit_order)
+                        elif last_sell_spread > self.BASE_SPREAD:
+                            self.opportunity_status = OpportunityStatus.sell_opportunity
+                    else:
+                        self.opportunity_status = OpportunityStatus.buy_opportunity
+                        self.set_additional_coins_to_sell(sell_p, s_prices, last_profit_order)
+                else:
+                    self.opportunity_status = OpportunityStatus.sell_opportunity
+                break
             else:
                 break
 
         if not b_prices or not s_prices:
             self.is_exhausted = True
             self.opportunity_status = OpportunityStatus.exhausted_opportunity
-        elif not self.profit_orders:
-            pass
-        else:
-            last_profit_book_order = self.profit_orders[-1]
-            if last_profit_book_order.buy_price != buy_p.price:
-                if last_profit_book_order.sell_price != sell_p.price:
-                    # double switch of book order
-                    last_buy_spread = (last_profit_book_order.buy_price / sell_p.price) / last_profit_book_order.buy_price
-                    last_sell_spread = (last_profit_book_order.sell_price / buy_p.price) / last_profit_book_order.sell_price
-                    if last_buy_spread > self.BASE_SPREAD:
-                        self.opportunity_status = OpportunityStatus.buy_opportunity
-                    elif last_sell_spread > self.BASE_SPREAD:
-                        self.opportunity_status = OpportunityStatus.sell_opportunity
-                else:
-                    self.opportunity_status = OpportunityStatus.buy_opportunity
-            else:
-                self.opportunity_status = OpportunityStatus.sell_opportunity
 
         if self.is_user_based:
             self.set_user_based_data(buy_p, sell_p)
@@ -173,6 +176,18 @@ class PriceAnalyzer:
             self.used_buy_orders += 1
         elif sell_p.partial_exhausted:
             self.used_sell_orders += 1
+
+    def set_additional_coins_to_sell(self, sell_p: Price, s_prices: list[list], last_profit_order: ProfitBookOrder):
+        while s_prices:
+            if sell_p.amount_available == 0:
+                sell_p = self.get_price(s_prices.pop(0))
+
+            spread = (sell_p.price - last_profit_order.buy_price) / last_profit_order.buy_price
+            if spread > self.SAFE_SPREAD:
+                self.additional_coins_to_sell += sell_p.amount_available
+                sell_p.amount_available = 0
+            else:
+                break
 
     @staticmethod
     def get_price(price_data: list) -> Price:
@@ -220,6 +235,7 @@ class PriceAnalyzer:
             # general info
             "to_use_usdt": self.to_use_usdt,
             "to_use_base_ccy": self.coins_to_buy,
+            "additional_base_ccy_to_sell": self.additional_coins_to_sell,
             "spot_fee": self.spot_fee * self.avg_sell_price,
             "network_fee": self.withdraw_cne.withdraw_fee * self.avg_buy_price,
             "profit": self.profit,
