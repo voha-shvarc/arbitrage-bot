@@ -509,6 +509,6 @@ class ProfitBookOrder:
             "buy_price": self.buy_price,
             "sell_price": self.sell_price,
             "qty": self.coin_amount,
-            "spread": self.spread,
-            "profit": self.coin_amount * self.sell_price * self.spread,
+            "spread": round(self.spread, 3),
+            "profit": round(self.coin_amount * self.sell_price * self.spread, 2),
         }
