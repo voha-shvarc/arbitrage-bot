@@ -179,7 +179,7 @@ def send_tg_message(bundle_id, profit_orders_data: Optional[list[dict]] = None):
 
             filename = f"{bundle_id}_{bundle.pair.default_name}_profit_details.csv"
             with open(filename, "w") as file:
-                writer = csv.DictWriter(file, fieldnames=["buy_price", "sell_price", "qty", "spread", "profit"])
+                writer = csv.DictWriter(file, fieldnames=["buy_price", "sell_price", "qty", "spread", "usdt", "profit"])
                 writer.writeheader()
                 writer.writerows(profit_orders)
 
