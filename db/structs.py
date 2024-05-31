@@ -510,5 +510,5 @@ class ProfitBookOrder:
             "sell_price": self.sell_price,
             "qty": self.coin_amount,
             "spread": self.spread,
-            "profit": self.coin_amount * self.spread,
+            "profit": self.coin_amount * self.sell_price * self.spread,
         }
