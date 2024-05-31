@@ -1,8 +1,11 @@
 import asyncio
+import csv
 import logging
 import time
+from typing import Optional
 
 from aiogram import Bot
+from aiogram.types import FSInputFile
 from celery import Task
 from celery.exceptions import MaxRetriesExceededError
 from dotenv import dotenv_values
@@ -19,6 +22,7 @@ from db.models import Pair
 from db.models import PairExchange
 from db.models import ProfitBundle
 from db.models import ProfitBundleItem
+from db.structs import ProfitBookOrder
 from exchanges import EXCHANGES_MAPPING
 from tgbot.config import load_config
 from tgbot.keyboards.bundle import get_bundle_keyboard
@@ -40,7 +44,7 @@ handler.setFormatter(formatt)
 logger.addHandler(handler)
 
 
-@app.task(bind=True, max_retries=100)  # it takes 40 minutes to use all the retires
+@app.task(bind=True, max_retries=100)  # it takes 25 minutes to use all the retires
 def monitor_bundle(self: Task, bundle_id, force_refresh: bool = False):
     with Session() as session:
         bundle: ProfitBundle = session.scalar(
@@ -104,12 +108,10 @@ def monitor_bundle(self: Task, bundle_id, force_refresh: bool = False):
             send_tg_message.apply_async(args=[bundle_id], countdown=0.5)
 
         try:
-            if self.request.retries < 60:  # for first 10 minutes
-                raise self.retry(countdown=10, args=[bundle_id])
-            elif self.request.retries < 80:  # for next 10 minutes
-                raise self.retry(countdown=30, args=[bundle_id])
-            else:
-                raise self.retry(countdown=60, args=[bundle_id])
+            if self.request.retries < 60:  # for first 5 minutes
+                raise self.retry(countdown=5, args=[bundle_id])
+            elif self.request.retries < 60:  # for next 20 minutes
+                raise self.retry(countdown=20, args=[bundle_id])
         except MaxRetriesExceededError:
             pass
 
@@ -123,7 +125,7 @@ def monitor_bundle(self: Task, bundle_id, force_refresh: bool = False):
 
 
 @app.task
-def send_tg_message(bundle_id):
+def send_tg_message(bundle_id, profit_orders_data: Optional[list[dict]] = None):
     with Session() as session:
         bundle = joinedload(ProfitBundleItem.profit_bundle)
         bundle_item: ProfitBundleItem = (
@@ -172,6 +174,24 @@ def send_tg_message(bundle_id):
             )
             for user_id in config_tg.tg_bot.admin_ids
         ]
+        if profit_orders_data:
+            profit_orders = [ProfitBookOrder.from_dict(data).analyzed_info for data in profit_orders_data]
+
+            filename = f"{bundle_id}_{bundle.pair.default_name}_profit_details.csv"
+            with open(filename) as file:
+                writer = csv.DictWriter(file, fieldnames=["buy_price", "sell_price", "qty", "spread", "profit"])
+                writer.writeheader()
+                writer.writerows(profit_orders)
+
+            file_tg = FSInputFile(filename)
+            file_info_messages = [
+                bot.send_document(
+                    user_id,
+                    file_tg,
+                )
+                for user_id in config_tg.tg_bot.admin_ids
+            ]
+            send_message_tasks.extend(file_info_messages)
 
         async def send_messages():
             await asyncio.gather(*send_message_tasks)
@@ -180,7 +200,12 @@ def send_tg_message(bundle_id):
 
 
 @app.task
-def fill_up_bundle(bundle_id: int, current_buy_price: float, current_sell_price: float):
+def fill_up_bundle(
+    bundle_id: int,
+    current_buy_price: float,
+    current_sell_price: float,
+    profit_orders: list[dict],
+):
     with Session() as session:
         bundle: ProfitBundle = session.scalar(
             select(ProfitBundle)
@@ -207,7 +232,7 @@ def fill_up_bundle(bundle_id: int, current_buy_price: float, current_sell_price:
 
         session.commit()
 
-    send_tg_message.apply_async(args=[bundle_id], countdown=1)
+    send_tg_message.apply_async(args=[bundle_id, profit_orders], countdown=0.5)
 
 
 @app.task

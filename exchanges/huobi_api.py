@@ -77,7 +77,8 @@ class HuobiAPI(AbstractExchange):
 
     def get_price(self, pair: Pair, limit=30) -> tuple[list[list[str]], list[list[str]]]:
         try:
-            depth = self.price_client.get_pricedepth(pair.huobi_name, DepthStep.STEP0, limit)
+            # limit doesn't matter here, when depth is step0 - 150 by default
+            depth = self.price_client.get_pricedepth(pair.huobi_name, DepthStep.STEP0)
         except Exception:
             raise NoPriceFound()
 
@@ -87,11 +88,10 @@ class HuobiAPI(AbstractExchange):
             raise NoPriceFound()
         return buy, sell
 
-    async def async_get_price(self, pair: Pair, limit=20):
+    async def async_get_price(self, pair: Pair, limit=30):
         url = self.base_url + "/market/depth"
         body = {
             "symbol": pair.huobi_name,
-            "depth": limit,
             "type": DepthStep.STEP0,
         }
         response = await self.connection.get(url, params=body)

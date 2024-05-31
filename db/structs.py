@@ -1,3 +1,4 @@
+from dataclasses import asdict
 from dataclasses import dataclass
 from typing import Any
 from typing import List
@@ -494,3 +495,20 @@ class ProfitBookOrder:
     coin_amount: float
     buy_price: float
     sell_price: float
+
+    def to_dict(self):
+        return asdict(self)
+
+    @staticmethod
+    def from_dict(data: dict):
+        return ProfitBookOrder(**data)
+
+    @property
+    def analyzed_info(self):
+        return {
+            "buy_price": self.buy_price,
+            "sell_price": self.sell_price,
+            "qty": self.coin_amount,
+            "spread": self.spread,
+            "profit": self.coin_amount * self.spread,
+        }
